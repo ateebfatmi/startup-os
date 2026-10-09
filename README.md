@@ -4,7 +4,7 @@ Orbit is a spatial startup operating system built around a navigable 3D office. 
 
 ## What works now
 
-- A React Three Fiber office rendered with real 3D geometry, an orthographic isometric camera, lighting, shadows, furniture, and rooms.
+- A premium React Three Fiber office rendered with real 3D geometry, an orthographic isometric camera, limestone flooring, walnut furniture, smoked-glass rooms, brass details, tailored lighting, shadows, and distinct work zones.
 - Responsive WASD/arrow movement, eased velocity, facing direction, office bounds, and furniture collision.
 - Contextual project-table, meeting-room, whiteboard, and focus-pod interactions.
 - Live cross-tab presence and avatar movement through a typed transport layer, with smoothed remote avatars, payload validation, heartbeats, stale-player cleanup, and automatic Supabase Realtime selection when configured.

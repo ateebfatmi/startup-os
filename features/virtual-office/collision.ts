@@ -10,6 +10,11 @@ export const COLLIDERS: Collider[] = [
   { id: "project-table", x: -5.8, z: 3.4, width: 4.3, depth: 2.2 },
   { id: "lounge-sofa", x: 5.8, z: 3.7, width: 3.7, depth: 1.2 },
   { id: "divider", x: 0, z: -5.4, width: 0.35, depth: 3.1 },
+  { id: "reception", x: 0, z: 5.9, width: 3.2, depth: 0.8 },
+  { id: "left-glass-north", x: -2.65, z: -5.55, width: 0.12, depth: 3.1 },
+  { id: "left-glass-south", x: -2.65, z: -1.85, width: 0.12, depth: 2.3 },
+  { id: "right-glass-north", x: 2.65, z: -5.55, width: 0.12, depth: 3.1 },
+  { id: "right-glass-south", x: 2.65, z: -1.85, width: 0.12, depth: 2.3 },
 ];
 
 function collides(point: Vec2, collider: Collider) {

@@ -27,6 +27,8 @@
 - [x] Meeting, project, focus, lounge, and whiteboard zones.
 - [x] Contextual interactions that open working product tools.
 - [x] Pixel-ratio cap and restrained lighting/shadow cost.
+- [x] Premium atelier layout with limestone flooring, walnut furniture, smoked-glass rooms, brass detailing, tailored lighting, reception, executive boardroom, focus library, and lounge.
+- [x] Collision geometry aligned with premium partitions and reception furniture.
 - [ ] Replace capsule avatar with an asset-backed animation adapter.
 - [ ] Load saved office layouts and objects from Supabase.
 - [ ] Add touch/click-to-move controls.
