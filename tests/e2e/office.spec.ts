@@ -1,5 +1,17 @@
 import { expect, test } from "@playwright/test";
 
+test("creates a personalized local workspace and exits the demo", async ({ page }) => {
+  await page.goto("/onboarding");
+  await page.getByLabel("Your display name").fill("Maya Chen");
+  await page.getByLabel("Workspace name").fill("Arc Studio");
+  await page.getByRole("button", { name: "Client lab" }).click();
+  await page.getByRole("button", { name: "Enter local demo" }).click();
+  await expect(page.getByRole("button", { name: /Arc Studio/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Maya Chen profile" })).toBeVisible();
+  await page.getByRole("button", { name: "Exit demo" }).click();
+  await expect(page).toHaveURL(/\/login$/);
+});
+
 test("opens the 3D office shell", async ({ page }) => {
   await page.goto("/office");
   await expect(page.getByRole("heading", { name: "Office", exact: true })).toBeVisible();

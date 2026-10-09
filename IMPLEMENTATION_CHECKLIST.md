@@ -14,8 +14,8 @@
 - [x] Workspace onboarding and office-template selection.
 - [x] Initial PostgreSQL schema, indexes, helper functions, and RLS.
 - [x] Local-first project/task workflow for credential-free evaluation.
-- [ ] Connect onboarding form to `create_workspace` RPC when credentials exist.
-- [ ] Complete email verification, recovery, OAuth callback, and protected middleware.
+- [x] Connect onboarding and profile setup to `create_workspace` RPC when credentials exist, with a personalized local fallback.
+- [x] Complete registration, email verification callback, password recovery, Google OAuth entry, logout, and protected session middleware.
 - [ ] Build invitation acceptance and member administration.
 
 ## Phase 2 — 3D office

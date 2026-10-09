@@ -1,16 +1,19 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Command, DoorOpen, FolderKanban, Headphones, LayoutGrid, Loader2, Menu, Mic, MicOff, PhoneOff, Plus, Search, Settings2, Sparkles, Users, Video, VideoOff, Wifi, X } from "lucide-react";
+import { Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Command, DoorOpen, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Menu, Mic, MicOff, PhoneOff, Plus, Search, Sparkles, Users, Video, VideoOff, Wifi, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
+import { initialsFor } from "@/features/auth/auth-utils";
 import { OfficeCanvas } from "@/features/virtual-office/office-canvas";
 import { useOfficeStore } from "@/features/virtual-office/store";
 import { useMultiplayer } from "@/features/multiplayer/use-multiplayer";
 import { useHuddle, type HuddleController } from "@/features/communication/use-huddle";
 import type { CallParticipant } from "@/features/communication/types";
+import { createSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase/client";
 import { useWorkspaceData } from "./use-workspace-data";
 import type { TaskStatus } from "./sample-data";
 
@@ -26,8 +29,42 @@ const nav = [
 type View = (typeof nav)[number]["id"];
 
 export function WorkspaceShell() {
-  useMultiplayer("northstar-demo");
-  const huddle = useHuddle("northstar-demo", "weekly-product-pulse");
+  const router = useRouter();
+  const [identity, setIdentity] = useState({ displayName: "Ateeb Fatmi", workspaceName: "Northstar Labs", workspaceId: "northstar-demo" });
+  useEffect(() => {
+    const localIdentity = {
+      displayName: window.localStorage.getItem("orbit-display-name") || "Ateeb Fatmi",
+      workspaceName: window.localStorage.getItem("orbit-workspace-name") || "Northstar Labs",
+      workspaceId: window.localStorage.getItem("orbit-workspace-id") || "northstar-demo",
+    };
+    setIdentity(localIdentity);
+    if (!hasSupabaseConfig) return;
+    let active = true;
+    void (async () => {
+      const supabase = createSupabaseBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const [{ data: profile }, { data: memberships }] = await Promise.all([
+        supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
+        supabase.from("workspace_members").select("workspace_id, workspaces(name)").eq("user_id", user.id).limit(1),
+      ]);
+      const membership = memberships?.[0] as { workspace_id: string; workspaces: { name?: string } | { name?: string }[] | null } | undefined;
+      const relatedWorkspace = Array.isArray(membership?.workspaces) ? membership.workspaces[0] : membership?.workspaces;
+      const nextIdentity = {
+        displayName: profile?.display_name || localIdentity.displayName,
+        workspaceName: relatedWorkspace?.name || localIdentity.workspaceName,
+        workspaceId: membership?.workspace_id || localIdentity.workspaceId,
+      };
+      if (!active) return;
+      setIdentity(nextIdentity);
+      window.localStorage.setItem("orbit-display-name", nextIdentity.displayName);
+      window.localStorage.setItem("orbit-workspace-name", nextIdentity.workspaceName);
+      window.localStorage.setItem("orbit-workspace-id", nextIdentity.workspaceId);
+    })();
+    return () => { active = false; };
+  }, []);
+  useMultiplayer(identity.workspaceId);
+  const huddle = useHuddle(identity.workspaceId, "weekly-product-pulse");
   const [view, setView] = useState<View>("office");
   const [mobileNav, setMobileNav] = useState(false);
   const [rightRail, setRightRail] = useState(true);
@@ -41,14 +78,14 @@ export function WorkspaceShell() {
 
   return (
     <main className="flex h-[100dvh] overflow-hidden bg-[#f4f1e8]">
-      <Sidebar view={view} setView={setView} mobileNav={mobileNav} onClose={() => setMobileNav(false)} />
+      <Sidebar view={view} setView={setView} mobileNav={mobileNav} onClose={() => setMobileNav(false)} workspaceName={identity.workspaceName} onExit={async () => { if (hasSupabaseConfig) await createSupabaseBrowserClient().auth.signOut(); ["orbit-display-name", "orbit-workspace-name", "orbit-workspace-id", "orbit-workspace-type", "orbit-office-template"].forEach((key) => window.localStorage.removeItem(key)); router.push("/login"); router.refresh(); }} />
       <div className="relative flex min-w-0 flex-1 flex-col">
-        <Topbar view={view} onMenu={() => setMobileNav(true)} />
+        <Topbar view={view} onMenu={() => setMobileNav(true)} displayName={identity.displayName} />
         <div className="relative isolate min-h-0 flex-1">
           {view === "office" ? (
             <>
               <div className="absolute inset-0 z-0"><OfficeCanvas /></div>
-              <OfficeHud rightRail={rightRail} onToggleRail={() => setRightRail((value) => !value)} tasks={data.tasks} />
+              <OfficeHud rightRail={rightRail} onToggleRail={() => setRightRail((value) => !value)} tasks={data.tasks} displayName={identity.displayName} />
               <AnimatePresence>
                 {nearbyAction && (
                   <motion.button initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} onClick={() => openPanel(nearbyAction.kind)} className="absolute bottom-24 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 rounded-2xl bg-[#17211b] px-4 py-3 text-sm font-semibold text-white shadow-2xl">
@@ -72,7 +109,7 @@ export function WorkspaceShell() {
   );
 }
 
-function Sidebar({ view, setView, mobileNav, onClose }: { view: View; setView: (view: View) => void; mobileNav: boolean; onClose: () => void }) {
+function Sidebar({ view, setView, mobileNav, onClose, workspaceName, onExit }: { view: View; setView: (view: View) => void; mobileNav: boolean; onClose: () => void; workspaceName: string; onExit: () => Promise<void> }) {
   return <>
     {mobileNav && <button className="fixed inset-0 z-30 bg-black/35 lg:hidden" aria-label="Close navigation" onClick={onClose} />}
     <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-[#173f2b] p-3 text-[#f5f0e4] transition-transform lg:static lg:translate-x-0 ${mobileNav ? "translate-x-0" : "-translate-x-full"}`}>
@@ -81,22 +118,22 @@ function Sidebar({ view, setView, mobileNav, onClose }: { view: View; setView: (
         <button className="lg:hidden" onClick={onClose}><X size={20} /></button>
       </div>
       <button className="my-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.08] p-3 text-left">
-        <div className="grid h-9 w-9 place-items-center rounded-xl bg-[#ff8a4c] text-sm font-bold text-[#311b13]">NS</div>
-        <div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold">Northstar Labs</div><div className="text-xs text-white/55">Local demo</div></div><ChevronDown size={16} className="text-white/50" />
+        <div className="grid h-9 w-9 place-items-center rounded-xl bg-[#ff8a4c] text-sm font-bold text-[#311b13]">{initialsFor(workspaceName)}</div>
+        <div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold">{workspaceName}</div><div className="text-xs text-white/55">{hasSupabaseConfig ? "Private workspace" : "Local demo"}</div></div><ChevronDown size={16} className="text-white/50" />
       </button>
       <nav className="mt-2 space-y-1" aria-label="Workspace">
         {nav.map((item) => <button key={item.id} onClick={() => { setView(item.id); onClose(); }} className={`flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium transition ${view === item.id ? "bg-[#c8f560] text-[#173f2b]" : "text-white/67 hover:bg-white/[.07] hover:text-white"}`}><item.icon size={18} /><span>{item.label}</span>{item.id === "tasks" && <span className="ml-auto rounded-full bg-white/10 px-2 text-xs">3</span>}</button>)}
       </nav>
       <div className="mt-auto rounded-2xl bg-[#214d38] p-3">
-        <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><Sparkles size={16} className="text-[#c8f560]" /> Demo workspace</div>
-        <p className="text-xs leading-5 text-white/60">Connect Supabase to replace local sample data with your team workspace.</p>
+        <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><Sparkles size={16} className="text-[#c8f560]" /> {hasSupabaseConfig ? "Private workspace" : "Demo workspace"}</div>
+        <p className="text-xs leading-5 text-white/60">{hasSupabaseConfig ? "Your session and membership are protected by Supabase Auth and RLS." : "Connect Supabase to replace local sample data with your team workspace."}</p>
       </div>
-      <button className="mt-2 flex h-11 items-center gap-3 rounded-xl px-3 text-sm text-white/65 hover:bg-white/[.07]"><Settings2 size={18} /> Settings</button>
+      <button onClick={() => void onExit()} className="mt-2 flex h-11 items-center gap-3 rounded-xl px-3 text-sm text-white/65 hover:bg-white/[.07]"><LogOut size={18} /> {hasSupabaseConfig ? "Sign out" : "Exit demo"}</button>
     </aside>
   </>;
 }
 
-function Topbar({ view, onMenu }: { view: View; onMenu: () => void }) {
+function Topbar({ view, onMenu, displayName }: { view: View; onMenu: () => void; displayName: string }) {
   const title = nav.find((item) => item.id === view)?.label ?? "Office";
   const teammateCount = useOfficeStore((state) => Object.keys(state.remotePlayers).length);
   return <header className="z-20 flex h-16 shrink-0 items-center gap-3 border-b border-black/[.07] bg-[#fffdf7]/95 px-4 backdrop-blur-md md:px-5">
@@ -105,11 +142,11 @@ function Topbar({ view, onMenu }: { view: View; onMenu: () => void }) {
     <div className="ml-auto hidden w-full max-w-xs items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2 text-[#68736b] md:flex"><Search size={16} /><input className="w-full bg-transparent text-sm outline-none" placeholder="Search workspace" aria-label="Search workspace" /><kbd className="rounded bg-black/5 px-1.5 py-0.5 text-xs">⌘K</kbd></div>
     <Button variant="ghost" size="icon" aria-label="Help"><CircleHelp size={19} /></Button>
     <Button variant="ghost" size="icon" aria-label="Notifications" className="relative"><Bell size={19} /><span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#ff8a4c]" /></Button>
-    <button className="grid h-9 w-9 place-items-center rounded-full bg-[#efad73] text-xs font-bold">AF</button>
+    <button className="grid h-9 w-9 place-items-center rounded-full bg-[#efad73] text-xs font-bold" aria-label={`${displayName} profile`}>{initialsFor(displayName)}</button>
   </header>;
 }
 
-function OfficeHud({ rightRail, onToggleRail, tasks }: { rightRail: boolean; onToggleRail: () => void; tasks: { status: string }[] }) {
+function OfficeHud({ rightRail, onToggleRail, tasks, displayName }: { rightRail: boolean; onToggleRail: () => void; tasks: { status: string }[]; displayName: string }) {
   const remotePlayers = useOfficeStore((state) => state.remotePlayers);
   const connectionState = useOfficeStore((state) => state.connectionState);
   const transportLabel = useOfficeStore((state) => state.transportLabel);
@@ -122,7 +159,7 @@ function OfficeHud({ rightRail, onToggleRail, tasks }: { rightRail: boolean; onT
     <button onClick={onToggleRail} className="absolute right-4 top-4 z-20 grid h-10 w-10 place-items-center rounded-xl border border-white/50 bg-[#fffdf7]/[.9] shadow-lg backdrop-blur-md lg:hidden"><Users size={18} /></button>
     {rightRail && <aside className="absolute right-5 top-5 z-10 hidden w-64 rounded-[24px] border border-white/45 bg-[#fffdf7]/[.9] p-4 shadow-panel backdrop-blur-md lg:block">
       <div className="flex items-center justify-between"><h2 className="text-sm font-bold">In the office</h2><Badge className="bg-[#e5f3e7] text-[#276141]">{onlineCount} online</Badge></div>
-      <div className="mt-4 flex items-center gap-3"><div className="relative grid h-10 w-10 place-items-center rounded-full bg-[#efad73] text-xs font-bold">AF<span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#55ac74]" /></div><div><div className="text-sm font-semibold">You</div><div className="text-xs text-[#68736b]">Open workspace</div></div></div>
+      <div className="mt-4 flex items-center gap-3"><div className="relative grid h-10 w-10 place-items-center rounded-full bg-[#efad73] text-xs font-bold">{initialsFor(displayName)}<span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#55ac74]" /></div><div><div className="text-sm font-semibold">{displayName}</div><div className="text-xs text-[#68736b]">Open workspace</div></div></div>
       {Object.values(remotePlayers).map((player) => <div key={player.id} className="mt-3 flex items-center gap-3"><div className="relative grid h-10 w-10 place-items-center rounded-full text-xs font-bold text-white" style={{ background: player.color }}>{player.name.slice(0, 2).toUpperCase()}<span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#55ac74]" /></div><div className="min-w-0"><div className="truncate text-sm font-semibold">{player.name}</div><div className="text-xs text-[#68736b]">Moving in the office</div></div></div>)}
       <div className="my-4 h-px bg-black/[.07]" />
       <div className="flex items-center justify-between"><span className="text-xs font-semibold uppercase tracking-wider text-[#68736b]">Today</span><span className="text-xs text-[#68736b]">{tasks.filter((task) => task.status !== "Done").length} open tasks</span></div>

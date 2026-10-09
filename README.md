@@ -10,6 +10,8 @@ Orbit is a spatial startup operating system built around a navigable 3D office. 
 - Live cross-tab presence and avatar movement through a typed transport layer, with smoothed remote avatars, payload validation, heartbeats, stale-player cleanup, and automatic Supabase Realtime selection when configured.
 - Real, permission-gated WebRTC huddles with audio/video tracks, microphone and camera controls, peer status, directed SDP/ICE signaling, and complete media cleanup.
 - A responsive app shell, overview, local Kanban workflow, login, and workspace onboarding.
+- Production-shaped Supabase Auth flows for registration, email verification callbacks, sign-in, Google OAuth entry, password recovery, protected routes, persistent cookie sessions, and logout.
+- Authenticated onboarding that updates the member profile, creates a private workspace through the `create_workspace` RPC, saves workspace type, and persists the selected office template.
 - Local demo persistence for tasks when no backend credentials are configured.
 - A Supabase migration containing core workspace models, indexes, RLS, user bootstrap, and atomic workspace creation.
 
@@ -34,6 +36,14 @@ Open `http://localhost:3000`. Without Supabase credentials, `/login` clearly off
 3. Copy the project URL and anon key into `.env.local`.
 4. Add `http://localhost:3000` and the production Vercel origin to the Auth redirect allowlist.
 5. Never expose `SUPABASE_SERVICE_ROLE_KEY` to browser code. It is reserved for server-only administrative operations.
+
+### Authentication configuration
+
+- Set the Supabase Auth site URL to `http://localhost:3000` for local development and to the canonical HTTPS origin in production.
+- Add both origins to the redirect allowlist. Orbit returns email verification and OAuth responses through `/auth/callback`; password recovery continues from that callback to `/reset-password`.
+- Enable the Google provider in Supabase only after configuring its OAuth client and the Supabase callback URL shown by the provider settings.
+- When email confirmation is enabled, new users remain on the login screen until they follow the verification link. When disabled, onboarding begins immediately.
+- `/office`, `/onboarding`, and `/reset-password` are session-protected whenever public Supabase credentials are configured. Without credentials, they remain available for the explicit local demo.
 
 For calls outside a local network, set `NEXT_PUBLIC_ICE_SERVERS` to a JSON array containing your STUN and TURN configuration. Prefer short-lived TURN credentials issued by a server-side endpoint. The current peer mesh is intended for small huddles; larger calls should move to an SFU.
 
@@ -64,4 +74,4 @@ Deploy the Next.js app to Vercel and configure the same public Supabase variable
 - `supabase/migrations`: persistent schema and authorization.
 - `tests`: deterministic movement tests and browser workflows.
 
-See `IMPLEMENTATION_CHECKLIST.md` for completed scope and the next milestone. Multiplayer, real media, and collaborative whiteboard synchronization are not claimed as complete in this milestone.
+See `IMPLEMENTATION_CHECKLIST.md` for completed scope and the next milestone. Authenticated cross-device Supabase verification, production TURN, full database-backed Startup OS CRUD, and collaborative whiteboard synchronization remain explicit follow-up work.
