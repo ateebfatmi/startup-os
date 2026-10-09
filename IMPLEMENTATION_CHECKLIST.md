@@ -33,7 +33,12 @@
 
 ## Later phases
 
-- [ ] Supabase Realtime presence transport, snapshots, interpolation, and reconnection.
+- [x] Typed multiplayer transport boundary with payload validation and rate-limited snapshots.
+- [x] Immediate localhost cross-tab presence with join, leave, heartbeat, and stale-player cleanup.
+- [x] Supabase Realtime presence/broadcast transport selected automatically when configured.
+- [x] Smoothed remote-avatar interpolation independent of local movement.
+- [ ] Verify authenticated Supabase Realtime presence across two separate devices.
+- [ ] Add server-side movement validation for a dedicated WebSocket deployment.
 - [ ] WebRTC signaling, TURN configuration, manual calls, then proximity audio.
 - [ ] Full project/task/comment/member CRUD through server-authorized repositories.
 - [ ] Meeting scheduling, persistent notes/resources, notifications, and activity feed.

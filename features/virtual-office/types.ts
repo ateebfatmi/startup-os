@@ -20,4 +20,7 @@ export type PlayerSnapshot = {
   rotation: number;
   updatedAt: number;
   color: string;
+  roomId?: string;
 };
+
+export type ConnectionState = "connecting" | "connected" | "reconnecting" | "offline";

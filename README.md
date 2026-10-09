@@ -7,6 +7,7 @@ Orbit is a spatial startup operating system built around a navigable 3D office. 
 - A React Three Fiber office rendered with real 3D geometry, an orthographic isometric camera, lighting, shadows, furniture, and rooms.
 - Responsive WASD/arrow movement, eased velocity, facing direction, office bounds, and furniture collision.
 - Contextual project-table, meeting-room, whiteboard, and focus-pod interactions.
+- Live cross-tab presence and avatar movement through a typed transport layer, with smoothed remote avatars, payload validation, heartbeats, stale-player cleanup, and automatic Supabase Realtime selection when configured.
 - A responsive app shell, overview, local Kanban workflow, login, and workspace onboarding.
 - Local demo persistence for tasks when no backend credentials are configured.
 - A Supabase migration containing core workspace models, indexes, RLS, user bootstrap, and atomic workspace creation.
@@ -53,6 +54,7 @@ Deploy the Next.js app to Vercel and configure the same public Supabase variable
 ## Architecture boundaries
 
 - `features/virtual-office`: frame-loop simulation, scene, collision, interaction definitions, and local player store.
+- `features/multiplayer`: transport interface, browser and Supabase adapters, validation, rate limiting, presence, and lifecycle handling.
 - `features/workspace`: product shell and temporary local data adapter.
 - `lib/supabase`: credential-aware database client boundary.
 - `supabase/migrations`: persistent schema and authorization.

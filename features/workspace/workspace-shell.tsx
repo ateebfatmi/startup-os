@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { OfficeCanvas } from "@/features/virtual-office/office-canvas";
 import { useOfficeStore } from "@/features/virtual-office/store";
+import { useMultiplayer } from "@/features/multiplayer/use-multiplayer";
 import { useWorkspaceData } from "./use-workspace-data";
 import type { TaskStatus } from "./sample-data";
 
@@ -23,6 +24,7 @@ const nav = [
 type View = (typeof nav)[number]["id"];
 
 export function WorkspaceShell() {
+  useMultiplayer("northstar-demo");
   const [view, setView] = useState<View>("office");
   const [mobileNav, setMobileNav] = useState(false);
   const [mic, setMic] = useState(false);
@@ -93,9 +95,10 @@ function Sidebar({ view, setView, mobileNav, onClose }: { view: View; setView: (
 
 function Topbar({ view, onMenu }: { view: View; onMenu: () => void }) {
   const title = nav.find((item) => item.id === view)?.label ?? "Office";
+  const teammateCount = useOfficeStore((state) => Object.keys(state.remotePlayers).length);
   return <header className="z-20 flex h-16 shrink-0 items-center gap-3 border-b border-black/[.07] bg-[#fffdf7]/95 px-4 backdrop-blur-md md:px-5">
     <button className="grid h-10 w-10 place-items-center rounded-xl hover:bg-black/5 lg:hidden" onClick={onMenu}><Menu size={20} /></button>
-    <div><h1 className="text-base font-bold tracking-tight">{title}</h1><p className="hidden text-xs text-[#68736b] sm:block">Friday, October 9 · 2 teammates available</p></div>
+    <div><h1 className="text-base font-bold tracking-tight">{title}</h1><p className="hidden text-xs text-[#68736b] sm:block">Friday, October 9 · {teammateCount ? `${teammateCount} teammate${teammateCount === 1 ? "" : "s"} nearby` : "Waiting for teammates"}</p></div>
     <div className="ml-auto hidden w-full max-w-xs items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2 text-[#68736b] md:flex"><Search size={16} /><input className="w-full bg-transparent text-sm outline-none" placeholder="Search workspace" aria-label="Search workspace" /><kbd className="rounded bg-black/5 px-1.5 py-0.5 text-xs">⌘K</kbd></div>
     <Button variant="ghost" size="icon" aria-label="Help"><CircleHelp size={19} /></Button>
     <Button variant="ghost" size="icon" aria-label="Notifications" className="relative"><Bell size={19} /><span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#ff8a4c]" /></Button>
@@ -104,15 +107,20 @@ function Topbar({ view, onMenu }: { view: View; onMenu: () => void }) {
 }
 
 function OfficeHud({ rightRail, onToggleRail, tasks }: { rightRail: boolean; onToggleRail: () => void; tasks: { status: string }[] }) {
+  const remotePlayers = useOfficeStore((state) => state.remotePlayers);
+  const connectionState = useOfficeStore((state) => state.connectionState);
+  const transportLabel = useOfficeStore((state) => state.transportLabel);
+  const onlineCount = Object.keys(remotePlayers).length + 1;
   return <>
     <div className="pointer-events-none absolute left-4 top-4 z-10 max-w-[calc(100%-2rem)] rounded-2xl border border-white/40 bg-[#fffdf7]/[.9] p-3 shadow-panel backdrop-blur-md sm:left-5 sm:top-5">
-      <div className="flex items-center gap-2 text-sm font-bold"><span className="h-2.5 w-2.5 rounded-full bg-[#52aa72]" /> Open workspace</div>
-      <p className="mt-1 text-xs text-[#68736b]">Move with WASD or arrow keys · Press E to interact</p>
+      <div className="flex items-center gap-2 text-sm font-bold"><span className={`h-2.5 w-2.5 rounded-full ${connectionState === "connected" ? "bg-[#52aa72]" : connectionState === "offline" ? "bg-[#d46b52]" : "animate-pulse bg-[#e5a13e]"}`} /> Open workspace</div>
+      <p className="mt-1 text-xs text-[#68736b]">Move with WASD or arrow keys · Press E to interact · {transportLabel}</p>
     </div>
     <button onClick={onToggleRail} className="absolute right-4 top-4 z-20 grid h-10 w-10 place-items-center rounded-xl border border-white/50 bg-[#fffdf7]/[.9] shadow-lg backdrop-blur-md lg:hidden"><Users size={18} /></button>
     {rightRail && <aside className="absolute right-5 top-5 z-10 hidden w-64 rounded-[24px] border border-white/45 bg-[#fffdf7]/[.9] p-4 shadow-panel backdrop-blur-md lg:block">
-      <div className="flex items-center justify-between"><h2 className="text-sm font-bold">In the office</h2><Badge className="bg-[#e5f3e7] text-[#276141]">1 online</Badge></div>
+      <div className="flex items-center justify-between"><h2 className="text-sm font-bold">In the office</h2><Badge className="bg-[#e5f3e7] text-[#276141]">{onlineCount} online</Badge></div>
       <div className="mt-4 flex items-center gap-3"><div className="relative grid h-10 w-10 place-items-center rounded-full bg-[#efad73] text-xs font-bold">AF<span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#55ac74]" /></div><div><div className="text-sm font-semibold">You</div><div className="text-xs text-[#68736b]">Open workspace</div></div></div>
+      {Object.values(remotePlayers).map((player) => <div key={player.id} className="mt-3 flex items-center gap-3"><div className="relative grid h-10 w-10 place-items-center rounded-full text-xs font-bold text-white" style={{ background: player.color }}>{player.name.slice(0, 2).toUpperCase()}<span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#55ac74]" /></div><div className="min-w-0"><div className="truncate text-sm font-semibold">{player.name}</div><div className="text-xs text-[#68736b]">Moving in the office</div></div></div>)}
       <div className="my-4 h-px bg-black/[.07]" />
       <div className="flex items-center justify-between"><span className="text-xs font-semibold uppercase tracking-wider text-[#68736b]">Today</span><span className="text-xs text-[#68736b]">{tasks.filter((task) => task.status !== "Done").length} open tasks</span></div>
       <div className="mt-3 rounded-2xl bg-[#173f2b] p-3 text-white"><div className="text-xs text-white/55">Next meeting · 3:30 PM</div><div className="mt-1 text-sm font-semibold">Weekly product pulse</div><button onClick={() => useOfficeStore.getState().openPanel("meeting")} className="mt-3 w-full rounded-xl bg-[#c8f560] py-2 text-xs font-bold text-[#173f2b]">View meeting</button></div>

@@ -28,6 +28,7 @@ export function OfficeCanvas() {
       <directionalLight castShadow position={[7, 14, 4]} intensity={2.2} shadow-mapSize={[1024, 1024]} shadow-camera-far={35} />
       <OfficeEnvironment />
       <LocalPlayer />
+      <RemotePlayers />
     </Canvas>
   );
 }
@@ -47,6 +48,7 @@ function LocalPlayer() {
   const position = useRef(new THREE.Vector2(0, 1.6));
   const velocity = useRef(new THREE.Vector2());
   const rotation = useRef(Math.PI);
+  const lastStoreUpdate = useRef(0);
   const setPlayerTransform = useOfficeStore((state) => state.setPlayerTransform);
   const setNearbyAction = useOfficeStore((state) => state.setNearbyAction);
   const openPanel = useOfficeStore((state) => state.openPanel);
@@ -90,7 +92,11 @@ function LocalPlayer() {
     const zone = INTERACTION_ZONES.find((item) => Math.hypot(item.x - next.x, item.z - next.z) <= item.radius);
     const action = zone ? { kind: zone.kind, label: zone.hint } : null;
     if (action?.kind !== useOfficeStore.getState().nearbyAction?.kind) setNearbyAction(action);
-    setPlayerTransform(next.x, next.z, rotation.current);
+    const now = performance.now();
+    if (now - lastStoreUpdate.current >= 1000 / 20) {
+      lastStoreUpdate.current = now;
+      setPlayerTransform(next.x, next.z, rotation.current);
+    }
   });
 
   return (
@@ -108,6 +114,35 @@ function LocalPlayer() {
       </Html>
     </group>
   );
+}
+
+function RemotePlayers() {
+  const players = useOfficeStore((state) => state.remotePlayers);
+  return <>{Object.values(players).map((player) => <RemotePlayer key={player.id} player={player} />)}</>;
+}
+
+function RemotePlayer({ player }: { player: ReturnType<typeof useOfficeStore.getState>["player"] }) {
+  const group = useRef<THREE.Group>(null);
+  const targetPosition = useRef(new THREE.Vector3(player.x, 0.06, player.z));
+  const targetRotation = useRef(player.rotation);
+
+  useEffect(() => {
+    targetPosition.current.set(player.x, 0.06, player.z);
+    targetRotation.current = player.rotation;
+  }, [player.x, player.z, player.rotation]);
+
+  useFrame((_, delta) => {
+    if (!group.current) return;
+    group.current.position.lerp(targetPosition.current, 1 - Math.exp(-delta * 10));
+    const difference = Math.atan2(Math.sin(targetRotation.current - group.current.rotation.y), Math.cos(targetRotation.current - group.current.rotation.y));
+    group.current.rotation.y += difference * (1 - Math.exp(-delta * 12));
+  });
+
+  return <group ref={group} position={[player.x, .06, player.z]} rotation-y={player.rotation}>
+    <mesh castShadow position={[0, .56, 0]}><capsuleGeometry args={[.36, .62, 8, 16]} /><meshStandardMaterial color={player.color} roughness={.75} /></mesh>
+    <mesh castShadow position={[0, 1.2, 0]}><sphereGeometry args={[.3, 20, 20]} /><meshStandardMaterial color="#5b443a" roughness={.8} /></mesh>
+    <Html center position={[0, 1.76, 0]} distanceFactor={13}><div className="whitespace-nowrap rounded-full bg-white px-2 py-1 text-[11px] font-bold text-[#17211b] shadow-lg">{player.name}</div></Html>
+  </group>;
 }
 
 function OfficeEnvironment() {
