@@ -24,3 +24,26 @@ test("synchronizes presence across two office tabs", async ({ context }) => {
   await second.close();
   await expect(first.getByText("1 online", { exact: true })).toBeVisible();
 });
+
+test("joins a real permission-gated huddle across two tabs", async ({ context }) => {
+  const first = await context.newPage();
+  const second = await context.newPage();
+  await Promise.all([first.goto("/office"), second.goto("/office")]);
+  await first.getByRole("button", { name: "Start huddle" }).click();
+  await second.getByRole("button", { name: "Start huddle" }).click();
+  await Promise.all([
+    first.getByRole("button", { name: "Audio only" }).click(),
+    second.getByRole("button", { name: "Audio only" }).click(),
+  ]);
+  const firstDialog = first.getByRole("dialog");
+  const secondDialog = second.getByRole("dialog");
+  await expect(firstDialog.getByText("Teammate", { exact: true })).toBeVisible();
+  await expect(secondDialog.getByText("Teammate", { exact: true })).toBeVisible();
+  await expect(firstDialog.getByRole("button", { name: "Leave huddle" })).toBeVisible();
+  await firstDialog.getByRole("button", { name: "Mute microphone" }).click();
+  await expect(firstDialog.getByRole("button", { name: "Unmute microphone" })).toBeVisible();
+  await Promise.all([
+    firstDialog.getByRole("button", { name: "Leave huddle" }).click(),
+    secondDialog.getByRole("button", { name: "Leave huddle" }).click(),
+  ]);
+});

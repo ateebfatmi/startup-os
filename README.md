@@ -8,6 +8,7 @@ Orbit is a spatial startup operating system built around a navigable 3D office. 
 - Responsive WASD/arrow movement, eased velocity, facing direction, office bounds, and furniture collision.
 - Contextual project-table, meeting-room, whiteboard, and focus-pod interactions.
 - Live cross-tab presence and avatar movement through a typed transport layer, with smoothed remote avatars, payload validation, heartbeats, stale-player cleanup, and automatic Supabase Realtime selection when configured.
+- Real, permission-gated WebRTC huddles with audio/video tracks, microphone and camera controls, peer status, directed SDP/ICE signaling, and complete media cleanup.
 - A responsive app shell, overview, local Kanban workflow, login, and workspace onboarding.
 - Local demo persistence for tasks when no backend credentials are configured.
 - A Supabase migration containing core workspace models, indexes, RLS, user bootstrap, and atomic workspace creation.
@@ -34,6 +35,8 @@ Open `http://localhost:3000`. Without Supabase credentials, `/login` clearly off
 4. Add `http://localhost:3000` and the production Vercel origin to the Auth redirect allowlist.
 5. Never expose `SUPABASE_SERVICE_ROLE_KEY` to browser code. It is reserved for server-only administrative operations.
 
+For calls outside a local network, set `NEXT_PUBLIC_ICE_SERVERS` to a JSON array containing your STUN and TURN configuration. Prefer short-lived TURN credentials issued by a server-side endpoint. The current peer mesh is intended for small huddles; larger calls should move to an SFU.
+
 The RLS policies scope data through `workspace_members`. Private rooms additionally check `allowed_roles`. Invitation tokens are modeled as hashes; raw tokens must only be generated and exchanged by server routes.
 
 ## Verification
@@ -55,6 +58,7 @@ Deploy the Next.js app to Vercel and configure the same public Supabase variable
 
 - `features/virtual-office`: frame-loop simulation, scene, collision, interaction definitions, and local player store.
 - `features/multiplayer`: transport interface, browser and Supabase adapters, validation, rate limiting, presence, and lifecycle handling.
+- `features/communication`: permission-gated media capture, WebRTC peer lifecycle, signaling adapters, ICE configuration, and call state.
 - `features/workspace`: product shell and temporary local data adapter.
 - `lib/supabase`: credential-aware database client boundary.
 - `supabase/migrations`: persistent schema and authorization.

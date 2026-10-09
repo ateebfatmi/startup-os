@@ -39,7 +39,13 @@
 - [x] Smoothed remote-avatar interpolation independent of local movement.
 - [ ] Verify authenticated Supabase Realtime presence across two separate devices.
 - [ ] Add server-side movement validation for a dedicated WebSocket deployment.
-- [ ] WebRTC signaling, TURN configuration, manual calls, then proximity audio.
+- [x] Permission-gated manual WebRTC audio/video huddles for small groups.
+- [x] Local and Supabase Realtime signaling adapters with directed SDP/ICE exchange.
+- [x] Microphone/camera track controls, participant states, and media cleanup.
+- [x] ICE candidate buffering for out-of-order signaling.
+- [ ] Configure production TURN credentials and verify calls across restrictive networks.
+- [ ] Add speaking indicators, proximity grouping, and automatic proximity audio.
+- [ ] Migrate larger group calls from peer mesh to an SFU provider.
 - [ ] Full project/task/comment/member CRUD through server-authorized repositories.
 - [ ] Meeting scheduling, persistent notes/resources, notifications, and activity feed.
 - [ ] Collaborative whiteboard CRDT/realtime synchronization.

@@ -1,14 +1,16 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Command, DoorOpen, FolderKanban, Headphones, LayoutGrid, Menu, MessageSquareText, Mic, MicOff, Plus, Search, Settings2, Sparkles, Users, Video, VideoOff, X } from "lucide-react";
-import { useState } from "react";
+import { Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Command, DoorOpen, FolderKanban, Headphones, LayoutGrid, Loader2, Menu, Mic, MicOff, PhoneOff, Plus, Search, Settings2, Sparkles, Users, Video, VideoOff, Wifi, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { OfficeCanvas } from "@/features/virtual-office/office-canvas";
 import { useOfficeStore } from "@/features/virtual-office/store";
 import { useMultiplayer } from "@/features/multiplayer/use-multiplayer";
+import { useHuddle, type HuddleController } from "@/features/communication/use-huddle";
+import type { CallParticipant } from "@/features/communication/types";
 import { useWorkspaceData } from "./use-workspace-data";
 import type { TaskStatus } from "./sample-data";
 
@@ -25,16 +27,17 @@ type View = (typeof nav)[number]["id"];
 
 export function WorkspaceShell() {
   useMultiplayer("northstar-demo");
+  const huddle = useHuddle("northstar-demo", "weekly-product-pulse");
   const [view, setView] = useState<View>("office");
   const [mobileNav, setMobileNav] = useState(false);
-  const [mic, setMic] = useState(false);
-  const [camera, setCamera] = useState(false);
   const [rightRail, setRightRail] = useState(true);
   const nearbyAction = useOfficeStore((state) => state.nearbyAction);
   const activePanel = useOfficeStore((state) => state.activePanel);
   const openPanel = useOfficeStore((state) => state.openPanel);
   const closePanel = useOfficeStore((state) => state.closePanel);
   const data = useWorkspaceData();
+  const localParticipant = Object.values(huddle.participants).find((participant) => participant.isLocal);
+  const inCall = huddle.status === "connected";
 
   return (
     <main className="flex h-[100dvh] overflow-hidden bg-[#f4f1e8]">
@@ -55,16 +58,16 @@ export function WorkspaceShell() {
                 )}
               </AnimatePresence>
               <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-white/35 bg-[#fffdf7]/90 p-2 shadow-panel backdrop-blur-md">
-                <Button variant={mic ? "solid" : "outline"} size="icon" onClick={() => setMic((value) => !value)} aria-label={mic ? "Mute microphone" : "Unmute microphone"}>{mic ? <Mic size={18} /> : <MicOff size={18} />}</Button>
-                <Button variant={camera ? "solid" : "outline"} size="icon" onClick={() => setCamera((value) => !value)} aria-label={camera ? "Turn camera off" : "Turn camera on"}>{camera ? <Video size={18} /> : <VideoOff size={18} />}</Button>
+                <Button variant={localParticipant?.microphoneEnabled ? "solid" : "outline"} size="icon" onClick={() => inCall ? huddle.toggleMicrophone() : openPanel("meeting")} aria-label={localParticipant?.microphoneEnabled ? "Mute microphone" : "Unmute microphone"}>{localParticipant?.microphoneEnabled ? <Mic size={18} /> : <MicOff size={18} />}</Button>
+                <Button variant={localParticipant?.cameraEnabled ? "solid" : "outline"} size="icon" onClick={() => inCall ? huddle.toggleCamera() : openPanel("meeting")} aria-label={localParticipant?.cameraEnabled ? "Turn camera off" : "Turn camera on"}>{localParticipant?.cameraEnabled ? <Video size={18} /> : <VideoOff size={18} />}</Button>
                 <div className="mx-1 h-6 w-px bg-black/10" />
-                <Button variant="outline" size="sm" onClick={() => openPanel("meeting")}><Headphones size={17} /> Start huddle</Button>
+                <Button variant="outline" size="sm" onClick={() => openPanel("meeting")}><Headphones size={17} /> {inCall ? `${Object.keys(huddle.participants).length} in huddle` : "Start huddle"}</Button>
               </div>
             </>
           ) : <DashboardView view={view} {...data} />}
         </div>
       </div>
-      <FeatureDialog kind={activePanel} onClose={closePanel} tasks={data.tasks} moveTask={data.moveTask} addTask={data.addTask} />
+      <FeatureDialog kind={activePanel} onClose={closePanel} tasks={data.tasks} moveTask={data.moveTask} addTask={data.addTask} huddle={huddle} />
     </main>
   );
 }
@@ -150,16 +153,32 @@ function Kanban({ tasks, moveTask, addTask }: { tasks: ReturnType<typeof useWork
   return <div className="mx-auto max-w-7xl"><div className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><Badge className="mb-3 bg-[#e0edbe] text-[#39571c]">SPRINT 08</Badge><h2 className="text-3xl font-bold tracking-[-.04em]">Launch board</h2><p className="mt-2 text-[#68736b]">Move work forward one clear decision at a time.</p></div><form className="flex gap-2" onSubmit={(event) => { event.preventDefault(); if (title.trim()) { addTask(title.trim()); setTitle(""); } }}><input value={title} onChange={(event) => setTitle(event.target.value)} className="h-11 rounded-xl border border-black/10 bg-white px-3 text-sm outline-none" placeholder="Add a task" aria-label="Task title" /><Button type="submit"><Plus size={17} /> Add</Button></form></div><div className="grid gap-3 lg:grid-cols-4">{statuses.map((status) => <section key={status} className="min-h-72 rounded-[22px] bg-black/[.035] p-3"><div className="mb-3 flex items-center justify-between px-1"><h3 className="text-sm font-bold">{status}</h3><span className="text-xs text-[#68736b]">{tasks.filter((task) => task.status === status).length}</span></div><div className="space-y-2">{tasks.filter((task) => task.status === status).map((task) => <article key={task.id} className="rounded-2xl border border-black/[.07] bg-[#fffdf7] p-3 shadow-sm"><Badge className="bg-black/5 text-[#68736b]">{task.project}</Badge><h4 className="mt-3 text-sm font-semibold leading-5">{task.title}</h4><div className="mt-4 flex items-center justify-between text-xs text-[#68736b]"><span>{task.due}</span><select value={task.status} onChange={(event) => moveTask(task.id, event.target.value as TaskStatus)} className="max-w-24 rounded-lg border border-black/10 bg-white px-2 py-1" aria-label={`Status for ${task.title}`}>{statuses.map((option) => <option key={option}>{option}</option>)}</select></div></article>)}</div></section>)}</div></div>;
 }
 
-function FeatureDialog({ kind, onClose, tasks, moveTask, addTask }: { kind: ReturnType<typeof useOfficeStore.getState>["activePanel"]; onClose: () => void; tasks: ReturnType<typeof useWorkspaceData>["tasks"]; moveTask: ReturnType<typeof useWorkspaceData>["moveTask"]; addTask: ReturnType<typeof useWorkspaceData>["addTask"] }) {
+function FeatureDialog({ kind, onClose, tasks, moveTask, addTask, huddle }: { kind: ReturnType<typeof useOfficeStore.getState>["activePanel"]; onClose: () => void; tasks: ReturnType<typeof useWorkspaceData>["tasks"]; moveTask: ReturnType<typeof useWorkspaceData>["moveTask"]; addTask: ReturnType<typeof useWorkspaceData>["addTask"]; huddle: HuddleController }) {
   if (!kind) return null;
   if (kind === "projects") return <Dialog open title="Project table" onClose={onClose}><Kanban tasks={tasks} moveTask={moveTask} addTask={addTask} /></Dialog>;
   if (kind === "whiteboard") return <Dialog open title="Whiteboard" onClose={onClose}><Whiteboard /></Dialog>;
   if (kind === "focus") return <Dialog open title="Focus pod" onClose={onClose}><FocusPanel /></Dialog>;
-  return <Dialog open title="Weekly product pulse" onClose={onClose}><MeetingPanel /></Dialog>;
+  return <Dialog open title="Weekly product pulse" onClose={onClose}><MeetingPanel huddle={huddle} /></Dialog>;
 }
 
 function Whiteboard() { const [notes, setNotes] = useState(["What must be true?", "Talk to 5 beta teams"]); const [value, setValue] = useState(""); return <div><div className="relative h-72 overflow-hidden rounded-2xl bg-[#f7f0dd] grid-noise p-5">{notes.map((note, index) => <motion.div drag dragConstraints={{ left: -10, right: 360, top: -10, bottom: 160 }} key={`${note}-${index}`} className={`absolute w-40 rotate-[-2deg] rounded-sm p-4 text-sm font-semibold shadow-md ${index % 2 ? "bg-[#ffbc7f] left-52 top-28 rotate-[3deg]" : "bg-[#c8f560] left-8 top-8"}`}>{note}</motion.div>)}</div><form className="mt-4 flex gap-2" onSubmit={(event) => { event.preventDefault(); if (value.trim()) { setNotes((current) => [...current, value.trim()]); setValue(""); } }}><input className="h-11 flex-1 rounded-xl border border-black/10 px-3 text-sm" placeholder="Add a sticky note" value={value} onChange={(event) => setValue(event.target.value)} /><Button type="submit">Add note</Button></form><p className="mt-3 text-xs text-[#68736b]">Saved on this device in demo mode. Supabase Realtime enables shared editing when configured.</p></div>; }
 
-function MeetingPanel() { const [joined, setJoined] = useState(false); return <div><div className="rounded-2xl bg-[#173f2b] p-5 text-white"><div className="flex flex-wrap items-start justify-between gap-4"><div><Badge className="bg-[#c8f560] text-[#173f2b]">TODAY · 3:30 PM</Badge><p className="mt-4 max-w-md text-sm leading-6 text-white/70">Align on launch blockers, review beta readiness, and leave with one owner per open decision.</p></div><div className="flex -space-x-2"><div className="grid h-10 w-10 place-items-center rounded-full border-2 border-[#173f2b] bg-[#efad73] text-xs font-bold text-[#17211b]">AF</div><div className="grid h-10 w-10 place-items-center rounded-full border-2 border-[#173f2b] bg-[#a8d4ed] text-xs font-bold text-[#17211b]">SK</div></div></div></div><div className="mt-4 flex items-center gap-3"><Button onClick={() => setJoined((value) => !value)} className={joined ? "bg-[#b64b3e] hover:bg-[#9f3f34]" : ""}>{joined ? <><X size={17} /> Leave huddle</> : <><Video size={17} /> Join huddle</>}</Button><span className="text-sm text-[#68736b]">{joined ? "Connected locally; media starts only after browser permission." : "Camera and microphone stay off until you join."}</span></div></div>; }
+function MeetingPanel({ huddle }: { huddle: HuddleController }) {
+  const participants = Object.values(huddle.participants);
+  const local = participants.find((participant) => participant.isLocal);
+  const waiting = huddle.status === "requesting_permission" || huddle.status === "joining";
+  return <div>
+    <div className="rounded-2xl bg-[#173f2b] p-5 text-white"><div className="flex flex-wrap items-start justify-between gap-4"><div><Badge className="bg-[#c8f560] text-[#173f2b]">TODAY · 3:30 PM</Badge><p className="mt-4 max-w-md text-sm leading-6 text-white/70">Align on launch blockers, review beta readiness, and leave with one owner per open decision.</p></div><div className="flex items-center gap-2 text-xs text-white/60"><Wifi size={15} /> Peer-to-peer huddle</div></div></div>
+    {huddle.status === "idle" || huddle.status === "error" ? <div className="mt-5 rounded-2xl border border-black/[.08] bg-white p-5"><h3 className="font-bold">Choose how to join</h3><p className="mt-2 text-sm leading-6 text-[#68736b]">Your browser will ask before Orbit accesses a microphone or camera. Nothing starts automatically.</p>{huddle.error && <p className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-800">{huddle.error}</p>}<div className="mt-5 flex flex-wrap gap-2"><Button onClick={() => void huddle.join(true)}><Video size={17} /> Join with camera</Button><Button variant="outline" onClick={() => void huddle.join(false)}><Mic size={17} /> Audio only</Button></div></div> : null}
+    {waiting && <div className="mt-5 flex items-center gap-3 rounded-2xl bg-[#eef4ea] p-5 text-sm text-[#315e45]"><Loader2 className="animate-spin" size={18} /> Waiting for media permission…</div>}
+    {huddle.status === "connected" && <><div className="mt-5 grid gap-3 sm:grid-cols-2">{participants.map((participant) => <VideoTile key={participant.id} participant={participant} />)}</div><div className="mt-4 flex flex-wrap items-center gap-2"><Button variant={local?.microphoneEnabled ? "solid" : "outline"} size="icon" onClick={huddle.toggleMicrophone} aria-label={local?.microphoneEnabled ? "Mute microphone" : "Unmute microphone"}>{local?.microphoneEnabled ? <Mic size={18} /> : <MicOff size={18} />}</Button><Button variant={local?.cameraEnabled ? "solid" : "outline"} size="icon" onClick={huddle.toggleCamera} aria-label={local?.cameraEnabled ? "Turn camera off" : "Turn camera on"}>{local?.cameraEnabled ? <Video size={18} /> : <VideoOff size={18} />}</Button><Button className="ml-auto bg-[#b64b3e] hover:bg-[#9f3f34]" onClick={() => void huddle.leave()}><PhoneOff size={17} /> Leave huddle</Button></div></>}
+  </div>;
+}
+
+function VideoTile({ participant }: { participant: CallParticipant }) {
+  const video = useRef<HTMLVideoElement>(null);
+  useEffect(() => { if (video.current) video.current.srcObject = participant.stream; }, [participant.stream]);
+  return <article className="relative aspect-video overflow-hidden rounded-2xl bg-[#1d3027] text-white"><video ref={video} autoPlay playsInline muted={participant.isLocal} className={`h-full w-full object-cover ${participant.isLocal ? "-scale-x-100" : ""}`} />{!participant.cameraEnabled && <div className="absolute inset-0 grid place-items-center"><div className="grid h-16 w-16 place-items-center rounded-full bg-[#c8f560] text-xl font-bold text-[#173f2b]">{participant.name.slice(0, 2).toUpperCase()}</div></div>}<div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/70 to-transparent p-3 pt-8"><span className="text-sm font-semibold">{participant.name}</span><div className="flex items-center gap-1.5">{participant.connectionState === "connecting" && <Loader2 className="animate-spin" size={14} />}{participant.microphoneEnabled ? <Mic size={14} /> : <MicOff size={14} />}</div></div></article>;
+}
 
 function FocusPanel() { const [active, setActive] = useState(false); return <div className="text-center"><div className="mx-auto grid h-36 w-36 place-items-center rounded-full border-[10px] border-[#e6eadf] text-3xl font-bold">25:00</div><h3 className="mt-5 text-lg font-bold">Protect one block of attention</h3><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#68736b]">Your office presence will show as focusing while this session is active.</p><Button className="mt-5" onClick={() => setActive((value) => !value)}>{active ? "End session" : "Start focus session"}</Button></div>; }
