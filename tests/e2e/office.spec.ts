@@ -17,6 +17,7 @@ test("opens the 3D office shell", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Office", exact: true })).toBeVisible();
   await expect(page.getByText("Move with WASD or arrow keys")).toBeVisible();
   await expect(page.getByRole("button", { name: "Start huddle" })).toBeVisible();
+  await expect.poll(async () => page.getByText("You", { exact: true }).last().evaluate((label) => label.getBoundingClientRect().width)).toBeLessThan(100);
 });
 
 test("creates a local task", async ({ page }) => {

@@ -22,7 +22,7 @@ export function OfficeCanvas() {
         gl.setClearColor(0x000000, 0);
       }}
     >
-      <OrthographicCamera makeDefault position={[13, 16, 13]} zoom={42} near={0.1} far={100} onUpdate={(camera) => camera.lookAt(0, 0, 0)} />
+      <OrthographicCamera makeDefault position={[13, 16, 13]} zoom={36} near={0.1} far={100} onUpdate={(camera) => camera.lookAt(0, 0, 0)} />
       <CameraRig />
       <hemisphereLight args={["#fff5dc", "#39463e", 1.35]} />
       <ambientLight intensity={.45} />
@@ -113,7 +113,7 @@ function LocalPlayer() {
         <sphereGeometry args={[0.3, 20, 20]} />
         <meshStandardMaterial color="#6b3d2b" roughness={0.8} />
       </mesh>
-      <Html center position={[0, 1.76, 0]} distanceFactor={13}>
+      <Html center position={[0, 1.76, 0]}>
         <div className="whitespace-nowrap rounded-full bg-[#17211b] px-2 py-1 text-[11px] font-bold text-white shadow-lg">You</div>
       </Html>
     </group>
@@ -145,7 +145,7 @@ function RemotePlayer({ player }: { player: ReturnType<typeof useOfficeStore.get
   return <group ref={group} position={[player.x, .06, player.z]} rotation-y={player.rotation}>
     <mesh castShadow position={[0, .56, 0]}><capsuleGeometry args={[.36, .62, 8, 16]} /><meshStandardMaterial color={player.color} roughness={.75} /></mesh>
     <mesh castShadow position={[0, 1.2, 0]}><sphereGeometry args={[.3, 20, 20]} /><meshStandardMaterial color="#5b443a" roughness={.8} /></mesh>
-    <Html center position={[0, 1.76, 0]} distanceFactor={13}><div className="whitespace-nowrap rounded-full bg-white px-2 py-1 text-[11px] font-bold text-[#17211b] shadow-lg">{player.name}</div></Html>
+    <Html center position={[0, 1.76, 0]}><div className="whitespace-nowrap rounded-full bg-white px-2 py-1 text-[11px] font-bold text-[#17211b] shadow-lg">{player.name}</div></Html>
   </group>;
 }
 
@@ -174,7 +174,7 @@ function OfficeEnvironment() {
             <ringGeometry args={[0.5, 0.58, 48]} />
             <meshBasicMaterial color="#d7b873" transparent opacity={0.95} />
           </mesh>
-          <Html center position={[0,.12,0]} distanceFactor={18}><div className="pointer-events-none whitespace-nowrap rounded-full bg-[#f5ecdc]/90 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-[#4a3423] shadow-sm">{zone.label}</div></Html>
+          <Html center position={[0,.12,0]}><div className="pointer-events-none whitespace-nowrap rounded-full bg-[#f5ecdc]/90 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-[#4a3423] shadow-sm">{zone.label}</div></Html>
         </group>
       ))}
     </group>
@@ -226,7 +226,7 @@ function Reception() {
   return <group position={[0,0,5.9]}>
     <RoundedBox castShadow position={[0,.64,0]} args={[3.2,1.08,.75]} radius={.12}><meshStandardMaterial color="#5a3b2b" roughness={.46} /></RoundedBox>
     <mesh position={[0,1.19,.23]}><boxGeometry args={[2.6,.055,.34]} /><meshStandardMaterial color="#d2c4a9" roughness={.35} /></mesh>
-    <Html center position={[0,1.9,.02]} distanceFactor={14}><div className="pointer-events-none text-sm font-black tracking-[.34em] text-[#26352e]">ORBIT</div></Html>
+    <Html center position={[0,1.9,.02]}><div className="pointer-events-none text-sm font-black tracking-[.34em] text-[#26352e]">ORBIT</div></Html>
     <mesh castShadow position={[1.22,1.47,0]}><cylinderGeometry args={[.05,.16,.62,20]} /><meshStandardMaterial color="#b69055" metalness={.75} roughness={.22} /></mesh>
     <mesh position={[1.22,1.8,0]} rotation-x={-Math.PI/2}><cylinderGeometry args={[.3,.3,.04,32]} /><meshStandardMaterial color="#f4d49d" emissive="#d69a47" emissiveIntensity={.6} /></mesh>
   </group>;
@@ -279,7 +279,7 @@ function Whiteboard() {
   return <group position={[0,1.45,-7.55]}>
     <mesh castShadow><boxGeometry args={[4.2,1.72,.13]} /><meshStandardMaterial color="#e6e0d3" roughness={.38} /></mesh>
     <mesh position={[0,0,.075]}><ringGeometry args={[1.02,1.06,4]} /><meshBasicMaterial color="#b08a55" /></mesh>
-    <Html center position={[0,.28,.08]} distanceFactor={15}><div className="pointer-events-none whitespace-nowrap text-[10px] font-black tracking-[.24em] text-[#26352e]">MAKE IT MATTER</div></Html>
+    <Html center position={[0,.28,.08]}><div className="pointer-events-none whitespace-nowrap text-[10px] font-black tracking-[.24em] text-[#26352e]">MAKE IT MATTER</div></Html>
     <mesh position={[-.9,-.35,.08]}><planeGeometry args={[.52,.52]} /><meshBasicMaterial color="#d9b96d" /></mesh>
     <mesh position={[0,-.35,.08]}><planeGeometry args={[.52,.52]} /><meshBasicMaterial color="#9bb6a8" /></mesh>
     <mesh position={[.9,-.35,.08]}><planeGeometry args={[.52,.52]} /><meshBasicMaterial color="#c48363" /></mesh>
