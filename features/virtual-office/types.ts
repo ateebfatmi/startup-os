@@ -2,7 +2,7 @@ export type Vec2 = { x: number; z: number };
 
 export type Collider = Vec2 & { width: number; depth: number; id: string };
 
-export type InteractionKind = "projects" | "meeting" | "whiteboard" | "focus";
+export type InteractionKind = "projects" | "meeting" | "whiteboard" | "focus" | "ai_assistant";
 
 export type InteractionZone = Vec2 & {
   id: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Command, DoorOpen, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Menu, Mic, MicOff, PhoneOff, Plus, Search, Sparkles, Users, Video, VideoOff, Wifi, X } from "lucide-react";
+import { Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Command, DoorOpen, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Menu, Mic, MicOff, PhoneOff, Plus, Search, Sparkles, Users, Video, VideoOff, Wifi, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,8 @@ import { useWorkspaceData } from "./use-workspace-data";
 import { TeamView } from "./team-view";
 import { ProjectsView } from "./projects-view";
 import { KanbanView } from "./kanban-view";
+import { AIAssistantPanel } from "./ai-assistant-panel";
+import { WhiteboardPanel } from "./whiteboard-panel";
 import type { TaskStatus } from "./sample-data";
 
 const nav = [
@@ -144,6 +146,7 @@ function Topbar({ view, onMenu, displayName }: { view: View; onMenu: () => void;
     <button className="grid h-10 w-10 place-items-center rounded-xl hover:bg-black/5 lg:hidden" onClick={onMenu}><Menu size={20} /></button>
     <div><h1 className="text-base font-bold tracking-tight">{title}</h1><p className="hidden text-xs text-[#68736b] sm:block">Friday, October 9 · {teammateCount ? `${teammateCount} teammate${teammateCount === 1 ? "" : "s"} nearby` : "Waiting for teammates"}</p></div>
     <div className="ml-auto hidden w-full max-w-xs items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2 text-[#68736b] md:flex"><Search size={16} /><input className="w-full bg-transparent text-sm outline-none" placeholder="Search workspace" aria-label="Search workspace" /><kbd className="rounded bg-black/5 px-1.5 py-0.5 text-xs">⌘K</kbd></div>
+    <Button size="sm" onClick={() => useOfficeStore.getState().openPanel("ai_assistant")} className="hidden sm:flex items-center gap-1.5 bg-[#173f2b] text-[#c8f560] hover:bg-[#20573c] border-none shadow-sm"><Bot size={16} /> AI Copilot</Button>
     <Button variant="ghost" size="icon" aria-label="Help"><CircleHelp size={19} /></Button>
     <Button variant="ghost" size="icon" aria-label="Notifications" className="relative"><Bell size={19} /><span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#ff8a4c]" /></Button>
     <button className="grid h-9 w-9 place-items-center rounded-full bg-[#efad73] text-xs font-bold" aria-label={`${displayName} profile`}>{initialsFor(displayName)}</button>
@@ -193,12 +196,11 @@ function Metric({ label, value, note, color }: { label: string; value: string; n
 function FeatureDialog({ kind, onClose, tasks, moveTask, addTask, huddle }: { kind: ReturnType<typeof useOfficeStore.getState>["activePanel"]; onClose: () => void; tasks: ReturnType<typeof useWorkspaceData>["tasks"]; moveTask: ReturnType<typeof useWorkspaceData>["moveTask"]; addTask: ReturnType<typeof useWorkspaceData>["addTask"]; huddle: HuddleController }) {
   if (!kind) return null;
   if (kind === "projects") return <Dialog open title="Project board" onClose={onClose}><KanbanView workspaceId="northstar-demo" /></Dialog>;
-  if (kind === "whiteboard") return <Dialog open title="Whiteboard" onClose={onClose}><Whiteboard /></Dialog>;
+  if (kind === "whiteboard") return <Dialog open title="Spatial Whiteboard" onClose={onClose}><WhiteboardPanel /></Dialog>;
   if (kind === "focus") return <Dialog open title="Focus pod" onClose={onClose}><FocusPanel /></Dialog>;
+  if (kind === "ai_assistant") return <Dialog open title="AI Startup Copilot" onClose={onClose}><AIAssistantPanel tasks={tasks} addTask={addTask} /></Dialog>;
   return <Dialog open title="Weekly product pulse" onClose={onClose}><MeetingPanel huddle={huddle} /></Dialog>;
 }
-
-function Whiteboard() { const [notes, setNotes] = useState(["What must be true?", "Talk to 5 beta teams"]); const [value, setValue] = useState(""); return <div><div className="relative h-72 overflow-hidden rounded-2xl bg-[#f7f0dd] grid-noise p-5">{notes.map((note, index) => <motion.div drag dragConstraints={{ left: -10, right: 360, top: -10, bottom: 160 }} key={`${note}-${index}`} className={`absolute w-40 rotate-[-2deg] rounded-sm p-4 text-sm font-semibold shadow-md ${index % 2 ? "bg-[#ffbc7f] left-52 top-28 rotate-[3deg]" : "bg-[#c8f560] left-8 top-8"}`}>{note}</motion.div>)}</div><form className="mt-4 flex gap-2" onSubmit={(event) => { event.preventDefault(); if (value.trim()) { setNotes((current) => [...current, value.trim()]); setValue(""); } }}><input className="h-11 flex-1 rounded-xl border border-black/10 px-3 text-sm" placeholder="Add a sticky note" value={value} onChange={(event) => setValue(event.target.value)} /><Button type="submit">Add note</Button></form><p className="mt-3 text-xs text-[#68736b]">Saved on this device in demo mode. Supabase Realtime enables shared editing when configured.</p></div>; }
 
 function MeetingPanel({ huddle }: { huddle: HuddleController }) {
   const participants = Object.values(huddle.participants);

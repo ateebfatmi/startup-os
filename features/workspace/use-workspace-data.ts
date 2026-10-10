@@ -22,7 +22,12 @@ export function useWorkspaceData() {
   }, [ready, tasks]);
 
   const moveTask = (id: string, status: TaskStatus) => setTasks((current) => current.map((task) => task.id === id ? { ...task, status } : task));
-  const addTask = (title: string) => setTasks((current) => [...current, { id: crypto.randomUUID(), title, status: "Todo", priority: "Medium", project: "Product", due: "No date" }]);
+  const addTask = (input: string | (Partial<Task> & { title: string })) => setTasks((current) => {
+    const taskObj: Task = typeof input === "string"
+      ? { id: crypto.randomUUID(), title: input, status: "Todo", priority: "Medium", project: "Product", due: "No date" }
+      : { id: crypto.randomUUID(), title: input.title, status: input.status || "Todo", priority: input.priority || "Medium", project: input.project || "Product", due: input.due || "No date" };
+    return [...current, taskObj];
+  });
 
   return { tasks, moveTask, addTask };
 }

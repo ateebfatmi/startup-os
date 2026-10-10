@@ -166,6 +166,7 @@ function OfficeEnvironment() {
       <Lounge />
       <Whiteboard />
       <LibraryWall />
+      <AIPod />
       <LightingDetails />
       <Plants />
       {COLLIDERS.length > 0 && INTERACTION_ZONES.map((zone) => (
@@ -300,3 +301,23 @@ function LightingDetails() {
 function Plants() {
   return <>{[[-10,-6.4],[9.8,-6.35],[-9.9,6.35],[9.75,6.15],[-2.1,6.3],[2.1,6.3]].map(([x,z], i) => <group key={i} position={[x,0,z]}><mesh castShadow position={[0,.32,0]}><cylinderGeometry args={[.28,.38,.64,20]} /><meshStandardMaterial color={i % 2 ? "#9b7650" : "#31463b"} roughness={.58} /></mesh>{[-.26,0,.26].map((offset) => <mesh key={offset} castShadow position={[offset*.55,.98+Math.abs(offset),offset]} rotation-z={offset*1.5}><sphereGeometry args={[.38,14,14]} /><meshStandardMaterial color={i % 2 ? "#56745f" : "#456554"} roughness={.86} /></mesh>)}</group>)}</>;
 }
+
+function AIPod() {
+  return (
+    <group position={[8.5, 0, -3.4]}>
+      <RoundedBox castShadow position={[0, .52, 0]} args={[1.6, .95, 1.1]} radius={.16} smoothness={4}>
+        <meshStandardMaterial color="#1a2e26" roughness={.35} metalness={.65} />
+      </RoundedBox>
+      <mesh position={[0, 1.22, 0]}>
+        <sphereGeometry args={[.22, 24, 24]} />
+        <meshStandardMaterial color="#7ee0ff" emissive="#3bb2e6" emissiveIntensity={1.8} transparent opacity={0.88} />
+      </mesh>
+      <mesh position={[0, 1.22, 0]} rotation-x={Math.PI / 3} rotation-y={Math.PI / 6}>
+        <torusGeometry args={[.36, .02, 16, 32]} />
+        <meshStandardMaterial color="#c8f560" emissive="#96d425" emissiveIntensity={1.2} />
+      </mesh>
+      <pointLight position={[0, 1.25, 0]} color="#5cd0ff" intensity={3.5} distance={4} />
+    </group>
+  );
+}
+
