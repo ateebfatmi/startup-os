@@ -16,7 +16,7 @@
 - [x] Local-first project/task workflow for credential-free evaluation.
 - [x] Connect onboarding and profile setup to `create_workspace` RPC when credentials exist, with a personalized local fallback.
 - [x] Complete registration, email verification callback, password recovery, Google OAuth entry, logout, and protected session middleware.
-- [ ] Build invitation acceptance and member administration.
+- [x] Build invitation acceptance and member administration workflow (server-side token creation, SHA-256 token hashing, expiration, single-use acceptance, workspace role enforcement, final-owner protection, member directory, and local demo fallbacks).
 
 ## Phase 2 — 3D office
 

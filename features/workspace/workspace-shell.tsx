@@ -15,6 +15,7 @@ import { useHuddle, type HuddleController } from "@/features/communication/use-h
 import type { CallParticipant } from "@/features/communication/types";
 import { createSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase/client";
 import { useWorkspaceData } from "./use-workspace-data";
+import { TeamView } from "./team-view";
 import type { TaskStatus } from "./sample-data";
 
 const nav = [
@@ -101,7 +102,7 @@ export function WorkspaceShell() {
                 <Button variant="outline" size="sm" onClick={() => openPanel("meeting")}><Headphones size={17} /> {inCall ? `${Object.keys(huddle.participants).length} in huddle` : "Start huddle"}</Button>
               </div>
             </>
-          ) : <DashboardView view={view} {...data} />}
+          ) : <DashboardView view={view} {...data} workspaceId={identity.workspaceId} />}
         </div>
       </div>
       <FeatureDialog kind={activePanel} onClose={closePanel} tasks={data.tasks} moveTask={data.moveTask} addTask={data.addTask} huddle={huddle} />
@@ -163,13 +164,14 @@ function OfficeHud({ rightRail, onToggleRail, tasks, displayName }: { rightRail:
       {Object.values(remotePlayers).map((player) => <div key={player.id} className="mt-3 flex items-center gap-3"><div className="relative grid h-10 w-10 place-items-center rounded-full text-xs font-bold text-white" style={{ background: player.color }}>{player.name.slice(0, 2).toUpperCase()}<span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#55ac74]" /></div><div className="min-w-0"><div className="truncate text-sm font-semibold">{player.name}</div><div className="text-xs text-[#68736b]">Moving in the office</div></div></div>)}
       <div className="my-4 h-px bg-black/[.07]" />
       <div className="flex items-center justify-between"><span className="text-xs font-semibold uppercase tracking-wider text-[#68736b]">Today</span><span className="text-xs text-[#68736b]">{tasks.filter((task) => task.status !== "Done").length} open tasks</span></div>
-      <div className="mt-3 rounded-2xl bg-[#173f2b] p-3 text-white"><div className="text-xs text-white/55">Next meeting · 3:30 PM</div><div className="mt-1 text-sm font-semibold">Weekly product pulse</div><button onClick={() => useOfficeStore.getState().openPanel("meeting")} className="mt-3 w-full rounded-xl bg-[#c8f560] py-2 text-xs font-bold text-[#173f2b]">View meeting</button></div>
+      <div className="mt-3 rounded-2xl bg-[#173f2b] p-3 text-[#f5f0e4]"><div className="text-xs text-white/55">Next meeting · 3:30 PM</div><div className="mt-1 text-sm font-semibold">Weekly product pulse</div><button onClick={() => useOfficeStore.getState().openPanel("meeting")} className="mt-3 w-full rounded-xl bg-[#c8f560] py-2 text-xs font-bold text-[#173f2b]">View meeting</button></div>
     </aside>}
   </>;
 }
 
-function DashboardView({ view, tasks, moveTask, addTask }: { view: Exclude<View, "office">; tasks: ReturnType<typeof useWorkspaceData>["tasks"]; moveTask: ReturnType<typeof useWorkspaceData>["moveTask"]; addTask: ReturnType<typeof useWorkspaceData>["addTask"] }) {
+function DashboardView({ view, tasks, moveTask, addTask, workspaceId }: { view: Exclude<View, "office">; tasks: ReturnType<typeof useWorkspaceData>["tasks"]; moveTask: ReturnType<typeof useWorkspaceData>["moveTask"]; addTask: ReturnType<typeof useWorkspaceData>["addTask"]; workspaceId: string }) {
   if (view === "projects" || view === "tasks") return <div className="h-full overflow-auto p-4 md:p-7"><Kanban tasks={tasks} moveTask={moveTask} addTask={addTask} /></div>;
+  if (view === "team") return <div className="h-full overflow-auto p-4 md:p-7"><TeamView workspaceId={workspaceId} /></div>;
   return <div className="h-full overflow-auto p-4 md:p-7"><Overview view={view} tasks={tasks} /></div>;
 }
 
