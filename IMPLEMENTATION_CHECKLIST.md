@@ -48,7 +48,7 @@
 - [ ] Configure production TURN credentials and verify calls across restrictive networks.
 - [ ] Add speaking indicators, proximity grouping, and automatic proximity audio.
 - [ ] Migrate larger group calls from peer mesh to an SFU provider.
-- [ ] Full project/task/comment/member CRUD through server-authorized repositories.
+- [x] Full project/task/comment/member CRUD through server-authorized repositories, Zod validation, Kanban filters, task assignment, deadlines, and priorities.
 - [ ] Meeting scheduling, persistent notes/resources, notifications, and activity feed.
 - [ ] Collaborative whiteboard CRDT/realtime synchronization.
 - [ ] Two-browser multiplayer and media tests, access-control audit, and FPS benchmark.

@@ -22,16 +22,19 @@ test("opens the 3D office shell", async ({ page }) => {
 
 test("creates a local task", async ({ page }) => {
   await page.goto("/office");
-  await page.getByRole("button", { name: "Projects" }).click();
-  await page.getByLabel("Task title").fill("Verify beta access");
-  await page.getByRole("button", { name: "Add" }).click();
+  await page.getByRole("button", { name: "My tasks" }).click();
+  await page.getByRole("button", { name: "Add Task" }).click();
+  await page.getByPlaceholder("e.g. Implement WebRTC signaling candidate buffer").fill("Verify beta access");
+  await page.getByRole("button", { name: "Create Task" }).click();
   await expect(page.getByText("Verify beta access")).toBeVisible();
 });
 
 test("synchronizes presence across two office tabs", async ({ context }) => {
   const first = await context.newPage();
+  await first.goto("/office");
+  await expect(first.getByText("1 online", { exact: true })).toBeVisible();
   const second = await context.newPage();
-  await Promise.all([first.goto("/office"), second.goto("/office")]);
+  await second.goto("/office");
   await expect(first.getByText("2 online", { exact: true })).toBeVisible();
   await expect(second.getByText("2 online", { exact: true })).toBeVisible();
   await second.close();

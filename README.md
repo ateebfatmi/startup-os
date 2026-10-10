@@ -14,7 +14,8 @@ Orbit is a spatial startup operating system built around a navigable 3D office. 
 - Authenticated onboarding that updates the member profile, creates a private workspace through the `create_workspace` RPC, saves workspace type, and persists the selected office template.
 - Server-side workspace invitation workflow with raw token generation, SHA-256 token hashing in PostgreSQL, expiration, single-use invitation acceptance page (`/invite/accept`), email validation, and role assignment.
 - Workspace member directory and administration UI supporting roles (`owner`, `admin`, `member`, `guest`), server-authorized role updates, member removal, and final-owner protection.
-- Local demo persistence for tasks, team directory, and invitations when no backend credentials are configured.
+- Database-backed project portfolio and Kanban task management supporting full CRUD, task comments, member assignment, deadlines, priority filtering (`urgent`, `high`, `medium`, `low`), and project categorization.
+- Local demo persistence for projects, tasks, task comments, team directory, and invitations when no backend credentials are configured.
 - Supabase migrations containing core workspace models, RLS, user bootstrap, atomic workspace creation, and RPC functions for secure invitation acceptance and member management.
 
 The sample people, tasks, and meetings are visibly contained within the **Local demo** workspace. They are not represented as live product data.

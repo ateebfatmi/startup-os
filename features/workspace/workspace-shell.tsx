@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
+import { Logo } from "@/components/logo";
 import { initialsFor } from "@/features/auth/auth-utils";
 import { OfficeCanvas } from "@/features/virtual-office/office-canvas";
 import { useOfficeStore } from "@/features/virtual-office/store";
@@ -16,6 +17,8 @@ import type { CallParticipant } from "@/features/communication/types";
 import { createSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase/client";
 import { useWorkspaceData } from "./use-workspace-data";
 import { TeamView } from "./team-view";
+import { ProjectsView } from "./projects-view";
+import { KanbanView } from "./kanban-view";
 import type { TaskStatus } from "./sample-data";
 
 const nav = [
@@ -170,8 +173,9 @@ function OfficeHud({ rightRail, onToggleRail, tasks, displayName }: { rightRail:
 }
 
 function DashboardView({ view, tasks, moveTask, addTask, workspaceId }: { view: Exclude<View, "office">; tasks: ReturnType<typeof useWorkspaceData>["tasks"]; moveTask: ReturnType<typeof useWorkspaceData>["moveTask"]; addTask: ReturnType<typeof useWorkspaceData>["addTask"]; workspaceId: string }) {
-  if (view === "projects" || view === "tasks") return <div className="h-full overflow-auto p-4 md:p-7"><Kanban tasks={tasks} moveTask={moveTask} addTask={addTask} /></div>;
-  if (view === "team") return <div className="h-full overflow-auto p-4 md:p-7"><TeamView workspaceId={workspaceId} /></div>;
+  if (view === "projects") return <div className="h-full overflow-auto"><ProjectsView workspaceId={workspaceId} /></div>;
+  if (view === "tasks") return <div className="h-full overflow-auto"><KanbanView workspaceId={workspaceId} /></div>;
+  if (view === "team") return <div className="h-full overflow-auto"><TeamView workspaceId={workspaceId} /></div>;
   return <div className="h-full overflow-auto p-4 md:p-7"><Overview view={view} tasks={tasks} /></div>;
 }
 
@@ -186,15 +190,9 @@ function Overview({ view, tasks }: { view: Exclude<View, "office" | "projects" |
 
 function Metric({ label, value, note, color }: { label: string; value: string; note: string; color: string }) { return <div className="rounded-[24px] border border-black/[.07] bg-[#fffdf7] p-5"><div className="flex items-center justify-between text-sm text-[#68736b]"><span>{label}</span><span className="h-3 w-3 rounded-full" style={{ background: color }} /></div><div className="mt-4 text-4xl font-bold tracking-[-.05em]">{value}</div><div className="mt-1 text-xs text-[#68736b]">{note}</div></div>; }
 
-function Kanban({ tasks, moveTask, addTask }: { tasks: ReturnType<typeof useWorkspaceData>["tasks"]; moveTask: ReturnType<typeof useWorkspaceData>["moveTask"]; addTask: ReturnType<typeof useWorkspaceData>["addTask"] }) {
-  const [title, setTitle] = useState("");
-  const statuses: TaskStatus[] = ["Todo", "In progress", "In review", "Done"];
-  return <div className="mx-auto max-w-7xl"><div className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><Badge className="mb-3 bg-[#e0edbe] text-[#39571c]">SPRINT 08</Badge><h2 className="text-3xl font-bold tracking-[-.04em]">Launch board</h2><p className="mt-2 text-[#68736b]">Move work forward one clear decision at a time.</p></div><form className="flex gap-2" onSubmit={(event) => { event.preventDefault(); if (title.trim()) { addTask(title.trim()); setTitle(""); } }}><input value={title} onChange={(event) => setTitle(event.target.value)} className="h-11 rounded-xl border border-black/10 bg-white px-3 text-sm outline-none" placeholder="Add a task" aria-label="Task title" /><Button type="submit"><Plus size={17} /> Add</Button></form></div><div className="grid gap-3 lg:grid-cols-4">{statuses.map((status) => <section key={status} className="min-h-72 rounded-[22px] bg-black/[.035] p-3"><div className="mb-3 flex items-center justify-between px-1"><h3 className="text-sm font-bold">{status}</h3><span className="text-xs text-[#68736b]">{tasks.filter((task) => task.status === status).length}</span></div><div className="space-y-2">{tasks.filter((task) => task.status === status).map((task) => <article key={task.id} className="rounded-2xl border border-black/[.07] bg-[#fffdf7] p-3 shadow-sm"><Badge className="bg-black/5 text-[#68736b]">{task.project}</Badge><h4 className="mt-3 text-sm font-semibold leading-5">{task.title}</h4><div className="mt-4 flex items-center justify-between text-xs text-[#68736b]"><span>{task.due}</span><select value={task.status} onChange={(event) => moveTask(task.id, event.target.value as TaskStatus)} className="max-w-24 rounded-lg border border-black/10 bg-white px-2 py-1" aria-label={`Status for ${task.title}`}>{statuses.map((option) => <option key={option}>{option}</option>)}</select></div></article>)}</div></section>)}</div></div>;
-}
-
 function FeatureDialog({ kind, onClose, tasks, moveTask, addTask, huddle }: { kind: ReturnType<typeof useOfficeStore.getState>["activePanel"]; onClose: () => void; tasks: ReturnType<typeof useWorkspaceData>["tasks"]; moveTask: ReturnType<typeof useWorkspaceData>["moveTask"]; addTask: ReturnType<typeof useWorkspaceData>["addTask"]; huddle: HuddleController }) {
   if (!kind) return null;
-  if (kind === "projects") return <Dialog open title="Project table" onClose={onClose}><Kanban tasks={tasks} moveTask={moveTask} addTask={addTask} /></Dialog>;
+  if (kind === "projects") return <Dialog open title="Project board" onClose={onClose}><KanbanView workspaceId="northstar-demo" /></Dialog>;
   if (kind === "whiteboard") return <Dialog open title="Whiteboard" onClose={onClose}><Whiteboard /></Dialog>;
   if (kind === "focus") return <Dialog open title="Focus pod" onClose={onClose}><FocusPanel /></Dialog>;
   return <Dialog open title="Weekly product pulse" onClose={onClose}><MeetingPanel huddle={huddle} /></Dialog>;
