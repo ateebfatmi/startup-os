@@ -10,6 +10,8 @@ type OfficeState = {
   transportLabel: string;
   nearbyAction: { kind: InteractionKind; label: string } | null;
   activePanel: InteractionKind | null;
+  cameraMode: "top" | "follow";
+  clickTarget: { x: number; z: number } | null;
   setPlayerTransform: (x: number, z: number, rotation: number) => void;
   setPlayerIdentity: (identity: Pick<PlayerSnapshot, "id" | "name" | "color">) => void;
   upsertRemotePlayer: (player: PlayerSnapshot) => void;
@@ -19,6 +21,9 @@ type OfficeState = {
   setNearbyAction: (action: OfficeState["nearbyAction"]) => void;
   openPanel: (panel: InteractionKind) => void;
   closePanel: () => void;
+  setCameraMode: (mode: "top" | "follow") => void;
+  toggleCameraMode: () => void;
+  setClickTarget: (target: { x: number; z: number } | null) => void;
 };
 
 export const useOfficeStore = create<OfficeState>((set) => ({
@@ -28,6 +33,8 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   transportLabel: "Local network",
   nearbyAction: null,
   activePanel: null,
+  cameraMode: "top",
+  clickTarget: null,
   setPlayerTransform: (x, z, rotation) => set((state) => ({ player: { ...state.player, x, z, rotation, updatedAt: Date.now() } })),
   setPlayerIdentity: (identity) => set((state) => ({ player: { ...state.player, ...identity } })),
   upsertRemotePlayer: (player) => set((state) => player.id === state.player.id ? state : ({ remotePlayers: { ...state.remotePlayers, [player.id]: player } })),
@@ -41,4 +48,7 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   setNearbyAction: (nearbyAction) => set({ nearbyAction }),
   openPanel: (activePanel) => set({ activePanel }),
   closePanel: () => set({ activePanel: null }),
+  setCameraMode: (cameraMode) => set({ cameraMode }),
+  toggleCameraMode: () => set((state) => ({ cameraMode: state.cameraMode === "top" ? "follow" : "top" })),
+  setClickTarget: (clickTarget) => set({ clickTarget }),
 }));
