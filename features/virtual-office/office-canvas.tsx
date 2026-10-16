@@ -19,59 +19,74 @@ export function OfficeCanvas() {
     switch (lightingMode) {
       case "sunset":
         return {
-          hemiSky: "#ffa868",
-          hemiGround: "#2b1c18",
-          hemiIntensity: 1.15,
-          ambient: 0.42,
-          sunColor: "#ff9040",
-          sunIntensity: 2.8,
-          sunPos: [14, 15, 12] as [number, number, number],
-          canvasBg: "#4a3530",
+          hemiSky: "#ffd1a8",
+          hemiGround: "#36221c",
+          hemiIntensity: 1.25,
+          ambient: 0.45,
+          sunColor: "#ff923d",
+          sunIntensity: 2.6,
+          sunPos: [14, 18, 12] as [number, number, number],
+          canvasBg: "#2d2024",
+          roomLights: {
+            boardroom: "#ffd2a6",
+            lounge: "#ffb47a",
+            aiPod: "#5cd0ff",
+            phoneBooth: "#ffa552",
+          },
         };
       case "night":
         return {
-          hemiSky: "#13253a",
-          hemiGround: "#070f0c",
-          hemiIntensity: 0.45,
-          ambient: 0.22,
+          hemiSky: "#223b5c",
+          hemiGround: "#0b141e",
+          hemiIntensity: 0.7,
+          ambient: 0.32,
           sunColor: "#5ca8ff",
-          sunIntensity: 0.85,
-          sunPos: [5, 18, 6] as [number, number, number],
-          canvasBg: "#0f1614",
+          sunIntensity: 1.15,
+          sunPos: [6, 20, 8] as [number, number, number],
+          canvasBg: "#111720",
+          roomLights: {
+            boardroom: "#ffe4b8",
+            lounge: "#ffd094",
+            aiPod: "#5ce0ff",
+            phoneBooth: "#ff9a3c",
+          },
         };
       case "day":
       default:
         return {
-          hemiSky: "#fffbf0",
-          hemiGround: "#2c3b33",
-          hemiIntensity: 1.4,
-          ambient: 0.55,
-          sunColor: "#fff5dc",
-          sunIntensity: 2.3,
-          sunPos: [8, 24, 10] as [number, number, number],
-          canvasBg: "#7e8780",
+          hemiSky: "#ffffff",
+          hemiGround: "#e5ded4",
+          hemiIntensity: 1.35,
+          ambient: 0.58,
+          sunColor: "#fff7e8",
+          sunIntensity: 2.2,
+          sunPos: [8, 26, 12] as [number, number, number],
+          canvasBg: "#ebe6dc",
+          roomLights: {
+            boardroom: "#fff3db",
+            lounge: "#ffe8cc",
+            aiPod: "#72e5ff",
+            phoneBooth: "#ffc285",
+          },
         };
     }
   }, [lightingMode]);
 
   return (
     <Canvas
-      dpr={[1, 1.75]}
+      dpr={[1, 2]}
       shadows
-      style={{ background: lighting.canvasBg }}
-      gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
-      onCreated={({ gl, scene }) => {
-        scene.background = null;
-        gl.setClearColor(0x000000, 0);
-      }}
+      style={{ width: "100%", height: "100%" }}
+      gl={{ antialias: true, powerPreference: "high-performance" }}
     >
+      <color attach="background" args={[lighting.canvasBg]} />
       <OrthographicCamera
         makeDefault
-        position={[0, 32, 12]}
-        zoom={34}
+        position={[0, 20, 20]}
+        zoom={38}
         near={0.1}
-        far={120}
-        onUpdate={(camera) => camera.lookAt(0, 0, -0.3)}
+        far={150}
+        onUpdate={(camera) => camera.lookAt(0, 0, -0.6)}
       />
       <CameraRig />
       <hemisphereLight args={[lighting.hemiSky, lighting.hemiGround, lighting.hemiIntensity]} />
@@ -83,27 +98,24 @@ export function OfficeCanvas() {
         intensity={lighting.sunIntensity}
         shadow-mapSize={[2048, 2048]}
         shadow-camera-near={0.5}
-        shadow-camera-far={45}
-        shadow-camera-left={-15}
-        shadow-camera-right={15}
-        shadow-camera-top={12}
-        shadow-camera-bottom={-12}
-        shadow-bias={-0.0004}
+        shadow-camera-far={50}
+        shadow-camera-left={-16}
+        shadow-camera-right={16}
+        shadow-camera-top={14}
+        shadow-camera-bottom={-14}
+        shadow-bias={-0.0003}
       />
 
       {/* Atmospheric Zone Accent Lights */}
-      <pointLight position={[-5.8, 3.6, -3.7]} color="#ffd699" intensity={lightingMode === "night" ? 18 : 12} distance={8} decay={2} />
-      <pointLight position={[-5.8, 3.5, 3.4]} color="#ffdfa4" intensity={lightingMode === "night" ? 16 : 10} distance={7} decay={2} />
-      <pointLight position={[8.5, 2.2, -3.4]} color="#4ee3ff" intensity={lightingMode === "night" ? 22 : 16} distance={7} decay={2} />
-      <pointLight position={[5.8, 3.4, 3.6]} color="#ffcc88" intensity={lightingMode === "night" ? 16 : 10} distance={7} decay={2} />
-      <pointLight position={[0, 2.8, 5.9]} color="#ffe1a8" intensity={lightingMode === "night" ? 14 : 9} distance={6} decay={2} />
-      <pointLight position={[0, 3.0, -6.6]} color="#fff3db" intensity={lightingMode === "night" ? 12 : 8} distance={6} decay={2} />
-
-      {/* Phone booth ambient glow */}
-      <pointLight position={[2.4, 2.2, -6.4]} color="#ffaa55" intensity={lightingMode === "night" ? 6 : 3} distance={4} />
+      <pointLight position={[-5.8, 3.2, -3.7]} color={lighting.roomLights.boardroom} intensity={lightingMode === "night" ? 18 : 10} distance={8} decay={2} />
+      <pointLight position={[-5.8, 3.2, 3.4]} color="#ffecd1" intensity={lightingMode === "night" ? 14 : 8} distance={7} decay={2} />
+      <pointLight position={[8.5, 2.2, -3.4]} color={lighting.roomLights.aiPod} intensity={lightingMode === "night" ? 24 : 16} distance={8} decay={2} />
+      <pointLight position={[5.8, 3.2, 3.6]} color={lighting.roomLights.lounge} intensity={lightingMode === "night" ? 16 : 9} distance={7} decay={2} />
+      <pointLight position={[0, 2.8, 5.9]} color="#ffe9be" intensity={lightingMode === "night" ? 12 : 7} distance={6} decay={2} />
+      <pointLight position={[2.4, 2.2, -6.4]} color={lighting.roomLights.phoneBooth} intensity={lightingMode === "night" ? 8 : 4} distance={4} />
 
       <OfficeEnvironment />
-      <ContactShadows position={[0, 0.05, 0]} opacity={lightingMode === "night" ? 0.45 : 0.32} scale={28} blur={2.2} far={8} frames={1} />
+      <ContactShadows position={[0, 0.05, 0]} opacity={lightingMode === "night" ? 0.48 : 0.35} scale={30} blur={2.0} far={8} frames={1} />
       <FloorClickSurface />
       <ClickTargetMarker />
       <LocalPlayer />
@@ -120,24 +132,25 @@ function CameraRig() {
   useFrame(({ camera }, delta) => {
     const isTop = cameraMode === "top";
     if (isTop) {
-      // Architectural high-angle view framing the complete office
-      const desiredPos = new THREE.Vector3(0, 32, 12);
-      const desiredLook = new THREE.Vector3(0, 0, -0.3);
+      // Architectural 45-degree isometric view framing the entire office diorama
+      const desiredPos = new THREE.Vector3(0, 20, 20);
+      const desiredLook = new THREE.Vector3(0, 0, -0.6);
       camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 5));
       camera.lookAt(desiredLook);
 
-      const targetZoom = Math.min(size.width / 27, size.height / 19.5);
+      // Fit with comfortable margins accounting for top HUD and side rails
+      const targetZoom = Math.min((size.width - 120) / 28, (size.height - 80) / 16.5);
       if ("zoom" in camera) {
         camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 5));
         camera.updateProjectionMatrix();
       }
     } else {
-      // Follow mode: zoomed in on the player avatar
-      const desiredPos = new THREE.Vector3(player.x, 20, player.z + 9);
+      // Follow mode: smoothly follow player from isometric 3rd person angle
+      const desiredPos = new THREE.Vector3(player.x, 15, player.z + 14);
       camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 4));
-      camera.lookAt(player.x, 0, player.z);
+      camera.lookAt(player.x, 0.6, player.z);
 
-      const targetZoom = Math.min(size.width / 15, size.height / 11);
+      const targetZoom = Math.min(size.width / 16, size.height / 11);
       if ("zoom" in camera) {
         camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 4));
         camera.updateProjectionMatrix();
@@ -163,7 +176,7 @@ function FloorClickSurface() {
       }}
       visible={false}
     >
-      <planeGeometry args={[24, 16]} />
+      <planeGeometry args={[25, 17]} />
       <meshBasicMaterial transparent opacity={0} />
     </mesh>
   );
@@ -175,7 +188,7 @@ function ClickTargetMarker() {
 
   useFrame(() => {
     if (ringRef.current && clickTarget) {
-      const scale = 1 + (Math.sin(performance.now() / 140) * 0.16);
+      const scale = 1 + Math.sin(performance.now() / 140) * 0.16;
       ringRef.current.scale.set(scale, scale, 1);
     }
   });
@@ -268,7 +281,7 @@ function LocalPlayer() {
     }
 
     // Speed boost when caffeinated (+30%)
-    const maxSpeed = isSitting ? 0 : (isCaffeinated ? 5.8 : 4.5);
+    const maxSpeed = isSitting ? 0 : isCaffeinated ? 5.8 : 4.5;
     velocity.current.lerp(input.multiplyScalar(maxSpeed), 1 - Math.exp(-delta * 12));
     if (velocity.current.lengthSq() < 0.005) velocity.current.set(0, 0);
 
@@ -296,13 +309,13 @@ function LocalPlayer() {
 
     if (group.current) {
       const bob = Math.abs(Math.sin(walkPhase.current * 2)) * Math.min(speed / 45, 0.05);
-      const targetY = isSitting ? 0.32 : (0.06 + bob);
+      const targetY = isSitting ? 0.32 : 0.06 + bob;
       group.current.position.set(next.x, targetY, next.z);
       group.current.rotation.y = rotation.current;
 
       // Body lean into acceleration
       if (torsoRef.current) {
-        torsoRef.current.rotation.x = isSitting ? 0.1 : (speed > 0.2 ? -0.1 : 0);
+        torsoRef.current.rotation.x = isSitting ? 0.1 : speed > 0.2 ? -0.1 : 0;
       }
 
       // Leg stepping animation
@@ -373,7 +386,6 @@ function LocalPlayer() {
               <cylinderGeometry args={[0.075, 0.075, 0.03, 16]} />
               <meshStandardMaterial color="#173f2b" roughness={0.4} />
             </mesh>
-            {/* Steam ring */}
             <mesh position={[0, 0.16, 0]}>
               <ringGeometry args={[0.02, 0.05, 12]} />
               <meshBasicMaterial color="#ffffff" transparent opacity={0.6} />
@@ -394,22 +406,13 @@ function LocalPlayer() {
         </mesh>
       </group>
 
-      {/* Floating Status Tag */}
-      <Html center position={[0, 1.86, 0]}>
-        <div className="flex flex-col items-center gap-1 pointer-events-none select-none">
-          {isCaffeinated && (
-            <span className="rounded-full bg-amber-500 text-white px-2 py-0.5 text-[9px] font-bold shadow-md animate-pulse">
-              ☕ Caffeinated (+Speed)
-            </span>
-          )}
-          {isSitting && (
-            <span className="rounded-full bg-blue-600 text-white px-2 py-0.5 text-[9px] font-bold shadow-md">
-              🪑 Seated
-            </span>
-          )}
-          <div className="whitespace-nowrap rounded-full bg-[#17211b] px-2.5 py-1 text-[11px] font-bold text-white shadow-xl ring-2 ring-white/20">
-            You
-          </div>
+      {/* Sleek Overhead Tag */}
+      <Html center position={[0, 1.78, 0]}>
+        <div className="pointer-events-none select-none flex items-center gap-1.5 rounded-full bg-[#17211b]/90 backdrop-blur-sm px-2.5 py-0.5 text-[10px] font-bold text-white shadow-md ring-1 ring-white/20 whitespace-nowrap">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#c8f560]" />
+          <span>You</span>
+          {isCaffeinated && <span className="text-[9px] text-amber-300">☕</span>}
+          {isSitting && <span className="text-[9px] text-blue-300">🪑</span>}
         </div>
       </Html>
     </group>
@@ -427,7 +430,6 @@ function RemotePlayer({ player }: { player: ReturnType<typeof useOfficeStore.get
   const rightLegRef = useRef<THREE.Mesh>(null);
   const targetPosition = useRef(new THREE.Vector3(player.x, 0.06, player.z));
   const targetRotation = useRef(player.rotation);
-  const prevPosition = useRef(new THREE.Vector3(player.x, 0.06, player.z));
   const walkPhase = useRef(0);
 
   useEffect(() => {
@@ -479,8 +481,8 @@ function RemotePlayer({ player }: { player: ReturnType<typeof useOfficeStore.get
           <meshStandardMaterial color="#1f2d26" roughness={0.7} />
         </mesh>
       </group>
-      <Html center position={[0, 1.86, 0]}>
-        <div className="whitespace-nowrap rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-[#17211b] shadow-xl ring-2 ring-black/10 select-none">
+      <Html center position={[0, 1.78, 0]}>
+        <div className="pointer-events-none select-none rounded-full bg-white/95 px-2.5 py-0.5 text-[10px] font-bold text-[#17211b] shadow-md ring-1 ring-black/10 whitespace-nowrap">
           {player.name}
         </div>
       </Html>
@@ -490,14 +492,16 @@ function RemotePlayer({ player }: { player: ReturnType<typeof useOfficeStore.get
 
 function OfficeEnvironment() {
   const deskPositions = useMemo(() => [[4.8, -4.7], [7, -4.7], [4.8, -2.2], [7, -2.2]] as const, []);
+  const activeNearby = useOfficeStore((state) => state.nearbyAction);
+
   return (
     <group>
       <Floor />
       {/* Zone Carpets & Inlays */}
-      <RoomRug position={[-5.8, 0.045, -3.7]} color="#1b3327" trim="#c9a562" size={[6.4, 4.8]} />
-      <RoomRug position={[-5.8, 0.045, 3.45]} color="#563b27" trim="#a87f4c" size={[6.4, 4.6]} />
-      <RoomRug position={[5.8, 0.045, 3.55]} color="#82523d" trim="#e2b992" size={[6.3, 4.7]} />
-      <RoomRug position={[5.8, 0.045, -3.45]} color="#243836" trim="#789994" size={[6.3, 4.8]} />
+      <RoomRug position={[-5.8, 0.045, -3.7]} color="#1b2838" trim="#d4af37" size={[6.4, 4.8]} />
+      <RoomRug position={[-5.8, 0.045, 3.45]} color="#233d30" trim="#c9b08a" size={[6.4, 4.6]} />
+      <RoomRug position={[5.8, 0.045, 3.55]} color="#56382b" trim="#e2b992" size={[6.3, 4.7]} />
+      <RoomRug position={[5.8, 0.045, -3.45]} color="#222b30" trim="#5c6e7a" size={[6.3, 4.8]} />
 
       <Walls />
       <GlassPartitions />
@@ -517,24 +521,29 @@ function OfficeEnvironment() {
       <LightingDetails />
       <Plants />
 
-      {/* Interactive Zones Indicators */}
-      {INTERACTION_ZONES.map((zone) => (
-        <group key={zone.id} position={[zone.x, 0.052, zone.z]}>
-          <mesh rotation-x={-Math.PI / 2}>
-            <ringGeometry args={[0.55, 0.68, 48]} />
-            <meshBasicMaterial color="#c8f560" transparent opacity={0.88} />
-          </mesh>
-          <mesh rotation-x={-Math.PI / 2}>
-            <ringGeometry args={[0.42, 0.46, 32]} />
-            <meshBasicMaterial color="#ffffff" transparent opacity={0.6} />
-          </mesh>
-          <Html center position={[0, 0.16, 0]}>
-            <div className="pointer-events-none whitespace-nowrap rounded-full bg-[#17211b]/95 border border-white/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#c8f560] shadow-md">
-              {zone.label}
-            </div>
-          </Html>
-        </group>
-      ))}
+      {/* Clean, Subtle Interactive Zone Floor Rings */}
+      {INTERACTION_ZONES.map((zone) => {
+        const isNear = activeNearby?.kind === zone.kind;
+        return (
+          <group key={zone.id} position={[zone.x, 0.048, zone.z]}>
+            <mesh rotation-x={-Math.PI / 2}>
+              <ringGeometry args={[0.55, 0.65, 36]} />
+              <meshBasicMaterial color={isNear ? "#c8f560" : "#ffffff"} transparent opacity={isNear ? 0.9 : 0.28} />
+            </mesh>
+            <mesh rotation-x={-Math.PI / 2}>
+              <circleGeometry args={[0.52, 32]} />
+              <meshBasicMaterial color={isNear ? "#c8f560" : "#ffffff"} transparent opacity={isNear ? 0.15 : 0.04} />
+            </mesh>
+            {isNear && (
+              <Html center position={[0, 0.22, 0]}>
+                <div className="pointer-events-none select-none whitespace-nowrap rounded-full bg-[#17211b]/95 border border-[#c8f560]/40 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#c8f560] shadow-lg animate-pulse">
+                  {zone.label}
+                </div>
+              </Html>
+            )}
+          </group>
+        );
+      })}
     </group>
   );
 }
@@ -544,44 +553,50 @@ function Floor() {
     <group>
       {/* Foundation Base Slab */}
       <mesh receiveShadow position={[0, -0.22, 0]}>
-        <boxGeometry args={[24.4, 0.4, 16.4]} />
-        <meshStandardMaterial color="#222b26" roughness={0.7} />
+        <boxGeometry args={[24.8, 0.4, 16.8]} />
+        <meshStandardMaterial color="#1b231f" roughness={0.7} />
       </mesh>
 
-      {/* Primary Terrazzo/Stone Floor */}
+      {/* Primary Warm Scandinavian Hardwood Floor */}
       <mesh receiveShadow position={[0, 0.01, 0]} rotation-x={-Math.PI / 2}>
         <planeGeometry args={[24, 16]} />
-        <meshStandardMaterial color="#e5e0d4" roughness={0.62} metalness={0.03} />
+        <meshStandardMaterial color="#f0ebe0" roughness={0.55} metalness={0.04} />
       </mesh>
 
-      {/* Central Promenade Highway */}
-      <mesh receiveShadow position={[0, 0.03, 0.35]} rotation-x={-Math.PI / 2}>
+      {/* Central Polished Terrazzo Promenade */}
+      <mesh receiveShadow position={[0, 0.025, 0.35]} rotation-x={-Math.PI / 2}>
         <planeGeometry args={[3.8, 14.8]} />
-        <meshStandardMaterial color="#ded7c7" roughness={0.52} />
+        <meshStandardMaterial color="#e5dfd2" roughness={0.42} />
       </mesh>
-      {/* Central Brass Inlay Striping */}
-      <mesh position={[-1.9, 0.035, 0.35]} rotation-x={-Math.PI / 2}>
+      {/* Central Brushed Brass Inlay Inset Lines */}
+      <mesh position={[-1.9, 0.032, 0.35]} rotation-x={-Math.PI / 2}>
         <planeGeometry args={[0.04, 14.8]} />
-        <meshBasicMaterial color="#b38f54" />
+        <meshBasicMaterial color="#c9a562" />
       </mesh>
-      <mesh position={[1.9, 0.035, 0.35]} rotation-x={-Math.PI / 2}>
+      <mesh position={[1.9, 0.032, 0.35]} rotation-x={-Math.PI / 2}>
         <planeGeometry args={[0.04, 14.8]} />
-        <meshBasicMaterial color="#b38f54" />
+        <meshBasicMaterial color="#c9a562" />
       </mesh>
 
-      {/* Architectural Floor Grid Lines */}
-      {[-8, -4, 0, 4, 8].map((x) => (
+      {/* Architectural Floor Grid Tile Seams */}
+      {[-8, -4, 4, 8].map((x) => (
         <mesh key={`grid-x-${x}`} position={[x, 0.02, 0]} rotation-x={-Math.PI / 2}>
           <planeGeometry args={[0.02, 15.6]} />
-          <meshBasicMaterial color="#c7bea9" />
+          <meshBasicMaterial color="#ded6c5" />
         </mesh>
       ))}
       {[-4, 0, 4].map((z) => (
         <mesh key={`grid-z-${z}`} position={[0, 0.021, z]} rotation-x={-Math.PI / 2}>
           <planeGeometry args={[23.6, 0.02]} />
-          <meshBasicMaterial color="#c7bea9" />
+          <meshBasicMaterial color="#ded6c5" />
         </mesh>
       ))}
+
+      {/* North Wall Baseboard Ambient Warm Cove Light Strip */}
+      <mesh position={[0, 0.035, -7.68]} rotation-x={-Math.PI / 2}>
+        <planeGeometry args={[23.6, 0.06]} />
+        <meshBasicMaterial color="#ffe8be" transparent opacity={0.65} />
+      </mesh>
     </group>
   );
 }
@@ -601,15 +616,12 @@ function RoomRug({
     <group position={position} rotation-x={-Math.PI / 2}>
       <mesh receiveShadow>
         <planeGeometry args={size} />
-        <meshStandardMaterial color={color} roughness={0.92} />
+        <meshStandardMaterial color={color} roughness={0.88} />
       </mesh>
+      {/* Outer Trim Accent */}
       <mesh position={[0, 0, 0.005]}>
         <ringGeometry args={[Math.min(...size) * 0.38, Math.min(...size) * 0.4, 4]} />
         <meshBasicMaterial color={trim} />
-      </mesh>
-      <mesh position={[0, 0, 0.006]}>
-        <ringGeometry args={[Math.min(...size) * 0.44, Math.min(...size) * 0.45, 4]} />
-        <meshBasicMaterial color={trim} transparent opacity={0.65} />
       </mesh>
     </group>
   );
@@ -618,15 +630,15 @@ function RoomRug({
 function Walls() {
   return (
     <group>
-      {/* North Feature Wall - Fluted Walnut Wainscoting */}
+      {/* North Feature Wall - Fluted Walnut Wainscoting with Accent Molding */}
       <Wall position={[0, 1.25, -7.85]} size={[24, 2.5, 0.3]} />
-      <mesh position={[0, 0.5, -7.68]}>
-        <boxGeometry args={[23.6, 1.0, 0.06]} />
-        <meshStandardMaterial color="#26352e" roughness={0.7} />
+      <mesh position={[0, 0.65, -7.68]}>
+        <boxGeometry args={[23.6, 1.3, 0.06]} />
+        <meshStandardMaterial color="#2d3f37" roughness={0.7} />
       </mesh>
-      <mesh position={[0, 1.02, -7.64]}>
-        <boxGeometry args={[23.6, 0.05, 0.07]} />
-        <meshStandardMaterial color="#b38f54" metalness={0.75} roughness={0.25} />
+      <mesh position={[0, 1.32, -7.64]}>
+        <boxGeometry args={[23.6, 0.06, 0.07]} />
+        <meshStandardMaterial color="#c9a562" metalness={0.75} roughness={0.25} />
       </mesh>
 
       {/* South Wall (Front Cutaway Curb Wall + Glass Railing) */}
@@ -637,21 +649,21 @@ function Walls() {
       </mesh>
       <mesh position={[0, 0.92, 7.85]}>
         <boxGeometry args={[23.8, 0.05, 0.07]} />
-        <meshStandardMaterial color="#b38f54" metalness={0.75} roughness={0.25} />
+        <meshStandardMaterial color="#c9a562" metalness={0.75} roughness={0.25} />
       </mesh>
 
       {/* West Wall (Left) */}
       <Wall position={[-11.85, 0.65, 0]} size={[0.3, 1.3, 16]} />
-      <mesh position={[-11.68, 0.22, 0]}>
-        <boxGeometry args={[0.06, 0.44, 15.6]} />
-        <meshStandardMaterial color="#26352e" roughness={0.7} />
+      <mesh position={[-11.68, 0.25, 0]}>
+        <boxGeometry args={[0.06, 0.5, 15.6]} />
+        <meshStandardMaterial color="#2d3f37" roughness={0.7} />
       </mesh>
 
       {/* East Wall (Right) */}
       <Wall position={[11.85, 0.65, 0]} size={[0.3, 1.3, 16]} />
-      <mesh position={[11.68, 0.22, 0]}>
-        <boxGeometry args={[0.06, 0.44, 15.6]} />
-        <meshStandardMaterial color="#26352e" roughness={0.7} />
+      <mesh position={[11.68, 0.25, 0]}>
+        <boxGeometry args={[0.06, 0.5, 15.6]} />
+        <meshStandardMaterial color="#2d3f37" roughness={0.7} />
       </mesh>
     </group>
   );
@@ -661,7 +673,7 @@ function Wall({ position, size }: { position: [number, number, number]; size: [n
   return (
     <mesh castShadow receiveShadow position={position}>
       <boxGeometry args={size} />
-      <meshStandardMaterial color="#ece6da" roughness={0.75} />
+      <meshStandardMaterial color="#ede7dc" roughness={0.75} />
     </mesh>
   );
 }
@@ -692,7 +704,7 @@ function GlassPanel({ position, depth }: { position: [number, number, number]; d
     <group position={position}>
       <mesh castShadow>
         <boxGeometry args={[0.05, 1.5, depth]} />
-        <meshPhysicalMaterial color="#bed8d0" transparent opacity={0.28} roughness={0.12} transmission={0.65} depthWrite={false} />
+        <meshPhysicalMaterial color="#c2dfd7" transparent opacity={0.28} roughness={0.12} transmission={0.65} depthWrite={false} />
       </mesh>
       <mesh position={[0, -0.66, 0]}>
         <boxGeometry args={[0.07, 0.18, depth]} />
@@ -711,18 +723,24 @@ function GlassPanel({ position, depth }: { position: [number, number, number]; d
 function Reception() {
   return (
     <group position={[0, 0, 5.9]}>
+      {/* Front Curved Reception Counter */}
       <RoundedBox castShadow position={[0, 0.62, 0]} args={[3.2, 1.05, 0.75]} radius={0.14}>
-        <meshStandardMaterial color="#533728" roughness={0.45} />
+        <meshStandardMaterial color="#4a3225" roughness={0.45} />
       </RoundedBox>
       <mesh position={[0, 1.16, 0.22]}>
         <boxGeometry args={[2.7, 0.06, 0.36]} />
-        <meshStandardMaterial color="#dcd0b8" roughness={0.28} />
+        <meshStandardMaterial color="#ece3d2" roughness={0.28} />
       </mesh>
-      <Html center position={[0, 1.82, 0.02]}>
-        <div className="pointer-events-none text-xs font-black tracking-[0.4em] text-[#173f2b] bg-[#fffdf5]/90 px-3 py-1 rounded-full shadow-sm border border-black/10 select-none">
-          ORBIT
-        </div>
-      </Html>
+      {/* Backlit 3D Metallic ORBIT Emblem */}
+      <mesh position={[0, 0.65, 0.39]}>
+        <boxGeometry args={[1.2, 0.28, 0.03]} />
+        <meshStandardMaterial color="#173f2b" roughness={0.3} />
+      </mesh>
+      <mesh position={[0, 0.65, 0.41]}>
+        <boxGeometry args={[0.9, 0.14, 0.02]} />
+        <meshStandardMaterial color="#c8f560" emissive="#98d626" emissiveIntensity={0.6} />
+      </mesh>
+      {/* Brass Desk Lamp */}
       <mesh castShadow position={[1.22, 1.42, 0]}>
         <cylinderGeometry args={[0.04, 0.14, 0.58, 20]} />
         <meshStandardMaterial color="#b69055" metalness={0.78} roughness={0.2} />
@@ -740,15 +758,17 @@ function MeetingTable() {
 
   return (
     <group position={[-6.2, 0, -3.7]}>
+      {/* Solid Walnut Oval Conference Table */}
       <RoundedBox castShadow position={[0, 0.74, 0]} args={[4.4, 0.22, 2.15]} radius={0.32} smoothness={5}>
-        <meshStandardMaterial color="#422b21" roughness={0.32} />
+        <meshStandardMaterial color="#3d271e" roughness={0.32} />
       </RoundedBox>
       <RoundedBox castShadow position={[0, 0.58, 0]} args={[2.5, 0.72, 0.85]} radius={0.16}>
         <meshStandardMaterial color="#281e19" roughness={0.45} />
       </RoundedBox>
+      {/* Leather Center Runner & Microphones */}
       <mesh position={[0, 0.87, 0]}>
-        <boxGeometry args={[1.4, 0.02, 0.38]} />
-        <meshStandardMaterial color="#171d1a" metalness={0.5} roughness={0.3} />
+        <boxGeometry args={[1.6, 0.02, 0.42]} />
+        <meshStandardMaterial color="#1b2420" metalness={0.3} roughness={0.5} />
       </mesh>
       {[-0.45, 0.45].map((x) => (
         <mesh key={x} position={[x, 0.9, 0]}>
@@ -756,6 +776,7 @@ function MeetingTable() {
           <meshStandardMaterial color="#0c0e0d" metalness={0.8} />
         </mesh>
       ))}
+      {/* 8 Ergonomic Conference Chairs */}
       {[
         [-1.55, -0.75], [-0.5, -0.75], [0.5, -0.75], [1.55, -0.75],
         [-1.55, 0.75], [-0.5, 0.75], [0.5, 0.75], [1.55, 0.75],
@@ -768,17 +789,209 @@ function MeetingTable() {
   );
 }
 
+// Native 3D High-Res Canvas Texture 85" Boardroom Display (Zero HTML Overlap/Bugs)
 function BoardroomScreen() {
   const slide = useOfficeStore((state) => state.boardroomSlide);
   const nextSlide = useOfficeStore((state) => state.nextBoardroomSlide);
+  const [hovered, setHovered] = useState(false);
 
-  const slides = [
-    { title: "🚀 Q4 LAUNCH ROADMAP", metric: "94% Velocity", detail: "Beta launch in 12 days · 0 blocker items" },
-    { title: "📡 SPATIAL NETWORK HEALTH", metric: "18ms Latency", detail: "Multi-player mesh live · WebRTC active" },
-    { title: "📈 SEED TRACTION ROUND", metric: "$1.5M Target", detail: "1,200+ Workspaces created · 42m DAU" },
-  ];
+  const screenTexture = useMemo(() => {
+    if (typeof document === "undefined") return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = 1024;
+    canvas.height = 512;
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.generateMipmaps = true;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    return { canvas, tex };
+  }, []);
 
-  const current = slides[slide];
+  useEffect(() => {
+    if (!screenTexture) return;
+    const { canvas, tex } = screenTexture;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Crisp high-tech dark background
+    const bgGradient = ctx.createLinearGradient(0, 0, 1024, 512);
+    bgGradient.addColorStop(0, "#0a1612");
+    bgGradient.addColorStop(1, "#07100d");
+    ctx.fillStyle = bgGradient;
+    ctx.fillRect(0, 0, 1024, 512);
+
+    // Subtle grid lines
+    ctx.strokeStyle = "rgba(200, 245, 96, 0.04)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x < 1024; x += 40) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, 512);
+      ctx.stroke();
+    }
+    for (let y = 0; y < 512; y += 40) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(1024, y);
+      ctx.stroke();
+    }
+
+    // Top Header Bar
+    ctx.fillStyle = "rgba(255, 255, 255, 0.06)";
+    ctx.fillRect(0, 0, 1024, 56);
+
+    // Live status indicator dot
+    ctx.fillStyle = "#c8f560";
+    ctx.beginPath();
+    ctx.arc(36, 28, 7, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.font = "bold 20px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("ORBIT EXECUTIVE BOARDROOM", 56, 35);
+
+    // Slide pill
+    ctx.fillStyle = "rgba(200, 245, 96, 0.18)";
+    ctx.beginPath();
+    ctx.roundRect(870, 12, 124, 32, 8);
+    ctx.fill();
+    ctx.font = "bold 15px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillStyle = "#c8f560";
+    ctx.fillText(`SLIDE ${slide + 1} OF 3`, 890, 34);
+
+    // Dynamic Slide Content
+    if (slide === 0) {
+      ctx.font = "bold 22px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillStyle = "#c8f560";
+      ctx.fillText("🚀 Q4 LAUNCH ROADMAP", 48, 115);
+
+      ctx.font = "900 60px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText("94.2% Velocity", 48, 185);
+
+      // Progress bar background
+      ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+      ctx.beginPath();
+      ctx.roundRect(48, 220, 928, 24, 12);
+      ctx.fill();
+
+      // Progress bar fill
+      const grad = ctx.createLinearGradient(48, 0, 48 + 928 * 0.942, 0);
+      grad.addColorStop(0, "#489e67");
+      grad.addColorStop(1, "#c8f560");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(48, 220, 928 * 0.942, 24, 12);
+      ctx.fill();
+
+      // 3 KPI metric cards
+      const kpis = [
+        { label: "BETA LAUNCH", val: "12 Days", sub: "Oct 29 Target" },
+        { label: "BLOCKER ITEMS", val: "0 Critical", sub: "All systems green" },
+        { label: "SPRINT GOAL", val: "Sprint #14", sub: "38 of 40 issues done" },
+      ];
+      kpis.forEach((kpi, i) => {
+        const x = 48 + i * 320;
+        ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(x, 275, 288, 140, 16);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font = "bold 15px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillStyle = "#9cb5a5";
+        ctx.fillText(kpi.label, x + 24, 312);
+
+        ctx.font = "900 32px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(kpi.val, x + 24, 358);
+
+        ctx.font = "14px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillStyle = "#c8f560";
+        ctx.fillText(kpi.sub, x + 24, 392);
+      });
+    } else if (slide === 1) {
+      ctx.font = "bold 22px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillStyle = "#5cd0ff";
+      ctx.fillText("📡 SPATIAL MESH NETWORK HEALTH", 48, 115);
+
+      ctx.font = "900 60px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText("18ms Peer Latency", 48, 185);
+
+      const kpis = [
+        { label: "PEER MESH", val: "WebRTC Live", sub: "DataChannel mesh active" },
+        { label: "REALTIME ENGINE", val: "Supabase", sub: "Broadcast state sync" },
+        { label: "NETWORK UPTIME", val: "99.98%", sub: "Zero packet loss" },
+      ];
+      kpis.forEach((kpi, i) => {
+        const x = 48 + i * 320;
+        ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
+        ctx.strokeStyle = "rgba(92, 208, 255, 0.2)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(x, 275, 288, 140, 16);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font = "bold 15px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillStyle = "#90b4ce";
+        ctx.fillText(kpi.label, x + 24, 312);
+
+        ctx.font = "900 32px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(kpi.val, x + 24, 358);
+
+        ctx.font = "14px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillStyle = "#5cd0ff";
+        ctx.fillText(kpi.sub, x + 24, 392);
+      });
+    } else {
+      ctx.font = "bold 22px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillStyle = "#ffaa55";
+      ctx.fillText("📈 SEED ROUND TRACTION", 48, 115);
+
+      ctx.font = "900 60px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText("$1.5M Seed Target", 48, 185);
+
+      const kpis = [
+        { label: "COMMITTED", val: "$1.18M", sub: "78.6% allocation closed" },
+        { label: "ACTIVE WORKSPACES", val: "1,420+", sub: "+44% MoM growth" },
+        { label: "DAILY TIME / USER", val: "42 min", sub: "Top quartile retention" },
+      ];
+      kpis.forEach((kpi, i) => {
+        const x = 48 + i * 320;
+        ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
+        ctx.strokeStyle = "rgba(255, 170, 85, 0.2)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(x, 275, 288, 140, 16);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font = "bold 15px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillStyle = "#d8a57e";
+        ctx.fillText(kpi.label, x + 24, 312);
+
+        ctx.font = "900 32px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(kpi.val, x + 24, 358);
+
+        ctx.font = "14px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillStyle = "#ffaa55";
+        ctx.fillText(kpi.sub, x + 24, 392);
+      });
+    }
+
+    // Bottom clean hint
+    ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+    ctx.font = "14px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillText("🖱️ Click display to cycle slide · Real-time 3D View", 48, 475);
+
+    tex.needsUpdate = true;
+  }, [slide, screenTexture]);
 
   return (
     <group
@@ -788,38 +1001,32 @@ function BoardroomScreen() {
         playSlideClick();
         nextSlide();
       }}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
     >
-      {/* 85" TV Display Frame */}
-      <RoundedBox castShadow args={[3.2, 1.6, 0.1]} radius={0.05}>
+      {/* 85" TV Display Sleek Aluminum Frame */}
+      <RoundedBox castShadow args={[3.3, 1.7, 0.08]} radius={0.04}>
         <meshStandardMaterial color="#0c100e" roughness={0.2} metalness={0.8} />
       </RoundedBox>
-      {/* Screen Face */}
-      <mesh position={[0, 0, 0.052]}>
-        <planeGeometry args={[3.05, 1.45]} />
-        <meshBasicMaterial color="#0a1a14" />
+      {/* Display Screen with Native 3D Texture */}
+      {screenTexture && (
+        <mesh position={[0, 0, 0.045]}>
+          <planeGeometry args={[3.15, 1.55]} />
+          <meshBasicMaterial map={screenTexture.tex} />
+        </mesh>
+      )}
+      {/* Power LED Indicator */}
+      <mesh position={[1.5, -0.78, 0.045]}>
+        <circleGeometry args={[0.015, 16]} />
+        <meshBasicMaterial color="#c8f560" />
       </mesh>
-      {/* Dynamic Screen Content */}
-      <Html center position={[0, 0, 0.08]} transform occlude distanceFactor={14}>
-        <div className="w-80 select-none rounded-xl bg-gradient-to-br from-[#132c22] to-[#0c1813] border border-white/20 p-4 text-white shadow-2xl">
-          <div className="flex items-center justify-between border-b border-white/10 pb-2">
-            <span className="text-[10px] font-black tracking-widest text-[#c8f560] uppercase">{current.title}</span>
-            <span className="rounded bg-black/40 px-1.5 py-0.5 text-[8px] font-bold text-white/70">Slide {slide + 1}/3</span>
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <div className="text-2xl font-black text-white">{current.metric}</div>
-            <div className="h-2 w-2 rounded-full bg-[#c8f560] animate-pulse" />
-          </div>
-          <p className="mt-1 text-[11px] text-white/75 font-medium">{current.detail}</p>
-          <div className="mt-3 flex items-center justify-between text-[9px] text-[#c8f560]/80">
-            <span>🖱️ Click to switch slide</span>
-            <div className="flex gap-1">
-              {[0, 1, 2].map((i) => (
-                <div key={i} className={`h-1.5 w-1.5 rounded-full ${i === slide ? "bg-[#c8f560]" : "bg-white/30"}`} />
-              ))}
-            </div>
-          </div>
-        </div>
-      </Html>
+      {/* Subtle hover ring */}
+      {hovered && (
+        <mesh position={[0, 0, 0.05]}>
+          <planeGeometry args={[3.2, 1.6]} />
+          <meshBasicMaterial color="#c8f560" transparent opacity={0.08} />
+        </mesh>
+      )}
     </group>
   );
 }
@@ -827,8 +1034,9 @@ function BoardroomScreen() {
 function ProjectTable() {
   return (
     <group position={[-5.8, 0, 3.4]}>
+      {/* Oak Strategy & Product Table */}
       <RoundedBox castShadow position={[0, 0.68, 0]} args={[4.4, 0.18, 2.15]} radius={0.1}>
-        <meshStandardMaterial color="#5d402d" roughness={0.46} />
+        <meshStandardMaterial color="#553a29" roughness={0.46} />
       </RoundedBox>
       {[-1.75, 1.75].map((x) => (
         <mesh key={x} castShadow position={[x, 0.35, 0]}>
@@ -836,6 +1044,7 @@ function ProjectTable() {
           <meshStandardMaterial color="#b28a55" metalness={0.62} roughness={0.28} />
         </mesh>
       ))}
+      {/* Architecture Blueprints & iPads on table */}
       {[-1.4, 0, 1.4].map((x) => (
         <group key={x} position={[x, 0.82, 0]}>
           <mesh castShadow rotation-x={-0.12}>
@@ -868,10 +1077,10 @@ function Chair({ position }: { position: [number, number, number] }) {
   return (
     <group position={position}>
       <RoundedBox castShadow position={[0, 0.42, 0]} args={[0.5, 0.1, 0.52]} radius={0.08}>
-        <meshStandardMaterial color="#22302a" roughness={0.7} />
+        <meshStandardMaterial color="#202c26" roughness={0.7} />
       </RoundedBox>
       <RoundedBox castShadow position={[0, 0.72, position[2] < 0 ? -0.22 : 0.22]} args={[0.5, 0.6, 0.08]} radius={0.07}>
-        <meshStandardMaterial color="#22302a" roughness={0.68} />
+        <meshStandardMaterial color="#202c26" roughness={0.68} />
       </RoundedBox>
       {[-0.18, 0.18].map((x) => (
         <mesh key={x} position={[x, 0.18, 0]}>
@@ -883,14 +1092,53 @@ function Chair({ position }: { position: [number, number, number] }) {
   );
 }
 
+// Engineering Desks with Realistic Code Editor Monitor Display
 function Desk({ position, deskIndex }: { position: readonly [number, number, number]; deskIndex: number }) {
   const setIsSitting = useOfficeStore((state) => state.setIsSitting);
+
+  const codeTexture = useMemo(() => {
+    if (typeof document === "undefined") return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 256;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.fillStyle = "#11171f";
+      ctx.fillRect(0, 0, 512, 256);
+      ctx.fillStyle = "#1a222c";
+      ctx.fillRect(0, 0, 512, 30);
+      ctx.fillStyle = "#273444";
+      ctx.fillRect(30, 4, 120, 26);
+      ctx.fillStyle = "#c8f560";
+      ctx.font = "bold 13px monospace";
+      ctx.fillText(deskIndex % 2 === 0 ? "orbit-engine.ts" : "routes.tsx", 45, 22);
+
+      // Syntax highlighted lines
+      const colors = ["#5cd0ff", "#ff7b72", "#c8f560", "#d2a8ff", "#79c0ff", "#ffa657"];
+      for (let i = 0; i < 9; i++) {
+        const y = 55 + i * 21;
+        ctx.fillStyle = "#4a5668";
+        ctx.font = "11px monospace";
+        ctx.fillText(`${i + 1}`, 16, y);
+
+        const color = colors[i % colors.length];
+        ctx.fillStyle = color;
+        ctx.fillRect(40 + (i % 3) * 16, y - 8, 80 + ((i * 27) % 240), 9);
+        if (i % 2 === 0) {
+          ctx.fillStyle = colors[(i + 2) % colors.length];
+          ctx.fillRect(170 + ((i * 18) % 180), y - 8, 55, 9);
+        }
+      }
+    }
+    const tex = new THREE.CanvasTexture(canvas);
+    return tex;
+  }, [deskIndex]);
 
   return (
     <group position={position as [number, number, number]}>
       {/* Desk Surface */}
       <RoundedBox castShadow position={[0, 0.68, 0]} args={[1.65, 0.1, 0.8]} radius={0.06}>
-        <meshStandardMaterial color="#553a2b" roughness={0.42} />
+        <meshStandardMaterial color="#4a3225" roughness={0.42} />
       </RoundedBox>
       {/* Metal Legs */}
       {[-0.66, 0.66].map((x) => (
@@ -904,11 +1152,13 @@ function Desk({ position, deskIndex }: { position: readonly [number, number, num
         <boxGeometry args={[0.82, 0.46, 0.05]} />
         <meshStandardMaterial color="#151d19" metalness={0.3} roughness={0.2} />
       </mesh>
-      {/* Glowing Screen Content with Code Syntax Lines */}
-      <mesh position={[0, 1.02, -0.07]}>
-        <planeGeometry args={[0.78, 0.42]} />
-        <meshBasicMaterial color={deskIndex % 2 ? "#163a2b" : "#1a2c3a"} />
-      </mesh>
+      {/* Screen Face with Live IDE Code Lines */}
+      {codeTexture && (
+        <mesh position={[0, 1.02, -0.07]}>
+          <planeGeometry args={[0.78, 0.42]} />
+          <meshBasicMaterial map={codeTexture} />
+        </mesh>
+      )}
       {/* Display Stand */}
       <mesh position={[0, 0.8, -0.1]}>
         <boxGeometry args={[0.05, 0.3, 0.05]} />
@@ -936,10 +1186,10 @@ function Desk({ position, deskIndex }: { position: readonly [number, number, num
       {/* Clickable Ergonomic Chair */}
       <group position={[0, 0, 0.55]} onClick={() => { setIsSitting(true); playChime(); }}>
         <RoundedBox castShadow position={[0, 0.42, 0]} args={[0.48, 0.08, 0.48]} radius={0.06}>
-          <meshStandardMaterial color="#25352e" roughness={0.6} />
+          <meshStandardMaterial color="#22302a" roughness={0.6} />
         </RoundedBox>
         <RoundedBox castShadow position={[0, 0.72, 0.2]} args={[0.48, 0.55, 0.08]} radius={0.06}>
-          <meshStandardMaterial color="#25352e" roughness={0.6} />
+          <meshStandardMaterial color="#22302a" roughness={0.6} />
         </RoundedBox>
       </group>
     </group>
@@ -954,14 +1204,14 @@ function Lounge() {
       {/* Curved Moss Green Sectional Sofa */}
       <group onClick={() => { setIsSitting(true); playChime(); }}>
         <RoundedBox castShadow position={[0, 0.38, 0]} args={[3.7, 0.66, 1.18]} radius={0.28} smoothness={5}>
-          <meshStandardMaterial color="#3b594b" roughness={0.82} />
+          <meshStandardMaterial color="#355244" roughness={0.82} />
         </RoundedBox>
         <RoundedBox castShadow position={[0, 0.88, 0.46]} args={[3.7, 0.8, 0.24]} radius={0.13}>
-          <meshStandardMaterial color="#2e483c" roughness={0.78} />
+          <meshStandardMaterial color="#284236" roughness={0.78} />
         </RoundedBox>
         {[-1.15, 0, 1.15].map((x) => (
           <RoundedBox key={x} castShadow position={[x, 0.74, -0.08]} args={[0.94, 0.18, 0.82]} radius={0.14}>
-            <meshStandardMaterial color={x === 0 ? "#9e7446" : "#4c6e5d"} roughness={0.8} />
+            <meshStandardMaterial color={x === 0 ? "#9e7446" : "#436554"} roughness={0.8} />
           </RoundedBox>
         ))}
       </group>
@@ -991,6 +1241,7 @@ function EspressoStation() {
   const isCaffeinated = useOfficeStore((state) => state.isCaffeinated);
   const setIsCaffeinated = useOfficeStore((state) => state.setIsCaffeinated);
   const steamRef = useRef<THREE.Group>(null);
+  const [hovered, setHovered] = useState(false);
 
   useFrame(() => {
     if (steamRef.current) {
@@ -1005,7 +1256,12 @@ function EspressoStation() {
   };
 
   return (
-    <group position={[8.1, 0, 2.4]} onClick={handleBrew}>
+    <group
+      position={[8.1, 0, 2.4]}
+      onClick={handleBrew}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
+    >
       {/* Barista Counter Cabinet */}
       <RoundedBox castShadow position={[0, 0.5, 0]} args={[0.9, 1.0, 1.2]} radius={0.08}>
         <meshStandardMaterial color="#3d2c20" roughness={0.4} />
@@ -1036,12 +1292,14 @@ function EspressoStation() {
           <meshBasicMaterial color="#ffffff" transparent opacity={0.45} />
         </mesh>
       </group>
-      {/* Interactive Tooltip */}
-      <Html center position={[0, 1.7, 0]} distanceFactor={14}>
-        <div className="select-none rounded-full bg-[#173f2b] border border-white/20 px-2.5 py-1 text-[9px] font-bold text-white shadow-lg whitespace-nowrap">
-          {isCaffeinated ? "☕ Brew Another Espresso" : "☕ Click to Brew Espresso (+Speed)"}
-        </div>
-      </Html>
+      {/* Subtle hover indicator */}
+      {hovered && (
+        <Html center position={[0, 1.58, 0]}>
+          <div className="pointer-events-none select-none rounded-full bg-[#173f2b] border border-white/20 px-2.5 py-0.5 text-[9px] font-bold text-white shadow-lg whitespace-nowrap">
+            ☕ Click to Brew Espresso (+Speed)
+          </div>
+        </Html>
+      )}
     </group>
   );
 }
@@ -1051,6 +1309,7 @@ function VinylLofiPlayer() {
   const toggleLofi = useOfficeStore((state) => state.toggleLofi);
   const recordRef = useRef<THREE.Mesh>(null);
   const noteRef = useRef<THREE.Group>(null);
+  const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
     if (lofiPlaying) {
@@ -1080,6 +1339,8 @@ function VinylLofiPlayer() {
         toggleLofi();
         playChime();
       }}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
     >
       {/* Mid-century Credenza Table */}
       <RoundedBox castShadow position={[0, 0.38, 0]} args={[1.2, 0.74, 0.55]} radius={0.06}>
@@ -1095,7 +1356,7 @@ function VinylLofiPlayer() {
         <cylinderGeometry args={[0.18, 0.18, 0.015, 32]} />
         <meshStandardMaterial color="#111111" roughness={0.2} metalness={0.6} />
       </mesh>
-      {/* Gold Label */}
+      {/* Gold Center Label */}
       <mesh position={[-0.06, 0.82, 0]} rotation-x={-Math.PI / 2}>
         <circleGeometry args={[0.06, 24]} />
         <meshBasicMaterial color="#d4af37" />
@@ -1107,19 +1368,21 @@ function VinylLofiPlayer() {
       </mesh>
       {/* Floating Animated Music Notes */}
       {lofiPlaying && (
-        <group ref={noteRef} position={[0, 1.35, 0]}>
-          <Html center distanceFactor={14}>
-            <div className="select-none text-sm font-black text-[#c8f560] animate-bounce">
+        <group ref={noteRef} position={[0, 1.25, 0]}>
+          <Html center>
+            <div className="pointer-events-none select-none text-xs font-black text-[#c8f560] animate-bounce">
               ♫ ♪
             </div>
           </Html>
         </group>
       )}
-      <Html center position={[0, 1.15, 0]} distanceFactor={14}>
-        <div className="select-none rounded-full bg-[#173f2b] border border-white/20 px-2 py-0.5 text-[9px] font-bold text-white shadow-lg whitespace-nowrap">
-          {lofiPlaying ? "📻 Orbit Lofi: Playing ♫" : "📻 Click for Lofi Beats"}
-        </div>
-      </Html>
+      {hovered && (
+        <Html center position={[0, 1.2, 0]}>
+          <div className="pointer-events-none select-none rounded-full bg-[#173f2b] border border-white/20 px-2 py-0.5 text-[9px] font-bold text-white shadow-lg whitespace-nowrap">
+            {lofiPlaying ? "📻 Lofi: Playing ♫ (Click to pause)" : "📻 Click for Lofi Beats"}
+          </div>
+        </Html>
+      )}
     </group>
   );
 }
@@ -1149,16 +1412,6 @@ function PhoneBooth() {
       <RoundedBox position={[0, 2.18, 0]} args={[1.35, 0.1, 1.35]} radius={0.04}>
         <meshStandardMaterial color="#1a2420" roughness={0.5} />
       </RoundedBox>
-      {/* "ON AIR" / "FOCUS BOOTH" Sign */}
-      <mesh position={[0, 2.1, 0.62]}>
-        <boxGeometry args={[0.6, 0.14, 0.04]} />
-        <meshStandardMaterial color="#173f2b" roughness={0.3} />
-      </mesh>
-      <Html center position={[0, 2.1, 0.66]}>
-        <div className="select-none rounded bg-red-600/90 text-white px-1.5 py-0.5 text-[8px] font-black tracking-widest uppercase shadow">
-          PHONE BOOTH
-        </div>
-      </Html>
       {/* Interior Stool */}
       <mesh castShadow position={[0, 0.35, -0.15]}>
         <cylinderGeometry args={[0.22, 0.22, 0.08, 16]} />
@@ -1198,18 +1451,13 @@ function Whiteboard() {
       {/* Large Magnetic Glass Board */}
       <mesh castShadow>
         <boxGeometry args={[4.4, 1.76, 0.12]} />
-        <meshStandardMaterial color="#e9e4d8" roughness={0.35} />
+        <meshStandardMaterial color="#ede8dd" roughness={0.35} />
       </mesh>
       <mesh position={[0, 0, 0.065]}>
         <ringGeometry args={[1.05, 1.09, 4]} />
         <meshBasicMaterial color="#b08a55" />
       </mesh>
-      <Html center position={[0, 0.38, 0.08]}>
-        <div className="pointer-events-none select-none whitespace-nowrap text-[10px] font-black tracking-[0.28em] text-[#1c2e25]">
-          MAKE IT MATTER
-        </div>
-      </Html>
-      {/* Colored Idea Sticky Notes */}
+      {/* Sprint Sticky Notes in 3D */}
       <mesh position={[-1.1, -0.25, 0.08]}>
         <planeGeometry args={[0.55, 0.55]} />
         <meshBasicMaterial color="#d9b96d" />
@@ -1237,7 +1485,7 @@ function LibraryWall() {
         <group key={z} position={[0, 0, z]}>
           <mesh castShadow>
             <boxGeometry args={[0.38, 2.3, 1.02]} />
-            <meshStandardMaterial color="#304038" roughness={0.62} />
+            <meshStandardMaterial color="#2d3c34" roughness={0.62} />
           </mesh>
           {[-0.65, 0, 0.65].map((y) => (
             <mesh key={y} position={[-0.22, y, 0]}>
