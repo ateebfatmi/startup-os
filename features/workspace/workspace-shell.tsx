@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Command, DoorOpen, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, PhoneOff, Plus, Search, Sparkles, User, Users, Video, VideoOff, Wifi, X } from "lucide-react";
+import { Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, DoorOpen, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, Moon, Music, PhoneOff, Plus, Radio, Search, Sparkles, Sun, Sunset, User, Users, Video, VideoOff, Wifi, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -159,33 +159,98 @@ function OfficeHud({ rightRail, onToggleRail, tasks, displayName }: { rightRail:
   const transportLabel = useOfficeStore((state) => state.transportLabel);
   const cameraMode = useOfficeStore((state) => state.cameraMode);
   const toggleCameraMode = useOfficeStore((state) => state.toggleCameraMode);
+  const lightingMode = useOfficeStore((state) => state.lightingMode);
+  const cycleLightingMode = useOfficeStore((state) => state.cycleLightingMode);
+  const lofiPlaying = useOfficeStore((state) => state.lofiPlaying);
+  const toggleLofi = useOfficeStore((state) => state.toggleLofi);
+  const isCaffeinated = useOfficeStore((state) => state.isCaffeinated);
+  const isSitting = useOfficeStore((state) => state.isSitting);
+  const setIsSitting = useOfficeStore((state) => state.setIsSitting);
   const onlineCount = Object.keys(remotePlayers).length + 1;
+
   return <>
-    <div className="absolute left-4 top-4 z-10 max-w-[calc(100%-2rem)] rounded-2xl border border-white/40 bg-[#fffdf7]/[.9] p-3 shadow-panel backdrop-blur-md sm:left-5 sm:top-5">
-      <div className="flex items-center justify-between gap-3">
+    <div className="absolute left-4 top-4 z-10 max-w-[calc(100%-2rem)] rounded-2xl border border-white/40 bg-[#fffdf7]/[.92] p-3.5 shadow-panel backdrop-blur-md sm:left-5 sm:top-5">
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
         <div className="flex items-center gap-2 text-sm font-bold">
           <span className={`h-2.5 w-2.5 rounded-full ${connectionState === "connected" ? "bg-[#52aa72]" : connectionState === "offline" ? "bg-[#d46b52]" : "animate-pulse bg-[#e5a13e]"}`} />
-          Open workspace
-        </div>
-        <button
-          onClick={toggleCameraMode}
-          className="flex items-center gap-1.5 rounded-lg border border-black/10 bg-white/90 px-2 py-1 text-xs font-semibold text-[#173f2b] shadow-xs transition hover:bg-black/5"
-          title="Toggle between Full Office Top View and Follow View (Shortcut: V)"
-        >
-          {cameraMode === "top" ? (
-            <>
-              <Maximize2 size={13} className="text-[#327a56]" />
-              <span>Full Office View</span>
-            </>
-          ) : (
-            <>
-              <User size={13} className="text-[#327a56]" />
-              <span>Follow Avatar</span>
-            </>
+          <span>Open workspace</span>
+          {isCaffeinated && (
+            <span className="flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 text-amber-800 px-2 py-0.5 text-[10px] font-bold">
+              <Coffee size={11} /> +30% Speed
+            </span>
           )}
-        </button>
+          {isSitting && (
+            <button
+              onClick={() => setIsSitting(false)}
+              className="rounded-full bg-blue-100 border border-blue-300 text-blue-800 px-2 py-0.5 text-[10px] font-bold hover:bg-blue-200 transition"
+              title="Click or press F / WASD to stand up"
+            >
+              🪑 Seated (Stand up)
+            </button>
+          )}
+        </div>
+
+        {/* Quick Office Controls Toolbar */}
+        <div className="flex items-center gap-1.5">
+          {/* Lofi Radio Button */}
+          <button
+            onClick={toggleLofi}
+            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
+              lofiPlaying
+                ? "bg-[#173f2b] text-[#c8f560] border-[#173f2b] shadow-xs"
+                : "bg-white/90 text-[#3a443e] border-black/10 hover:bg-black/5"
+            }`}
+            title="Toggle Procedural Lofi Chill Chords"
+          >
+            <Radio size={13} className={lofiPlaying ? "text-[#c8f560] animate-pulse" : "text-[#68736b]"} />
+            <span>{lofiPlaying ? "Lofi: On ♫" : "Lofi"}</span>
+          </button>
+
+          {/* Atmosphere Lighting Toggle */}
+          <button
+            onClick={cycleLightingMode}
+            className="flex items-center gap-1.5 rounded-lg border border-black/10 bg-white/90 px-2.5 py-1 text-xs font-semibold text-[#173f2b] shadow-xs transition hover:bg-black/5"
+            title="Cycle Lighting Atmosphere: Day, Golden Sunset, Cyberpunk Night"
+          >
+            {lightingMode === "day" ? (
+              <>
+                <Sun size={13} className="text-amber-500" />
+                <span>Day</span>
+              </>
+            ) : lightingMode === "sunset" ? (
+              <>
+                <Sunset size={13} className="text-orange-500" />
+                <span>Sunset</span>
+              </>
+            ) : (
+              <>
+                <Moon size={13} className="text-blue-500" />
+                <span>Night</span>
+              </>
+            )}
+          </button>
+
+          {/* Camera View Toggle */}
+          <button
+            onClick={toggleCameraMode}
+            className="flex items-center gap-1.5 rounded-lg border border-black/10 bg-white/90 px-2.5 py-1 text-xs font-semibold text-[#173f2b] shadow-xs transition hover:bg-black/5"
+            title="Toggle between Full Office Top View and Follow View (Shortcut: V)"
+          >
+            {cameraMode === "top" ? (
+              <>
+                <Maximize2 size={13} className="text-[#327a56]" />
+                <span>Top View</span>
+              </>
+            ) : (
+              <>
+                <User size={13} className="text-[#327a56]" />
+                <span>Follow</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
-      <p className="mt-1 text-xs text-[#68736b]">Move with WASD or arrow keys · Click floor to walk · Press E to interact · V to toggle view · {transportLabel}</p>
+      <p className="mt-1.5 text-xs text-[#68736b]">Move with WASD or arrow keys · Click floor to walk · Press E to interact · F to sit/stand · V view · {transportLabel}</p>
     </div>
     <button onClick={onToggleRail} className="absolute right-4 top-4 z-20 grid h-10 w-10 place-items-center rounded-xl border border-white/50 bg-[#fffdf7]/[.9] shadow-lg backdrop-blur-md lg:hidden"><Users size={18} /></button>
     {rightRail && <aside className="absolute right-5 top-5 z-10 hidden w-64 rounded-[24px] border border-white/45 bg-[#fffdf7]/[.9] p-4 shadow-panel backdrop-blur-md lg:block">

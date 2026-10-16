@@ -12,6 +12,12 @@ type OfficeState = {
   activePanel: InteractionKind | null;
   cameraMode: "top" | "follow";
   clickTarget: { x: number; z: number } | null;
+  lightingMode: "day" | "sunset" | "night";
+  isSitting: boolean;
+  isCaffeinated: boolean;
+  lofiPlaying: boolean;
+  boardroomSlide: number;
+  avatarStatus: string | null;
   setPlayerTransform: (x: number, z: number, rotation: number) => void;
   setPlayerIdentity: (identity: Pick<PlayerSnapshot, "id" | "name" | "color">) => void;
   upsertRemotePlayer: (player: PlayerSnapshot) => void;
@@ -24,6 +30,14 @@ type OfficeState = {
   setCameraMode: (mode: "top" | "follow") => void;
   toggleCameraMode: () => void;
   setClickTarget: (target: { x: number; z: number } | null) => void;
+  setLightingMode: (mode: "day" | "sunset" | "night") => void;
+  cycleLightingMode: () => void;
+  setIsSitting: (sitting: boolean) => void;
+  setIsCaffeinated: (caffeinated: boolean) => void;
+  setLofiPlaying: (playing: boolean) => void;
+  toggleLofi: () => void;
+  nextBoardroomSlide: () => void;
+  setAvatarStatus: (status: string | null) => void;
 };
 
 export const useOfficeStore = create<OfficeState>((set) => ({
@@ -35,6 +49,12 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   activePanel: null,
   cameraMode: "top",
   clickTarget: null,
+  lightingMode: "day",
+  isSitting: false,
+  isCaffeinated: false,
+  lofiPlaying: false,
+  boardroomSlide: 0,
+  avatarStatus: null,
   setPlayerTransform: (x, z, rotation) => set((state) => ({ player: { ...state.player, x, z, rotation, updatedAt: Date.now() } })),
   setPlayerIdentity: (identity) => set((state) => ({ player: { ...state.player, ...identity } })),
   upsertRemotePlayer: (player) => set((state) => player.id === state.player.id ? state : ({ remotePlayers: { ...state.remotePlayers, [player.id]: player } })),
@@ -51,4 +71,15 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   setCameraMode: (cameraMode) => set({ cameraMode }),
   toggleCameraMode: () => set((state) => ({ cameraMode: state.cameraMode === "top" ? "follow" : "top" })),
   setClickTarget: (clickTarget) => set({ clickTarget }),
+  setLightingMode: (lightingMode) => set({ lightingMode }),
+  cycleLightingMode: () => set((state) => {
+    const next = state.lightingMode === "day" ? "sunset" : state.lightingMode === "sunset" ? "night" : "day";
+    return { lightingMode: next };
+  }),
+  setIsSitting: (isSitting) => set({ isSitting }),
+  setIsCaffeinated: (isCaffeinated) => set({ isCaffeinated }),
+  setLofiPlaying: (lofiPlaying) => set({ lofiPlaying }),
+  toggleLofi: () => set((state) => ({ lofiPlaying: !state.lofiPlaying })),
+  nextBoardroomSlide: () => set((state) => ({ boardroomSlide: (state.boardroomSlide + 1) % 3 })),
+  setAvatarStatus: (avatarStatus) => set({ avatarStatus }),
 }));
