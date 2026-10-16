@@ -166,6 +166,9 @@ function OfficeHud({ rightRail, onToggleRail, tasks, displayName }: { rightRail:
   const isCaffeinated = useOfficeStore((state) => state.isCaffeinated);
   const isSitting = useOfficeStore((state) => state.isSitting);
   const setIsSitting = useOfficeStore((state) => state.setIsSitting);
+  const zoomLevel = useOfficeStore((state) => state.zoomLevel);
+  const zoomIn = useOfficeStore((state) => state.zoomIn);
+  const zoomOut = useOfficeStore((state) => state.zoomOut);
   const onlineCount = Object.keys(remotePlayers).length + 1;
 
   return <>
@@ -248,6 +251,27 @@ function OfficeHud({ rightRail, onToggleRail, tasks, displayName }: { rightRail:
               </>
             )}
           </button>
+
+          {/* Broad View Zoom Controls */}
+          <div className="flex items-center rounded-lg border border-black/10 bg-white/90 shadow-xs">
+            <button
+              onClick={zoomOut}
+              className="px-2 py-1 text-xs font-bold text-[#173f2b] hover:bg-black/5 transition rounded-l-lg"
+              title="Broader View (Zoom Out)"
+            >
+              −
+            </button>
+            <span className="px-1 text-[10px] font-semibold text-[#68736b] select-none">
+              {Math.round(zoomLevel * 100)}%
+            </span>
+            <button
+              onClick={zoomIn}
+              className="px-2 py-1 text-xs font-bold text-[#173f2b] hover:bg-black/5 transition rounded-r-lg"
+              title="Closer View (Zoom In)"
+            >
+              +
+            </button>
+          </div>
         </div>
       </div>
       <p className="mt-1.5 text-xs text-[#68736b]">Move with WASD or arrow keys · Click floor to walk · Press E to interact · F to sit/stand · V view · {transportLabel}</p>

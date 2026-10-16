@@ -33,6 +33,11 @@ export function OfficeCanvas() {
             aiPod: "#5cd0ff",
             phoneBooth: "#ffa552",
           },
+          skyline: {
+            towerColor: "#3d2b2c",
+            windowColor: "#ffbe7d",
+            windowOpacity: 0.75,
+          },
         };
       case "night":
         return {
@@ -49,6 +54,11 @@ export function OfficeCanvas() {
             lounge: "#ffd094",
             aiPod: "#5ce0ff",
             phoneBooth: "#ff9a3c",
+          },
+          skyline: {
+            towerColor: "#101924",
+            windowColor: "#4ee3ff",
+            windowOpacity: 0.85,
           },
         };
       case "day":
@@ -68,6 +78,11 @@ export function OfficeCanvas() {
             aiPod: "#72e5ff",
             phoneBooth: "#ffc285",
           },
+          skyline: {
+            towerColor: "#d9d2c5",
+            windowColor: "#ffffff",
+            windowOpacity: 0.4,
+          },
         };
     }
   }, [lightingMode]);
@@ -82,11 +97,11 @@ export function OfficeCanvas() {
       <color attach="background" args={[lighting.canvasBg]} />
       <OrthographicCamera
         makeDefault
-        position={[0, 20, 20]}
-        zoom={38}
+        position={[0, 24, 25]}
+        zoom={32}
         near={0.1}
-        far={150}
-        onUpdate={(camera) => camera.lookAt(0, 0, -0.6)}
+        far={160}
+        onUpdate={(camera) => camera.lookAt(0, 0, 1.4)}
       />
       <CameraRig />
       <hemisphereLight args={[lighting.hemiSky, lighting.hemiGround, lighting.hemiIntensity]} />
@@ -98,11 +113,11 @@ export function OfficeCanvas() {
         intensity={lighting.sunIntensity}
         shadow-mapSize={[2048, 2048]}
         shadow-camera-near={0.5}
-        shadow-camera-far={50}
-        shadow-camera-left={-16}
-        shadow-camera-right={16}
-        shadow-camera-top={14}
-        shadow-camera-bottom={-14}
+        shadow-camera-far={60}
+        shadow-camera-left={-18}
+        shadow-camera-right={18}
+        shadow-camera-top={18}
+        shadow-camera-bottom={-18}
         shadow-bias={-0.0003}
       />
 
@@ -114,8 +129,11 @@ export function OfficeCanvas() {
       <pointLight position={[0, 2.8, 5.9]} color="#ffe9be" intensity={lightingMode === "night" ? 12 : 7} distance={6} decay={2} />
       <pointLight position={[2.4, 2.2, -6.4]} color={lighting.roomLights.phoneBooth} intensity={lightingMode === "night" ? 8 : 4} distance={4} />
 
+      {/* City Skyline Silhouette Backdrop */}
+      <CitySkyline skylineConfig={lighting.skyline} />
+
       <OfficeEnvironment />
-      <ContactShadows position={[0, 0.05, 0]} opacity={lightingMode === "night" ? 0.48 : 0.35} scale={30} blur={2.0} far={8} frames={1} />
+      <ContactShadows position={[0, 0.05, 1.8]} opacity={lightingMode === "night" ? 0.48 : 0.35} scale={36} blur={2.0} far={8} frames={1} />
       <FloorClickSurface />
       <ClickTargetMarker />
       <LocalPlayer />
@@ -127,19 +145,34 @@ export function OfficeCanvas() {
 function CameraRig() {
   const player = useOfficeStore((state) => state.player);
   const cameraMode = useOfficeStore((state) => state.cameraMode);
-  const { size } = useThree();
+  const zoomLevel = useOfficeStore((state) => state.zoomLevel);
+  const { size, gl } = useThree();
+
+  // Mouse wheel scroll zoom support
+  useEffect(() => {
+    const el = gl.domElement;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.12 : 0.12;
+      const current = useOfficeStore.getState().zoomLevel;
+      useOfficeStore.getState().setZoomLevel(current + delta);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [gl]);
 
   useFrame(({ camera }, delta) => {
     const isTop = cameraMode === "top";
     if (isTop) {
-      // Architectural 45-degree isometric view framing the entire office diorama
-      const desiredPos = new THREE.Vector3(0, 20, 20);
-      const desiredLook = new THREE.Vector3(0, 0, -0.6);
+      // Panoramic Broader 45-degree isometric view framing the entire penthouse diorama
+      const desiredPos = new THREE.Vector3(0, 19, 23);
+      const desiredLook = new THREE.Vector3(0, 0, 1.5);
       camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 5));
       camera.lookAt(desiredLook);
 
-      // Fit with comfortable margins accounting for top HUD and side rails
-      const targetZoom = Math.min((size.width - 120) / 28, (size.height - 80) / 16.5);
+      // Broader framing with comfortable margins accounting for outdoor terrace and HUD
+      const baseZoom = Math.min((size.width - 120) / 32, (size.height - 80) / 21);
+      const targetZoom = baseZoom * zoomLevel;
       if ("zoom" in camera) {
         camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 5));
         camera.updateProjectionMatrix();
@@ -150,7 +183,8 @@ function CameraRig() {
       camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 4));
       camera.lookAt(player.x, 0.6, player.z);
 
-      const targetZoom = Math.min(size.width / 16, size.height / 11);
+      const baseZoom = Math.min(size.width / 16, size.height / 11);
+      const targetZoom = baseZoom * zoomLevel;
       if ("zoom" in camera) {
         camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 4));
         camera.updateProjectionMatrix();
@@ -167,7 +201,7 @@ function FloorClickSurface() {
 
   return (
     <mesh
-      position={[0, 0.02, 0]}
+      position={[0, 0.02, 2.0]}
       rotation-x={-Math.PI / 2}
       onPointerDown={(e) => {
         e.stopPropagation();
@@ -176,7 +210,7 @@ function FloorClickSurface() {
       }}
       visible={false}
     >
-      <planeGeometry args={[25, 17]} />
+      <planeGeometry args={[28, 24]} />
       <meshBasicMaterial transparent opacity={0} />
     </mesh>
   );
@@ -490,6 +524,47 @@ function RemotePlayer({ player }: { player: ReturnType<typeof useOfficeStore.get
   );
 }
 
+// Distant Minimalist City Skyline Silhouette Backdrop
+function CitySkyline({ skylineConfig }: { skylineConfig: { towerColor: string; windowColor: string; windowOpacity: number } }) {
+  const towers = useMemo(() => [
+    { x: -16, z: -17, w: 3.4, d: 3.2, h: 10.5 },
+    { x: -11.5, z: -20, w: 2.8, d: 2.6, h: 14.2 },
+    { x: -7.5, z: -16, w: 3.2, d: 3.0, h: 8.8 },
+    { x: -3.2, z: -22, w: 4.2, d: 3.8, h: 16.0 },
+    { x: 1.5, z: -18, w: 3.0, d: 2.8, h: 11.4 },
+    { x: 6.2, z: -21, w: 3.6, d: 3.2, h: 13.8 },
+    { x: 11.0, z: -16, w: 2.8, d: 2.8, h: 9.6 },
+    { x: 15.8, z: -19, w: 3.5, d: 3.2, h: 12.0 },
+  ], []);
+
+  return (
+    <group>
+      {towers.map((tower, i) => (
+        <group key={i} position={[tower.x, tower.h / 2 - 0.4, tower.z]}>
+          <mesh>
+            <boxGeometry args={[tower.w, tower.h, tower.d]} />
+            <meshStandardMaterial color={skylineConfig.towerColor} roughness={0.75} />
+          </mesh>
+          {/* Subtle Window Grid Strips */}
+          {[-tower.h / 4, 0, tower.h / 4].map((yOff) => (
+            <mesh key={yOff} position={[0, yOff, tower.d / 2 + 0.02]}>
+              <planeGeometry args={[tower.w * 0.75, 0.4]} />
+              <meshBasicMaterial color={skylineConfig.windowColor} transparent opacity={skylineConfig.windowOpacity} />
+            </mesh>
+          ))}
+          {/* Rooftop Antenna Spire */}
+          {i % 2 === 0 && (
+            <mesh position={[0, tower.h / 2 + 0.8, 0]}>
+              <cylinderGeometry args={[0.03, 0.05, 1.6, 8]} />
+              <meshBasicMaterial color="#a0abb5" />
+            </mesh>
+          )}
+        </group>
+      ))}
+    </group>
+  );
+}
+
 function OfficeEnvironment() {
   const deskPositions = useMemo(() => [[4.8, -4.7], [7, -4.7], [4.8, -2.2], [7, -2.2]] as const, []);
   const activeNearby = useOfficeStore((state) => state.nearbyAction);
@@ -497,6 +572,8 @@ function OfficeEnvironment() {
   return (
     <group>
       <Floor />
+      <PenthouseTerrace />
+
       {/* Zone Carpets & Inlays */}
       <RoomRug position={[-5.8, 0.045, -3.7]} color="#1b2838" trim="#d4af37" size={[6.4, 4.8]} />
       <RoomRug position={[-5.8, 0.045, 3.45]} color="#233d30" trim="#c9b08a" size={[6.4, 4.6]} />
@@ -551,9 +628,9 @@ function OfficeEnvironment() {
 function Floor() {
   return (
     <group>
-      {/* Foundation Base Slab */}
-      <mesh receiveShadow position={[0, -0.22, 0]}>
-        <boxGeometry args={[24.8, 0.4, 16.8]} />
+      {/* Foundation Grand Plinth Slab (Encompassing Interior + Terrace) */}
+      <mesh receiveShadow position={[0, -0.22, 1.8]}>
+        <boxGeometry args={[24.8, 0.4, 21.6]} />
         <meshStandardMaterial color="#1b231f" roughness={0.7} />
       </mesh>
 
@@ -563,7 +640,7 @@ function Floor() {
         <meshStandardMaterial color="#f0ebe0" roughness={0.55} metalness={0.04} />
       </mesh>
 
-      {/* Central Polished Terrazzo Promenade */}
+      {/* Central Polished Terrazzo Promenade Highway */}
       <mesh receiveShadow position={[0, 0.025, 0.35]} rotation-x={-Math.PI / 2}>
         <planeGeometry args={[3.8, 14.8]} />
         <meshStandardMaterial color="#e5dfd2" roughness={0.42} />
@@ -601,6 +678,144 @@ function Floor() {
   );
 }
 
+// Expansive Penthouse Sun Terrace with Teak Decking, Loungers, Parasol, and Balustrade
+function PenthouseTerrace() {
+  const setIsSitting = useOfficeStore((state) => state.setIsSitting);
+
+  return (
+    <group position={[0, 0, 9.9]}>
+      {/* Warm Teak Deck Flooring */}
+      <mesh receiveShadow position={[0, 0.02, 0]} rotation-x={-Math.PI / 2}>
+        <planeGeometry args={[24, 4.4]} />
+        <meshStandardMaterial color="#885e40" roughness={0.65} />
+      </mesh>
+
+      {/* Teak Deck Plank Inlay Seams */}
+      {[-9, -6, -3, 0, 3, 6, 9].map((x) => (
+        <mesh key={`deck-${x}`} position={[x, 0.025, 0]} rotation-x={-Math.PI / 2}>
+          <planeGeometry args={[0.02, 4.3]} />
+          <meshBasicMaterial color="#6a4730" />
+        </mesh>
+      ))}
+
+      {/* Frameless Glass Balustrade Perimeter Railings */}
+      {/* South (Front) Glass Railing */}
+      <mesh position={[0, 0.52, 2.15]}>
+        <boxGeometry args={[24, 0.95, 0.04]} />
+        <meshPhysicalMaterial color="#c5e2db" transparent opacity={0.35} roughness={0.1} transmission={0.75} depthWrite={false} />
+      </mesh>
+      <mesh position={[0, 1.0, 2.15]}>
+        <boxGeometry args={[24.2, 0.04, 0.06]} />
+        <meshStandardMaterial color="#dcd0be" metalness={0.8} roughness={0.2} />
+      </mesh>
+
+      {/* West Glass Railing */}
+      <mesh position={[-11.95, 0.52, 0]}>
+        <boxGeometry args={[0.04, 0.95, 4.3]} />
+        <meshPhysicalMaterial color="#c5e2db" transparent opacity={0.35} roughness={0.1} transmission={0.75} depthWrite={false} />
+      </mesh>
+      <mesh position={[-11.95, 1.0, 0]}>
+        <boxGeometry args={[0.06, 0.04, 4.4]} />
+        <meshStandardMaterial color="#dcd0be" metalness={0.8} roughness={0.2} />
+      </mesh>
+
+      {/* East Glass Railing */}
+      <mesh position={[11.95, 0.52, 0]}>
+        <boxGeometry args={[0.04, 0.95, 4.3]} />
+        <meshPhysicalMaterial color="#c5e2db" transparent opacity={0.35} roughness={0.1} transmission={0.75} depthWrite={false} />
+      </mesh>
+      <mesh position={[11.95, 1.0, 0]}>
+        <boxGeometry args={[0.06, 0.04, 4.4]} />
+        <meshStandardMaterial color="#dcd0be" metalness={0.8} roughness={0.2} />
+      </mesh>
+
+      {/* Outdoor Patio Chaise Loungers */}
+      {[-6.2, -4.2].map((x) => (
+        <group key={`lounger-${x}`} position={[x, 0, 0.2]} onClick={() => { setIsSitting(true); playChime(); }}>
+          <mesh castShadow position={[0, 0.18, 0]}>
+            <boxGeometry args={[0.72, 0.12, 1.7]} />
+            <meshStandardMaterial color="#6e4d36" roughness={0.6} />
+          </mesh>
+          <mesh position={[0, 0.26, -0.05]}>
+            <boxGeometry args={[0.66, 0.08, 1.55]} />
+            <meshStandardMaterial color="#f0ece1" roughness={0.75} />
+          </mesh>
+          <mesh position={[0, 0.42, -0.6]} rotation-x={0.45}>
+            <boxGeometry args={[0.64, 0.08, 0.55]} />
+            <meshStandardMaterial color="#f0ece1" roughness={0.75} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Large Modern Cantilever Sun Parasol Umbrella */}
+      <group position={[-7.5, 0, 1.1]}>
+        <mesh position={[0, 1.3, 0]}>
+          <cylinderGeometry args={[0.03, 0.03, 2.5, 12]} />
+          <meshStandardMaterial color="#303833" metalness={0.6} />
+        </mesh>
+        <mesh position={[0, 2.5, 0]} rotation-x={0.25} rotation-z={-0.15}>
+          <coneGeometry args={[1.15, 0.36, 24, 1, true]} />
+          <meshStandardMaterial color="#f5eedc" side={THREE.DoubleSide} roughness={0.8} />
+        </mesh>
+      </group>
+
+      {/* Outdoor Bistro Marble Table & Chairs */}
+      <group position={[5.4, 0, 0.2]}>
+        <mesh castShadow position={[0, 0.4, 0]}>
+          <cylinderGeometry args={[0.62, 0.62, 0.04, 28]} />
+          <meshStandardMaterial color="#ece3d2" roughness={0.3} />
+        </mesh>
+        <mesh position={[0, 0.2, 0]}>
+          <cylinderGeometry args={[0.04, 0.04, 0.4, 12]} />
+          <meshStandardMaterial color="#303833" metalness={0.7} />
+        </mesh>
+        <mesh position={[0, 0.03, 0]}>
+          <cylinderGeometry args={[0.26, 0.26, 0.04, 20]} />
+          <meshStandardMaterial color="#303833" metalness={0.7} />
+        </mesh>
+        {/* 2 Bistro Chairs */}
+        {[-0.68, 0.68].map((cx) => (
+          <group key={cx} position={[cx, 0, 0]} onClick={() => { setIsSitting(true); playChime(); }}>
+            <mesh castShadow position={[0, 0.32, 0]}>
+              <cylinderGeometry args={[0.2, 0.2, 0.04, 16]} />
+              <meshStandardMaterial color="#6a4a35" roughness={0.6} />
+            </mesh>
+            <mesh position={[0, 0.16, 0]}>
+              <cylinderGeometry args={[0.02, 0.02, 0.3, 8]} />
+              <meshStandardMaterial color="#303833" metalness={0.7} />
+            </mesh>
+          </group>
+        ))}
+      </group>
+
+      {/* Panoramic Skyline Viewpoint Telescope */}
+      <group position={[9.2, 0, 1.4]} rotation-y={-0.3}>
+        <mesh position={[0, 0.62, 0]}>
+          <cylinderGeometry args={[0.03, 0.03, 1.2, 10]} />
+          <meshStandardMaterial color="#b28c55" metalness={0.85} roughness={0.2} />
+        </mesh>
+        <mesh position={[0, 1.24, 0]} rotation-x={-0.35}>
+          <cylinderGeometry args={[0.06, 0.08, 0.55, 16]} />
+          <meshStandardMaterial color="#b28c55" metalness={0.85} roughness={0.2} />
+        </mesh>
+      </group>
+
+      {/* Modern Planters along Balustrade */}
+      {[-10.2, -1.8, 1.8, 10.2].map((px) => (
+        <group key={`planter-${px}`} position={[px, 0, 1.7]}>
+          <RoundedBox castShadow position={[0, 0.28, 0]} args={[0.7, 0.52, 0.55]} radius={0.06}>
+            <meshStandardMaterial color="#e5dfd2" roughness={0.4} />
+          </RoundedBox>
+          <mesh position={[0, 0.72, 0]}>
+            <sphereGeometry args={[0.28, 12, 12]} />
+            <meshStandardMaterial color="#3b5943" roughness={0.8} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
 function RoomRug({
   position,
   color,
@@ -630,8 +845,8 @@ function RoomRug({
 function Walls() {
   return (
     <group>
-      {/* North Feature Wall - Fluted Walnut Wainscoting with Accent Molding */}
-      <Wall position={[0, 1.25, -7.85]} size={[24, 2.5, 0.3]} />
+      {/* North Wall: Modern Floor-to-Ceiling Panoramic Glass Curtain Wall & Walnut Mullions */}
+      <Wall position={[0, 1.25, -7.85]} size={[24, 2.5, 0.25]} />
       <mesh position={[0, 0.65, -7.68]}>
         <boxGeometry args={[23.6, 1.3, 0.06]} />
         <meshStandardMaterial color="#2d3f37" roughness={0.7} />
@@ -641,15 +856,13 @@ function Walls() {
         <meshStandardMaterial color="#c9a562" metalness={0.75} roughness={0.25} />
       </mesh>
 
-      {/* South Wall (Front Cutaway Curb Wall + Glass Railing) */}
-      <Wall position={[0, 0.28, 7.85]} size={[24, 0.56, 0.3]} />
-      <mesh position={[0, 0.72, 7.85]}>
-        <boxGeometry args={[23.6, 0.36, 0.04]} />
-        <meshPhysicalMaterial color="#c2dfd8" transparent opacity={0.35} roughness={0.1} transmission={0.7} />
-      </mesh>
-      <mesh position={[0, 0.92, 7.85]}>
-        <boxGeometry args={[23.8, 0.05, 0.07]} />
-        <meshStandardMaterial color="#c9a562" metalness={0.75} roughness={0.25} />
+      {/* South Wall Interior Divider with Center Terrace Entrance Portal */}
+      <Wall position={[-6.8, 0.28, 7.85]} size={[10.4, 0.56, 0.3]} />
+      <Wall position={[6.8, 0.28, 7.85]} size={[10.4, 0.56, 0.3]} />
+      {/* Center Open Threshold to Terrace */}
+      <mesh position={[0, 0.015, 7.85]}>
+        <boxGeometry args={[3.8, 0.03, 0.3]} />
+        <meshBasicMaterial color="#c9a562" />
       </mesh>
 
       {/* West Wall (Left) */}

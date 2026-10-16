@@ -18,6 +18,7 @@ type OfficeState = {
   lofiPlaying: boolean;
   boardroomSlide: number;
   avatarStatus: string | null;
+  zoomLevel: number;
   setPlayerTransform: (x: number, z: number, rotation: number) => void;
   setPlayerIdentity: (identity: Pick<PlayerSnapshot, "id" | "name" | "color">) => void;
   upsertRemotePlayer: (player: PlayerSnapshot) => void;
@@ -38,6 +39,10 @@ type OfficeState = {
   toggleLofi: () => void;
   nextBoardroomSlide: () => void;
   setAvatarStatus: (status: string | null) => void;
+  setZoomLevel: (zoom: number) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  resetZoom: () => void;
 };
 
 export const useOfficeStore = create<OfficeState>((set) => ({
@@ -55,6 +60,7 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   lofiPlaying: false,
   boardroomSlide: 0,
   avatarStatus: null,
+  zoomLevel: 1.0,
   setPlayerTransform: (x, z, rotation) => set((state) => ({ player: { ...state.player, x, z, rotation, updatedAt: Date.now() } })),
   setPlayerIdentity: (identity) => set((state) => ({ player: { ...state.player, ...identity } })),
   upsertRemotePlayer: (player) => set((state) => player.id === state.player.id ? state : ({ remotePlayers: { ...state.remotePlayers, [player.id]: player } })),
@@ -82,4 +88,8 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   toggleLofi: () => set((state) => ({ lofiPlaying: !state.lofiPlaying })),
   nextBoardroomSlide: () => set((state) => ({ boardroomSlide: (state.boardroomSlide + 1) % 3 })),
   setAvatarStatus: (avatarStatus) => set({ avatarStatus }),
+  setZoomLevel: (zoomLevel) => set({ zoomLevel: Math.max(0.6, Math.min(1.8, zoomLevel)) }),
+  zoomIn: () => set((state) => ({ zoomLevel: Math.min(1.8, state.zoomLevel + 0.15) })),
+  zoomOut: () => set((state) => ({ zoomLevel: Math.max(0.6, state.zoomLevel - 0.15) })),
+  resetZoom: () => set({ zoomLevel: 1.0 }),
 }));
