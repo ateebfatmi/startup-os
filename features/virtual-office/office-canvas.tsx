@@ -97,11 +97,14 @@ export function OfficeCanvas() {
       <color attach="background" args={[lighting.canvasBg]} />
       <OrthographicCamera
         makeDefault
-        position={[0, 24, 25]}
+        position={[0, 34, 1.5]}
         zoom={32}
         near={0.1}
         far={160}
-        onUpdate={(camera) => camera.lookAt(0, 0, 1.4)}
+        onUpdate={(camera) => {
+          camera.up.set(0, 0, -1);
+          camera.lookAt(0, 0, 1.5);
+        }}
       />
       <CameraRig />
       <hemisphereLight args={[lighting.hemiSky, lighting.hemiGround, lighting.hemiIntensity]} />
@@ -164,14 +167,15 @@ function CameraRig() {
   useFrame(({ camera }, delta) => {
     const isTop = cameraMode === "top";
     if (isTop) {
-      // Panoramic Broader 45-degree isometric view framing the entire penthouse diorama
-      const desiredPos = new THREE.Vector3(0, 19, 23);
+      // True overhead floor-plan view that keeps the full office in frame.
+      const desiredPos = new THREE.Vector3(0, 34, 1.5);
       const desiredLook = new THREE.Vector3(0, 0, 1.5);
       camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 5));
+      camera.up.set(0, 0, -1);
       camera.lookAt(desiredLook);
 
-      // Broader framing with comfortable margins accounting for outdoor terrace and HUD
-      const baseZoom = Math.min((size.width - 120) / 32, (size.height - 80) / 21);
+      // Comfortable margins keep the terrace and HUD from crowding the floor plan.
+      const baseZoom = Math.min((size.width - 120) / 31, (size.height - 80) / 25);
       const targetZoom = baseZoom * zoomLevel;
       if ("zoom" in camera) {
         camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 5));
@@ -181,6 +185,7 @@ function CameraRig() {
       // Follow mode: smoothly follow player from isometric 3rd person angle
       const desiredPos = new THREE.Vector3(player.x, 15, player.z + 14);
       camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 4));
+      camera.up.set(0, 1, 0);
       camera.lookAt(player.x, 0.6, player.z);
 
       const baseZoom = Math.min(size.width / 16, size.height / 11);

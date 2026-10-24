@@ -21,7 +21,7 @@
 ## Phase 2 — 3D office
 
 - [x] React Three Fiber scene with real geometry, materials, lights, and shadows.
-- [x] Isometric orthographic follow camera.
+- [x] Full-office top-down orthographic camera with optional isometric follow mode.
 - [x] WASD and arrow-key movement with acceleration and rotation.
 - [x] Office bounds and furniture collision with axis sliding.
 - [x] Meeting, project, focus, lounge, and whiteboard zones.
