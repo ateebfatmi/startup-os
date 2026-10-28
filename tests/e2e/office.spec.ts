@@ -46,6 +46,19 @@ test("stores private file metadata and shows the workspace audit trail", async (
   await expect(page.getByText(/updated task/).first()).toBeVisible();
 });
 
+test("customizes and persists the office design", async ({ page }) => {
+  await page.goto("/office");
+  await page.getByRole("button", { name: "Office design" }).click();
+  await page.getByRole("button", { name: /Midnight Lab/ }).click();
+  await page.getByLabel("Penthouse terrace").uncheck();
+  await page.getByRole("button", { name: "Save design" }).click();
+  await expect(page.getByText("Office design saved for this workspace.")).toBeVisible();
+  await page.reload();
+  await page.getByRole("button", { name: "Office design" }).click();
+  await expect(page.getByRole("button", { name: /Midnight Lab/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("Penthouse terrace")).not.toBeChecked();
+});
+
 test("synchronizes presence across two office tabs", async ({ context }) => {
   const first = await context.newPage();
   await first.goto("/office");

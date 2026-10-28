@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import type { Availability, ConnectionState, InteractionKind, PlayerSnapshot } from "./types";
+import { DEFAULT_OFFICE_DESIGN, type OfficeDesignSettings } from "./office-design";
 
 type OfficeState = {
   player: PlayerSnapshot;
@@ -19,6 +20,7 @@ type OfficeState = {
   boardroomSlide: number;
   avatarStatus: Availability;
   zoomLevel: number;
+  officeDesign: OfficeDesignSettings;
   setPlayerTransform: (x: number, z: number, rotation: number) => void;
   setPlayerIdentity: (identity: Pick<PlayerSnapshot, "id" | "name" | "color">) => void;
   upsertRemotePlayer: (player: PlayerSnapshot) => void;
@@ -44,6 +46,7 @@ type OfficeState = {
   zoomIn: () => void;
   zoomOut: () => void;
   resetZoom: () => void;
+  setOfficeDesign: (design: OfficeDesignSettings) => void;
 };
 
 export const useOfficeStore = create<OfficeState>((set) => ({
@@ -62,6 +65,7 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   boardroomSlide: 0,
   avatarStatus: "available",
   zoomLevel: 1.0,
+  officeDesign: DEFAULT_OFFICE_DESIGN,
   setPlayerTransform: (x, z, rotation) => set((state) => ({ player: { ...state.player, x, z, rotation, updatedAt: Date.now() } })),
   setPlayerIdentity: (identity) => set((state) => ({ player: { ...state.player, ...identity } })),
   upsertRemotePlayer: (player) => set((state) => player.id === state.player.id ? state : ({ remotePlayers: { ...state.remotePlayers, [player.id]: player } })),
@@ -94,4 +98,5 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   zoomIn: () => set((state) => ({ zoomLevel: Math.min(1.8, state.zoomLevel + 0.15) })),
   zoomOut: () => set((state) => ({ zoomLevel: Math.max(0.6, state.zoomLevel - 0.15) })),
   resetZoom: () => set({ zoomLevel: 1.0 }),
+  setOfficeDesign: (officeDesign) => set({ officeDesign }),
 }));

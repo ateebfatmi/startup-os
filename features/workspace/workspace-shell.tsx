@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, MonitorUp, Moon, Music, PhoneOff, Plus, Radio, Search, Sparkles, Sun, Sunset, User, Users, Video, VideoOff, Wifi, X } from "lucide-react";
+import { Activity, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, MonitorUp, Moon, Music, Palette, PhoneOff, Plus, Radio, Search, Sparkles, Sun, Sunset, User, Users, Video, VideoOff, Wifi, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,8 @@ import type { Availability } from "@/features/virtual-office/types";
 import { ActivityView } from "./activity-view";
 import { DocumentsView } from "./documents-view";
 import { DEMO_WORKSPACE, fetchMyWorkspaces, type WorkspaceSummary } from "./workspace-service";
+import { loadOfficeDesign } from "./office-design-service";
+import { OfficeDesignView } from "./office-design-view";
 
 const nav = [
   { id: "office", label: "Office", icon: DoorOpen },
@@ -35,6 +37,7 @@ const nav = [
   { id: "meetings", label: "Meetings", icon: CalendarDays },
   { id: "files", label: "Files", icon: Files },
   { id: "activity", label: "Activity", icon: Activity },
+  { id: "design", label: "Office design", icon: Palette },
   { id: "team", label: "Team", icon: Users },
 ] as const;
 
@@ -42,13 +45,14 @@ type View = (typeof nav)[number]["id"];
 
 export function WorkspaceShell() {
   const router = useRouter();
-  const [identity, setIdentity] = useState({ displayName: "Ateeb Fatmi", workspaceName: "Northstar Labs", workspaceId: "northstar-demo" });
+  const [identity, setIdentity] = useState<{ displayName: string; workspaceName: string; workspaceId: string; workspaceRole: WorkspaceSummary["role"] }>({ displayName: "Ateeb Fatmi", workspaceName: "Northstar Labs", workspaceId: "northstar-demo", workspaceRole: "owner" });
   const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([DEMO_WORKSPACE]);
   useEffect(() => {
     const localIdentity = {
       displayName: window.localStorage.getItem("orbit-display-name") || "Ateeb Fatmi",
       workspaceName: window.localStorage.getItem("orbit-workspace-name") || "Northstar Labs",
       workspaceId: window.localStorage.getItem("orbit-workspace-id") || "northstar-demo",
+      workspaceRole: "owner" as WorkspaceSummary["role"],
     };
     setIdentity(localIdentity);
     if (!hasSupabaseConfig) return;
@@ -66,6 +70,7 @@ export function WorkspaceShell() {
         displayName: profile?.display_name || localIdentity.displayName,
         workspaceName: selectedWorkspace?.name || localIdentity.workspaceName,
         workspaceId: selectedWorkspace?.id || localIdentity.workspaceId,
+        workspaceRole: selectedWorkspace?.role || localIdentity.workspaceRole,
       };
       if (!active) return;
       setWorkspaces(availableWorkspaces);
@@ -76,8 +81,15 @@ export function WorkspaceShell() {
     })();
     return () => { active = false; };
   }, []);
+  useEffect(() => {
+    let active = true;
+    void loadOfficeDesign(identity.workspaceId).then((design) => {
+      if (active) useOfficeStore.getState().setOfficeDesign(design);
+    }).catch((error) => console.error("Could not load office design", error));
+    return () => { active = false; };
+  }, [identity.workspaceId]);
   const selectWorkspace = (workspace: WorkspaceSummary) => {
-    setIdentity((current) => ({ ...current, workspaceId: workspace.id, workspaceName: workspace.name }));
+    setIdentity((current) => ({ ...current, workspaceId: workspace.id, workspaceName: workspace.name, workspaceRole: workspace.role }));
     window.localStorage.setItem("orbit-workspace-id", workspace.id);
     window.localStorage.setItem("orbit-workspace-name", workspace.name);
     useOfficeStore.getState().clearRemotePlayers();
@@ -120,7 +132,7 @@ export function WorkspaceShell() {
                 <Button variant="outline" size="sm" onClick={() => openPanel("meeting")}><Headphones size={17} /> {inCall ? `${Object.keys(huddle.participants).length} in huddle` : "Start huddle"}</Button>
               </div>
             </>
-          ) : <DashboardView view={view} {...data} workspaceId={identity.workspaceId} />}
+          ) : <DashboardView view={view} {...data} workspaceId={identity.workspaceId} workspaceRole={identity.workspaceRole} />}
         </div>
       </div>
       <FeatureDialog kind={activePanel} onClose={closePanel} tasks={data.tasks} moveTask={data.moveTask} addTask={data.addTask} huddle={huddle} />
@@ -306,11 +318,12 @@ function OfficeHud({ rightRail, onToggleRail, tasks, displayName }: { rightRail:
   </>;
 }
 
-function DashboardView({ view, tasks, moveTask, addTask, workspaceId }: { view: Exclude<View, "office">; tasks: ReturnType<typeof useWorkspaceData>["tasks"]; moveTask: ReturnType<typeof useWorkspaceData>["moveTask"]; addTask: ReturnType<typeof useWorkspaceData>["addTask"]; workspaceId: string }) {
+function DashboardView({ view, tasks, moveTask, addTask, workspaceId, workspaceRole }: { view: Exclude<View, "office">; tasks: ReturnType<typeof useWorkspaceData>["tasks"]; moveTask: ReturnType<typeof useWorkspaceData>["moveTask"]; addTask: ReturnType<typeof useWorkspaceData>["addTask"]; workspaceId: string; workspaceRole: WorkspaceSummary["role"] }) {
   if (view === "projects") return <div className="h-full overflow-auto"><ProjectsView workspaceId={workspaceId} /></div>;
   if (view === "tasks") return <div className="h-full overflow-auto"><KanbanView workspaceId={workspaceId} /></div>;
   if (view === "files") return <div className="h-full overflow-auto"><DocumentsView workspaceId={workspaceId} /></div>;
   if (view === "activity") return <div className="h-full overflow-auto"><ActivityView workspaceId={workspaceId} /></div>;
+  if (view === "design") return <div className="h-full overflow-auto"><OfficeDesignView workspaceId={workspaceId} canEdit={workspaceRole === "owner" || workspaceRole === "admin"} /></div>;
   if (view === "team") return <div className="h-full overflow-auto"><TeamView workspaceId={workspaceId} /></div>;
   return <div className="h-full overflow-auto p-4 md:p-7"><Overview view={view} tasks={tasks} /></div>;
 }

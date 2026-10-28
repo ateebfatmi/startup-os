@@ -8,6 +8,7 @@ import { COLLIDERS, resolveMovement } from "./collision";
 import { INTERACTION_ZONES } from "./office-data";
 import { useOfficeStore } from "./store";
 import { playChime, playCoffeeSound, playLofiMusic, playSlideClick, stopLofiMusic } from "./audio";
+import { OFFICE_THEME_PALETTES } from "./office-design";
 
 const keys = new Set<string>();
 
@@ -621,17 +622,19 @@ function CitySkyline({ skylineConfig }: { skylineConfig: { towerColor: string; w
 function OfficeEnvironment() {
   const deskPositions = useMemo(() => [[4.8, -4.7], [7, -4.7], [4.8, -2.2], [7, -2.2]] as const, []);
   const activeNearby = useOfficeStore((state) => state.nearbyAction);
+  const design = useOfficeStore((state) => state.officeDesign);
+  const palette = OFFICE_THEME_PALETTES[design.theme];
 
   return (
     <group>
       <Floor />
-      <PenthouseTerrace />
+      {design.terraceEnabled && <PenthouseTerrace />}
 
       {/* Zone Carpets & Inlays */}
-      <RoomRug position={[-5.8, 0.045, -3.7]} color="#1b2838" trim="#d4af37" size={[6.4, 4.8]} />
-      <RoomRug position={[-5.8, 0.045, 3.45]} color="#233d30" trim="#c9b08a" size={[6.4, 4.6]} />
-      <RoomRug position={[5.8, 0.045, 3.55]} color="#56382b" trim="#e2b992" size={[6.3, 4.7]} />
-      <RoomRug position={[5.8, 0.045, -3.45]} color="#222b30" trim="#5c6e7a" size={[6.3, 4.8]} />
+      <RoomRug position={[-5.8, 0.045, -3.7]} color={palette.rug} trim={design.accentColor} size={[6.4, 4.8]} />
+      <RoomRug position={[-5.8, 0.045, 3.45]} color={palette.rug} trim={design.accentColor} size={[6.4, 4.6]} />
+      <RoomRug position={[5.8, 0.045, 3.55]} color={design.theme === "midnight" ? "#352735" : "#56382b"} trim={design.accentColor} size={[6.3, 4.7]} />
+      <RoomRug position={[5.8, 0.045, -3.45]} color={design.theme === "biophilic" ? "#294b3b" : "#222b30"} trim={design.accentColor} size={[6.3, 4.8]} />
 
       <Walls />
       <GlassPartitions />
@@ -649,7 +652,7 @@ function OfficeEnvironment() {
       <LibraryWall />
       <AIPod />
       <LightingDetails />
-      <Plants />
+      {design.plantsEnabled && <Plants />}
 
       {/* Clean, Subtle Interactive Zone Floor Rings */}
       {INTERACTION_ZONES.map((zone) => {
@@ -658,11 +661,11 @@ function OfficeEnvironment() {
           <group key={zone.id} position={[zone.x, 0.048, zone.z]}>
             <mesh rotation-x={-Math.PI / 2}>
               <ringGeometry args={[0.55, 0.65, 36]} />
-              <meshBasicMaterial color={isNear ? "#c8f560" : "#ffffff"} transparent opacity={isNear ? 0.9 : 0.28} />
+              <meshBasicMaterial color={isNear ? design.accentColor : "#ffffff"} transparent opacity={isNear ? 0.9 : 0.28} />
             </mesh>
             <mesh rotation-x={-Math.PI / 2}>
               <circleGeometry args={[0.52, 32]} />
-              <meshBasicMaterial color={isNear ? "#c8f560" : "#ffffff"} transparent opacity={isNear ? 0.15 : 0.04} />
+              <meshBasicMaterial color={isNear ? design.accentColor : "#ffffff"} transparent opacity={isNear ? 0.15 : 0.04} />
             </mesh>
             {isNear && <SpriteLabel text={zone.label.toUpperCase()} position={[0, 0.32, 0]} color="#c8f560" width={2.4} />}
           </group>
@@ -673,46 +676,48 @@ function OfficeEnvironment() {
 }
 
 function Floor() {
+  const design = useOfficeStore((state) => state.officeDesign);
+  const palette = OFFICE_THEME_PALETTES[design.theme];
   return (
     <group>
       {/* Foundation Grand Plinth Slab (Encompassing Interior + Terrace) */}
       <mesh receiveShadow position={[0, -0.22, 1.8]}>
         <boxGeometry args={[24.8, 0.4, 21.6]} />
-        <meshStandardMaterial color="#1b231f" roughness={0.7} />
+        <meshStandardMaterial color={palette.foundation} roughness={0.7} />
       </mesh>
 
       {/* Primary Warm Scandinavian Hardwood Floor */}
       <mesh receiveShadow position={[0, 0.01, 0]} rotation-x={-Math.PI / 2}>
         <planeGeometry args={[24, 16]} />
-        <meshStandardMaterial color="#f0ebe0" roughness={0.55} metalness={0.04} />
+        <meshStandardMaterial color={palette.floor} roughness={0.55} metalness={0.04} />
       </mesh>
 
       {/* Central Polished Terrazzo Promenade Highway */}
       <mesh receiveShadow position={[0, 0.025, 0.35]} rotation-x={-Math.PI / 2}>
         <planeGeometry args={[3.8, 14.8]} />
-        <meshStandardMaterial color="#e5dfd2" roughness={0.42} />
+        <meshStandardMaterial color={palette.promenade} roughness={0.42} />
       </mesh>
       {/* Central Brushed Brass Inlay Inset Lines */}
       <mesh position={[-1.9, 0.032, 0.35]} rotation-x={-Math.PI / 2}>
         <planeGeometry args={[0.04, 14.8]} />
-        <meshBasicMaterial color="#c9a562" />
+        <meshBasicMaterial color={design.accentColor} />
       </mesh>
       <mesh position={[1.9, 0.032, 0.35]} rotation-x={-Math.PI / 2}>
         <planeGeometry args={[0.04, 14.8]} />
-        <meshBasicMaterial color="#c9a562" />
+        <meshBasicMaterial color={design.accentColor} />
       </mesh>
 
       {/* Architectural Floor Grid Tile Seams */}
       {[-8, -4, 4, 8].map((x) => (
         <mesh key={`grid-x-${x}`} position={[x, 0.02, 0]} rotation-x={-Math.PI / 2}>
           <planeGeometry args={[0.02, 15.6]} />
-          <meshBasicMaterial color="#ded6c5" />
+          <meshBasicMaterial color={palette.seam} />
         </mesh>
       ))}
       {[-4, 0, 4].map((z) => (
         <mesh key={`grid-z-${z}`} position={[0, 0.021, z]} rotation-x={-Math.PI / 2}>
           <planeGeometry args={[23.6, 0.02]} />
-          <meshBasicMaterial color="#ded6c5" />
+          <meshBasicMaterial color={palette.seam} />
         </mesh>
       ))}
 

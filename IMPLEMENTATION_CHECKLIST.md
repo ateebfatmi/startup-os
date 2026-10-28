@@ -34,6 +34,7 @@
 - [x] Collision geometry aligned with premium partitions and reception furniture.
 - [ ] Replace capsule avatar with an asset-backed animation adapter.
 - [ ] Load saved office layouts and objects from Supabase.
+- [x] Persist workspace office themes, signature accents, terrace visibility, and planting density in `office_layouts`.
 - [ ] Add touch/click-to-move controls.
 
 ## Later phases
