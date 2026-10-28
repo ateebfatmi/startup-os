@@ -10,6 +10,7 @@ if (Boolean(publicSupabaseUrl) !== Boolean(publicSupabaseKey)) {
 for (const [name, value] of [
   ["NEXT_PUBLIC_SITE_URL", process.env.NEXT_PUBLIC_SITE_URL],
   ["NEXT_PUBLIC_SUPABASE_URL", publicSupabaseUrl],
+  ["TURN_CREDENTIALS_URL", process.env.TURN_CREDENTIALS_URL],
 ]) {
   if (!value) continue;
   const parsed = new URL(value);

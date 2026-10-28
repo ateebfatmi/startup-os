@@ -8,6 +8,7 @@
 - Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` together. Leaving both unset intentionally enables demo mode; configuring only one fails the build.
 - Keep `SUPABASE_SERVICE_ROLE_KEY` server-only. Never expose it through a `NEXT_PUBLIC_` variable.
 - Configure `NEXT_PUBLIC_ICE_SERVERS` as a JSON array with production STUN and TURN servers. Use short-lived TURN credentials when possible.
+- Prefer `TURN_CREDENTIALS_URL` plus the server-only `TURN_CREDENTIALS_TOKEN` for ephemeral credentials; retain `NEXT_PUBLIC_ICE_SERVERS` as a fallback.
 
 ## Backend preparation
 

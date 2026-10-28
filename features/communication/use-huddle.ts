@@ -5,6 +5,7 @@ import { useOfficeStore } from "@/features/virtual-office/store";
 import { CallEngine } from "./call-engine";
 import { createSignalingTransport } from "./signaling";
 import { useCallStore } from "./store";
+import { loadIceServers } from "./ice";
 
 export function useHuddle(workspaceId: string, roomId: string) {
   const engine = useRef<CallEngine | null>(null);
@@ -19,11 +20,12 @@ export function useHuddle(workspaceId: string, roomId: string) {
     }
     const identity = useOfficeStore.getState().player;
     useCallStore.getState().setStatus("requesting_permission");
+    const iceServers = await loadIceServers();
     const nextEngine = new CallEngine(roomId, { id: identity.id, name: identity.name }, createSignalingTransport(workspaceId, roomId), {
       onParticipant: (participant) => useCallStore.getState().upsertParticipant(participant),
       onParticipantChange: (id, patch) => useCallStore.getState().updateParticipant(id, patch),
       onParticipantLeave: (id) => useCallStore.getState().removeParticipant(id),
-    });
+    }, iceServers);
     engine.current = nextEngine;
     try {
       await nextEngine.join(withVideo);
@@ -50,13 +52,25 @@ export function useHuddle(workspaceId: string, roomId: string) {
     const local = Object.values(useCallStore.getState().participants).find((participant) => participant.isLocal);
     if (local) void engine.current?.setCamera(!local.cameraEnabled);
   }, []);
+  const toggleScreenShare = useCallback(async () => {
+    const local = Object.values(useCallStore.getState().participants).find((participant) => participant.isLocal);
+    if (!local || !engine.current) return;
+    try {
+      if (local.screenSharing) await engine.current.stopScreenShare();
+      else await engine.current.startScreenShare();
+    } catch (reason) {
+      if (!(reason instanceof DOMException && reason.name === "NotAllowedError")) {
+        console.error("Screen sharing could not start", reason);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const cleanup = () => { void engine.current?.leave(); useCallStore.getState().reset(); };
     window.addEventListener("pagehide", cleanup);
     return () => { window.removeEventListener("pagehide", cleanup); cleanup(); };
   }, []);
-  return { status, participants, error, join, leave, toggleMicrophone, toggleCamera };
+  return { status, participants, error, join, leave, toggleMicrophone, toggleCamera, toggleScreenShare };
 }
 
 export type HuddleController = ReturnType<typeof useHuddle>;

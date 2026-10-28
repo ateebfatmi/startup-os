@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { ConnectionState, InteractionKind, PlayerSnapshot } from "./types";
+import type { Availability, ConnectionState, InteractionKind, PlayerSnapshot } from "./types";
 
 type OfficeState = {
   player: PlayerSnapshot;
@@ -17,7 +17,7 @@ type OfficeState = {
   isCaffeinated: boolean;
   lofiPlaying: boolean;
   boardroomSlide: number;
-  avatarStatus: string | null;
+  avatarStatus: Availability;
   zoomLevel: number;
   setPlayerTransform: (x: number, z: number, rotation: number) => void;
   setPlayerIdentity: (identity: Pick<PlayerSnapshot, "id" | "name" | "color">) => void;
@@ -39,7 +39,7 @@ type OfficeState = {
   setLofiPlaying: (playing: boolean) => void;
   toggleLofi: () => void;
   nextBoardroomSlide: () => void;
-  setAvatarStatus: (status: string | null) => void;
+  setAvatarStatus: (status: Availability) => void;
   setZoomLevel: (zoom: number) => void;
   zoomIn: () => void;
   zoomOut: () => void;
@@ -47,7 +47,7 @@ type OfficeState = {
 };
 
 export const useOfficeStore = create<OfficeState>((set) => ({
-  player: { id: "local", name: "You", x: 0, z: 1.6, rotation: Math.PI, updatedAt: Date.now(), color: "#ff8a4c" },
+  player: { id: "local", name: "You", x: 0, z: 1.6, rotation: Math.PI, updatedAt: Date.now(), color: "#ff8a4c", status: "available" },
   remotePlayers: {},
   connectionState: "connecting",
   transportLabel: "Local network",
@@ -60,7 +60,7 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   isCaffeinated: false,
   lofiPlaying: false,
   boardroomSlide: 0,
-  avatarStatus: null,
+  avatarStatus: "available",
   zoomLevel: 1.0,
   setPlayerTransform: (x, z, rotation) => set((state) => ({ player: { ...state.player, x, z, rotation, updatedAt: Date.now() } })),
   setPlayerIdentity: (identity) => set((state) => ({ player: { ...state.player, ...identity } })),
@@ -89,7 +89,7 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   setLofiPlaying: (lofiPlaying) => set({ lofiPlaying }),
   toggleLofi: () => set((state) => ({ lofiPlaying: !state.lofiPlaying })),
   nextBoardroomSlide: () => set((state) => ({ boardroomSlide: (state.boardroomSlide + 1) % 3 })),
-  setAvatarStatus: (avatarStatus) => set({ avatarStatus }),
+  setAvatarStatus: (avatarStatus) => set((state) => ({ avatarStatus, player: { ...state.player, status: avatarStatus, updatedAt: Date.now() } })),
   setZoomLevel: (zoomLevel) => set({ zoomLevel: Math.max(0.6, Math.min(1.8, zoomLevel)) }),
   zoomIn: () => set((state) => ({ zoomLevel: Math.min(1.8, state.zoomLevel + 0.15) })),
   zoomOut: () => set((state) => ({ zoomLevel: Math.max(0.6, state.zoomLevel - 0.15) })),

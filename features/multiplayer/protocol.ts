@@ -4,6 +4,7 @@ import type { PlayerSnapshot } from "@/features/virtual-office/types";
 export const NETWORK_RATE_HZ = 12;
 export const STALE_PLAYER_MS = 15_000;
 const MAX_NAME_LENGTH = 80;
+const AVAILABILITY = new Set(["available", "focus", "do_not_disturb", "away"]);
 
 export function isPlayerSnapshot(value: unknown): value is PlayerSnapshot {
   if (!value || typeof value !== "object") return false;
@@ -15,7 +16,8 @@ export function isPlayerSnapshot(value: unknown): value is PlayerSnapshot {
     typeof snapshot.z === "number" && Number.isFinite(snapshot.z) && snapshot.z >= OFFICE_BOUNDS.minZ && snapshot.z <= OFFICE_BOUNDS.maxZ &&
     typeof snapshot.rotation === "number" && Number.isFinite(snapshot.rotation) && Math.abs(snapshot.rotation) <= Math.PI * 4 &&
     typeof snapshot.updatedAt === "number" && Number.isFinite(snapshot.updatedAt) &&
-    typeof snapshot.color === "string" && /^#[0-9a-f]{6}$/i.test(snapshot.color)
+    typeof snapshot.color === "string" && /^#[0-9a-f]{6}$/i.test(snapshot.color) &&
+    (snapshot.status === undefined || AVAILABILITY.has(snapshot.status))
   );
 }
 
@@ -31,5 +33,5 @@ export function normalizeSnapshot(snapshot: PlayerSnapshot): PlayerSnapshot {
 
 export function snapshotChanged(previous: PlayerSnapshot | null, current: PlayerSnapshot) {
   if (!previous) return true;
-  return Math.hypot(current.x - previous.x, current.z - previous.z) > 0.015 || Math.abs(current.rotation - previous.rotation) > 0.025 || current.roomId !== previous.roomId;
+  return Math.hypot(current.x - previous.x, current.z - previous.z) > 0.015 || Math.abs(current.rotation - previous.rotation) > 0.025 || current.roomId !== previous.roomId || current.status !== previous.status;
 }

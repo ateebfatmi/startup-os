@@ -8,7 +8,9 @@ Orbit is a spatial startup operating system built around a navigable 3D office. 
 - Responsive WASD/arrow movement, eased velocity, facing direction, office bounds, and furniture collision.
 - Contextual project-table, meeting-room, whiteboard, and focus-pod interactions.
 - Live cross-tab presence and avatar movement through a typed transport layer, with smoothed remote avatars, payload validation, heartbeats, stale-player cleanup, and automatic Supabase Realtime selection when configured.
-- Real, permission-gated WebRTC huddles with audio/video tracks, microphone and camera controls, peer status, directed SDP/ICE signaling, and complete media cleanup.
+- Real, permission-gated WebRTC huddles with audio/video tracks, microphone/camera controls, screen sharing, speaking indicators, peer status, directed SDP/ICE signaling, and complete media cleanup.
+- Synced availability states (`available`, `focus`, `do not disturb`, `away`) and deterministic departure delivery across browser tabs.
+- Authenticated ICE discovery that can exchange a server-only provider token for short-lived TURN credentials without exposing that token to browsers.
 - A responsive app shell, overview, local Kanban workflow, login, and workspace onboarding.
 - Production-shaped Supabase Auth flows for registration, email verification callbacks, sign-in, Google OAuth entry, password recovery, protected routes, persistent cookie sessions, and logout.
 - Authenticated onboarding that updates the member profile, creates a private workspace through the `create_workspace` RPC, saves workspace type, and persists the selected office template.
@@ -51,7 +53,7 @@ Open `http://localhost:3000`. Without Supabase credentials, `/login` clearly off
 - When email confirmation is enabled, new users remain on the login screen until they follow the verification link. When disabled, onboarding begins immediately.
 - `/office`, `/onboarding`, and `/reset-password` are session-protected whenever public Supabase credentials are configured. Without credentials, they remain available for the explicit local demo.
 
-For calls outside a local network, set `NEXT_PUBLIC_ICE_SERVERS` to a JSON array containing your STUN and TURN configuration. Prefer short-lived TURN credentials issued by a server-side endpoint. The current peer mesh is intended for small huddles; larger calls should move to an SFU.
+For calls outside a local network, configure `TURN_CREDENTIALS_URL` and optionally `TURN_CREDENTIALS_TOKEN` so `/api/realtime/ice` can fetch short-lived credentials. Static `NEXT_PUBLIC_ICE_SERVERS` remains the fallback. The current peer mesh is intended for small huddles; larger calls should move to an SFU.
 
 The RLS policies scope data through `workspace_members`. Private rooms additionally check `allowed_roles`. Invitation tokens are modeled as hashes; raw tokens must only be generated and exchanged by server routes.
 

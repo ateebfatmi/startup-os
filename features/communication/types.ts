@@ -8,10 +8,11 @@ export type CallParticipant = {
   isLocal: boolean;
   microphoneEnabled: boolean;
   cameraEnabled: boolean;
+  screenSharing: boolean;
   connectionState: PeerState;
 };
 
-export type MediaState = { microphoneEnabled: boolean; cameraEnabled: boolean };
+export type MediaState = { microphoneEnabled: boolean; cameraEnabled: boolean; screenSharing: boolean };
 
 export type SignalMessage = {
   roomId: string;

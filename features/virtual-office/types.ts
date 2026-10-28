@@ -1,4 +1,5 @@
 export type Vec2 = { x: number; z: number };
+export type Availability = "available" | "focus" | "do_not_disturb" | "away";
 
 export type Collider = Vec2 & { width: number; depth: number; id: string };
 
@@ -21,6 +22,7 @@ export type PlayerSnapshot = {
   updatedAt: number;
   color: string;
   roomId?: string;
+  status?: Availability;
 };
 
 export type ConnectionState = "connecting" | "connected" | "reconnecting" | "offline";

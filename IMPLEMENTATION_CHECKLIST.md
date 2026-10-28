@@ -49,7 +49,9 @@
 - [x] Microphone/camera track controls, participant states, and media cleanup.
 - [x] ICE candidate buffering for out-of-order signaling.
 - [ ] Configure production TURN credentials and verify calls across restrictive networks.
-- [ ] Add speaking indicators, proximity grouping, and automatic proximity audio.
+- [x] Add authenticated short-lived TURN credential discovery with static ICE fallback.
+- [x] Add speaking indicators, screen sharing, and synced availability states.
+- [ ] Add proximity grouping and automatic proximity audio.
 - [ ] Migrate larger group calls from peer mesh to an SFU provider.
 - [x] Full project/task/comment/member CRUD through server-authorized repositories, Zod validation, Kanban filters, task assignment, deadlines, and priorities.
 - [ ] Meeting scheduling, persistent notes/resources, and notifications.

@@ -18,6 +18,9 @@ test("opens the 3D office shell", async ({ page }) => {
   await expect(page.getByText("Move with WASD or arrow keys")).toBeVisible();
   await expect(page.getByRole("button", { name: "Start huddle" })).toBeVisible();
   await expect.poll(async () => page.getByText("You", { exact: true }).last().evaluate((label) => label.getBoundingClientRect().width)).toBeLessThan(100);
+  const ice = await page.request.get("/api/realtime/ice");
+  expect(ice.ok()).toBe(true);
+  expect((await ice.json()).iceServers.length).toBeGreaterThan(0);
 });
 
 test("creates a local task", async ({ page }) => {
@@ -51,6 +54,8 @@ test("synchronizes presence across two office tabs", async ({ context }) => {
   await second.goto("/office");
   await expect(first.getByText("2 online", { exact: true })).toBeVisible();
   await expect(second.getByText("2 online", { exact: true })).toBeVisible();
+  await first.getByLabel("Availability").selectOption("focus");
+  await expect(second.getByText("focus", { exact: true })).toBeVisible();
   await second.close();
   await expect(first.getByText("1 online", { exact: true })).toBeVisible();
 });

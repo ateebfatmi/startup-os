@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, Moon, Music, PhoneOff, Plus, Radio, Search, Sparkles, Sun, Sunset, User, Users, Video, VideoOff, Wifi, X } from "lucide-react";
+import { Activity, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, MonitorUp, Moon, Music, PhoneOff, Plus, Radio, Search, Sparkles, Sun, Sunset, User, Users, Video, VideoOff, Wifi, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,7 @@ import { KanbanView } from "./kanban-view";
 import { AIAssistantPanel } from "./ai-assistant-panel";
 import { WhiteboardPanel } from "./whiteboard-panel";
 import type { TaskStatus } from "./sample-data";
+import type { Availability } from "@/features/virtual-office/types";
 import { ActivityView } from "./activity-view";
 import { DocumentsView } from "./documents-view";
 import { DEMO_WORKSPACE, fetchMyWorkspaces, type WorkspaceSummary } from "./workspace-service";
@@ -156,6 +157,8 @@ function Sidebar({ view, setView, mobileNav, onClose, workspaceName, workspaceId
 function Topbar({ view, onMenu, displayName }: { view: View; onMenu: () => void; displayName: string }) {
   const title = nav.find((item) => item.id === view)?.label ?? "Office";
   const teammateCount = useOfficeStore((state) => Object.keys(state.remotePlayers).length);
+  const availability = useOfficeStore((state) => state.avatarStatus);
+  const setAvailability = useOfficeStore((state) => state.setAvatarStatus);
   return <header className="z-20 flex h-16 shrink-0 items-center gap-3 border-b border-black/[.07] bg-[#fffdf7]/95 px-4 backdrop-blur-md md:px-5">
     <button className="grid h-10 w-10 place-items-center rounded-xl hover:bg-black/5 lg:hidden" onClick={onMenu}><Menu size={20} /></button>
     <div><h1 className="text-base font-bold tracking-tight">{title}</h1><p className="hidden text-xs text-[#68736b] sm:block">Friday, October 9 · {teammateCount ? `${teammateCount} teammate${teammateCount === 1 ? "" : "s"} nearby` : "Waiting for teammates"}</p></div>
@@ -163,6 +166,7 @@ function Topbar({ view, onMenu, displayName }: { view: View; onMenu: () => void;
     <Button size="sm" onClick={() => useOfficeStore.getState().openPanel("ai_assistant")} className="hidden sm:flex items-center gap-1.5 bg-[#173f2b] text-[#c8f560] hover:bg-[#20573c] border-none shadow-sm"><Bot size={16} /> AI Copilot</Button>
     <Button variant="ghost" size="icon" aria-label="Help"><CircleHelp size={19} /></Button>
     <Button variant="ghost" size="icon" aria-label="Notifications" className="relative"><Bell size={19} /><span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#ff8a4c]" /></Button>
+    <label className="hidden items-center gap-2 rounded-xl border border-black/10 bg-white px-2 py-1.5 text-xs font-semibold text-[#4d5a52] xl:flex"><span className={`h-2 w-2 rounded-full ${availability === "available" ? "bg-[#55ac74]" : availability === "focus" ? "bg-blue-500" : availability === "away" ? "bg-amber-500" : "bg-red-500"}`} /><select aria-label="Availability" value={availability} onChange={(event) => setAvailability(event.target.value as Availability)} className="bg-transparent outline-none"><option value="available">Available</option><option value="focus">Focusing</option><option value="do_not_disturb">Do not disturb</option><option value="away">Away</option></select></label>
     <button className="grid h-9 w-9 place-items-center rounded-full bg-[#efad73] text-xs font-bold" aria-label={`${displayName} profile`}>{initialsFor(displayName)}</button>
   </header>;
 }
@@ -294,7 +298,7 @@ function OfficeHud({ rightRail, onToggleRail, tasks, displayName }: { rightRail:
     {rightRail && <aside className="absolute right-5 top-5 z-10 hidden w-64 rounded-[24px] border border-white/45 bg-[#fffdf7]/[.9] p-4 shadow-panel backdrop-blur-md lg:block">
       <div className="flex items-center justify-between"><h2 className="text-sm font-bold">In the office</h2><Badge className="bg-[#e5f3e7] text-[#276141]">{onlineCount} online</Badge></div>
       <div className="mt-4 flex items-center gap-3"><div className="relative grid h-10 w-10 place-items-center rounded-full bg-[#efad73] text-xs font-bold">{initialsFor(displayName)}<span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#55ac74]" /></div><div><div className="text-sm font-semibold">{displayName}</div><div className="text-xs text-[#68736b]">Open workspace</div></div></div>
-      {Object.values(remotePlayers).map((player) => <div key={player.id} className="mt-3 flex items-center gap-3"><div className="relative grid h-10 w-10 place-items-center rounded-full text-xs font-bold text-white" style={{ background: player.color }}>{player.name.slice(0, 2).toUpperCase()}<span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#55ac74]" /></div><div className="min-w-0"><div className="truncate text-sm font-semibold">{player.name}</div><div className="text-xs text-[#68736b]">Moving in the office</div></div></div>)}
+      {Object.values(remotePlayers).map((player) => <div key={player.id} className="mt-3 flex items-center gap-3"><div className="relative grid h-10 w-10 place-items-center rounded-full text-xs font-bold text-white" style={{ background: player.color }}>{player.name.slice(0, 2).toUpperCase()}<span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${player.status === "focus" ? "bg-blue-500" : player.status === "do_not_disturb" ? "bg-red-500" : player.status === "away" ? "bg-amber-500" : "bg-[#55ac74]"}`} /></div><div className="min-w-0"><div className="truncate text-sm font-semibold">{player.name}</div><div className="text-xs capitalize text-[#68736b]">{(player.status || "available").replaceAll("_", " ")}</div></div></div>)}
       <div className="my-4 h-px bg-black/[.07]" />
       <div className="flex items-center justify-between"><span className="text-xs font-semibold uppercase tracking-wider text-[#68736b]">Today</span><span className="text-xs text-[#68736b]">{tasks.filter((task) => task.status !== "Done").length} open tasks</span></div>
       <div className="mt-3 rounded-2xl bg-[#173f2b] p-3 text-[#f5f0e4]"><div className="text-xs text-white/55">Next meeting · 3:30 PM</div><div className="mt-1 text-sm font-semibold">Weekly product pulse</div><button onClick={() => useOfficeStore.getState().openPanel("meeting")} className="mt-3 w-full rounded-xl bg-[#c8f560] py-2 text-xs font-bold text-[#173f2b]">View meeting</button></div>
@@ -339,14 +343,42 @@ function MeetingPanel({ huddle }: { huddle: HuddleController }) {
     <div className="rounded-2xl bg-[#173f2b] p-5 text-white"><div className="flex flex-wrap items-start justify-between gap-4"><div><Badge className="bg-[#c8f560] text-[#173f2b]">TODAY · 3:30 PM</Badge><p className="mt-4 max-w-md text-sm leading-6 text-white/70">Align on launch blockers, review beta readiness, and leave with one owner per open decision.</p></div><div className="flex items-center gap-2 text-xs text-white/60"><Wifi size={15} /> Peer-to-peer huddle</div></div></div>
     {huddle.status === "idle" || huddle.status === "error" ? <div className="mt-5 rounded-2xl border border-black/[.08] bg-white p-5"><h3 className="font-bold">Choose how to join</h3><p className="mt-2 text-sm leading-6 text-[#68736b]">Your browser will ask before Orbit accesses a microphone or camera. Nothing starts automatically.</p>{huddle.error && <p className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-800">{huddle.error}</p>}<div className="mt-5 flex flex-wrap gap-2"><Button onClick={() => void huddle.join(true)}><Video size={17} /> Join with camera</Button><Button variant="outline" onClick={() => void huddle.join(false)}><Mic size={17} /> Audio only</Button></div></div> : null}
     {waiting && <div className="mt-5 flex items-center gap-3 rounded-2xl bg-[#eef4ea] p-5 text-sm text-[#315e45]"><Loader2 className="animate-spin" size={18} /> Waiting for media permission…</div>}
-    {huddle.status === "connected" && <><div className="mt-5 grid gap-3 sm:grid-cols-2">{participants.map((participant) => <VideoTile key={participant.id} participant={participant} />)}</div><div className="mt-4 flex flex-wrap items-center gap-2"><Button variant={local?.microphoneEnabled ? "solid" : "outline"} size="icon" onClick={huddle.toggleMicrophone} aria-label={local?.microphoneEnabled ? "Mute microphone" : "Unmute microphone"}>{local?.microphoneEnabled ? <Mic size={18} /> : <MicOff size={18} />}</Button><Button variant={local?.cameraEnabled ? "solid" : "outline"} size="icon" onClick={huddle.toggleCamera} aria-label={local?.cameraEnabled ? "Turn camera off" : "Turn camera on"}>{local?.cameraEnabled ? <Video size={18} /> : <VideoOff size={18} />}</Button><Button className="ml-auto bg-[#b64b3e] hover:bg-[#9f3f34]" onClick={() => void huddle.leave()}><PhoneOff size={17} /> Leave huddle</Button></div></>}
+    {huddle.status === "connected" && <><div className="mt-5 grid gap-3 sm:grid-cols-2">{participants.map((participant) => <VideoTile key={participant.id} participant={participant} />)}</div><div className="mt-4 flex flex-wrap items-center gap-2"><Button variant={local?.microphoneEnabled ? "solid" : "outline"} size="icon" onClick={huddle.toggleMicrophone} aria-label={local?.microphoneEnabled ? "Mute microphone" : "Unmute microphone"}>{local?.microphoneEnabled ? <Mic size={18} /> : <MicOff size={18} />}</Button><Button variant={local?.cameraEnabled ? "solid" : "outline"} size="icon" onClick={huddle.toggleCamera} aria-label={local?.cameraEnabled ? "Turn camera off" : "Turn camera on"}>{local?.cameraEnabled ? <Video size={18} /> : <VideoOff size={18} />}</Button><Button variant={local?.screenSharing ? "solid" : "outline"} onClick={() => void huddle.toggleScreenShare()} aria-label={local?.screenSharing ? "Stop sharing screen" : "Share screen"}><MonitorUp size={17} /> {local?.screenSharing ? "Stop sharing" : "Share screen"}</Button><Button className="ml-auto bg-[#b64b3e] hover:bg-[#9f3f34]" onClick={() => void huddle.leave()}><PhoneOff size={17} /> Leave huddle</Button></div></>}
   </div>;
 }
 
 function VideoTile({ participant }: { participant: CallParticipant }) {
   const video = useRef<HTMLVideoElement>(null);
+  const speaking = useSpeakingIndicator(participant.stream, participant.microphoneEnabled);
   useEffect(() => { if (video.current) video.current.srcObject = participant.stream; }, [participant.stream]);
-  return <article className="relative aspect-video overflow-hidden rounded-2xl bg-[#1d3027] text-white"><video ref={video} autoPlay playsInline muted={participant.isLocal} className={`h-full w-full object-cover ${participant.isLocal ? "-scale-x-100" : ""}`} />{!participant.cameraEnabled && <div className="absolute inset-0 grid place-items-center"><div className="grid h-16 w-16 place-items-center rounded-full bg-[#c8f560] text-xl font-bold text-[#173f2b]">{participant.name.slice(0, 2).toUpperCase()}</div></div>}<div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/70 to-transparent p-3 pt-8"><span className="text-sm font-semibold">{participant.name}</span><div className="flex items-center gap-1.5">{participant.connectionState === "connecting" && <Loader2 className="animate-spin" size={14} />}{participant.microphoneEnabled ? <Mic size={14} /> : <MicOff size={14} />}</div></div></article>;
+  return <article className={`relative aspect-video overflow-hidden rounded-2xl bg-[#1d3027] text-white ring-2 transition ${speaking ? "ring-[#c8f560]" : "ring-transparent"}`}><video ref={video} autoPlay playsInline muted={participant.isLocal} className={`h-full w-full object-cover ${participant.isLocal && !participant.screenSharing ? "-scale-x-100" : ""}`} />{!participant.cameraEnabled && !participant.screenSharing && <div className="absolute inset-0 grid place-items-center"><div className="grid h-16 w-16 place-items-center rounded-full bg-[#c8f560] text-xl font-bold text-[#173f2b]">{participant.name.slice(0, 2).toUpperCase()}</div></div>}{participant.screenSharing && <span className="absolute left-3 top-3 rounded-full bg-[#c8f560] px-2.5 py-1 text-[10px] font-bold text-[#173f2b]">PRESENTING</span>}<div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/70 to-transparent p-3 pt-8"><span className="text-sm font-semibold">{participant.name}</span><div className="flex items-center gap-1.5">{speaking && <span className="text-[10px] font-bold text-[#c8f560]">Speaking</span>}{participant.connectionState === "connecting" && <Loader2 className="animate-spin" size={14} />}{participant.microphoneEnabled ? <Mic size={14} /> : <MicOff size={14} />}</div></div></article>;
+}
+
+function useSpeakingIndicator(stream: MediaStream | null, enabled: boolean) {
+  const [speaking, setSpeaking] = useState(false);
+  useEffect(() => {
+    if (!stream || !enabled || stream.getAudioTracks().length === 0) { setSpeaking(false); return; }
+    const context = new AudioContext();
+    const analyser = context.createAnalyser();
+    analyser.fftSize = 256;
+    const source = context.createMediaStreamSource(stream);
+    source.connect(analyser);
+    const values = new Uint8Array(analyser.frequencyBinCount);
+    let frame = 0;
+    let last = 0;
+    const sample = (time: number) => {
+      if (time - last > 120) {
+        analyser.getByteFrequencyData(values);
+        const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+        setSpeaking(average > 18);
+        last = time;
+      }
+      frame = requestAnimationFrame(sample);
+    };
+    frame = requestAnimationFrame(sample);
+    return () => { cancelAnimationFrame(frame); source.disconnect(); void context.close(); };
+  }, [enabled, stream]);
+  return speaking;
 }
 
 function FocusPanel() { const [active, setActive] = useState(false); return <div className="text-center"><div className="mx-auto grid h-36 w-36 place-items-center rounded-full border-[10px] border-[#e6eadf] text-3xl font-bold">25:00</div><h3 className="mt-5 text-lg font-bold">Protect one block of attention</h3><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#68736b]">Your office presence will show as focusing while this session is active.</p><Button className="mt-5" onClick={() => setActive((value) => !value)}>{active ? "End session" : "Start focus session"}</Button></div>; }
