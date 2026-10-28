@@ -1,11 +1,64 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
+import { hasSupabaseConfig } from "@/lib/supabase/client";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+const MAX_BODY_BYTES = 64 * 1024;
+
+const AssistantRequestSchema = z.object({
+  mode: z.enum(["chat", "prd", "pitch", "tasks_summary"]).default("chat"),
+  prompt: z.string().trim().max(4_000, "Prompt is too long").default(""),
+  tasks: z
+    .array(z.object({ status: z.string().max(40) }).loose())
+    .max(500, "Too many tasks")
+    .optional(),
+});
+
+function json(data: unknown, status = 200) {
+  return NextResponse.json(data, {
+    status,
+    headers: { "Cache-Control": "no-store, max-age=0" },
+  });
+}
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { mode, prompt, tasks } = body;
+    const declaredSize = Number(request.headers.get("content-length") || 0);
+    if (Number.isFinite(declaredSize) && declaredSize > MAX_BODY_BYTES) {
+      return json({ success: false, error: "Request body is too large" }, 413);
+    }
 
-    const apiKey = process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY;
+    const rawBody = await request.text();
+    if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
+      return json({ success: false, error: "Request body is too large" }, 413);
+    }
+
+    let body: unknown;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return json({ success: false, error: "Malformed JSON request" }, 400);
+    }
+
+    const parsed = AssistantRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return json(
+        {
+          success: false,
+          error: "Invalid request",
+          issues: parsed.error.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message })),
+        },
+        400,
+      );
+    }
+
+    if (hasSupabaseConfig) {
+      const supabase = await createSupabaseServerClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return json({ success: false, error: "Authentication required" }, 401);
+    }
+
+    const { mode, prompt, tasks } = parsed.data;
 
     // If an API key is available, we could fetch from OpenAI / Gemini.
     // For reliable execution in both credentialed & local demo modes, we provide an AI reasoning generator:
@@ -42,7 +95,7 @@ Startup teams lose context switching between 2D task tools and video conferencin
         { title: `Benchmark 60 FPS performance for spatial R3F canvas`, priority: "High" as const, project: "Performance", due: "Tomorrow" },
       ];
 
-      return NextResponse.json({ success: true, result: prdText, tasksToCreate });
+      return json({ success: true, result: prdText, tasksToCreate });
     }
 
     if (mode === "pitch") {
@@ -89,11 +142,11 @@ Raising **$1.5M Seed** to expand engineering team and scale real-time spatial in
         { title: `Schedule 10 Seed Investor Demo Calls`, priority: "High" as const, project: "Fundraising", due: "Next Week" },
       ];
 
-      return NextResponse.json({ success: true, result: pitchText, tasksToCreate });
+      return json({ success: true, result: pitchText, tasksToCreate });
     }
 
     if (mode === "tasks_summary") {
-      const openTasksCount = Array.isArray(tasks) ? tasks.filter((t: any) => t.status !== "Done").length : 3;
+      const openTasksCount = tasks ? tasks.filter((task) => task.status !== "Done").length : 3;
       const summaryText = `### 📊 Workspace Task Analysis & Executive Summary
 
 - **Total Open Tasks**: ${openTasksCount}
@@ -105,7 +158,7 @@ Raising **$1.5M Seed** to expand engineering team and scale real-time spatial in
 2. **Assign Owners**: Ensure every active Kanban card has an explicit member assigned.
 3. **Automate QA**: Run Playwright E2E verification suites prior to production deployment.`;
 
-      return NextResponse.json({ success: true, result: summaryText });
+      return json({ success: true, result: summaryText });
     }
 
     // Default conversational chat response
@@ -120,8 +173,9 @@ Here are 3 strategic recommendations tailored for your startup:
 2. **Spontaneous Micro-Huddles**: Use the Executive Boardroom or Strategy Table for 5-minute syncs instead of scheduling full 30-minute calendar blocks.
 3. **Continuous PRD-to-Task Pipeline**: Generate initial feature specifications with the AI Pod and convert output directly into Kanban tasks.`;
 
-    return NextResponse.json({ success: true, result: responseText });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error?.message || "Failed to process AI request" }, { status: 500 });
+    return json({ success: true, result: responseText });
+  } catch (error: unknown) {
+    console.error("AI assistant request failed", error);
+    return json({ success: false, error: "Failed to process AI request" }, 500);
   }
 }

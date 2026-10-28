@@ -7,6 +7,7 @@ import {
   generateRawToken,
   hashToken,
 } from "@/features/workspace/invitations";
+import { getSiteOrigin } from "@/lib/site-url";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -18,7 +19,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
     const expiresAt = new Date(Date.now() + 7 * 86400 * 1000).toISOString();
 
     if (!hasSupabaseConfig) {
-      const origin = request.headers.get("origin") || "http://localhost:3000";
+      const origin = getSiteOrigin(request.url);
       return NextResponse.json({
         invitation: {
           id: `inv-local-${Date.now()}`,
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -95,7 +96,7 @@ export async function POST(request: Request) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-    const origin = request.headers.get("origin") || "http://localhost:3000";
+    const origin = getSiteOrigin(request.url);
     return NextResponse.json({
       invitation: data,
       rawToken,
@@ -119,7 +120,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ success: true, isLocalDemo: true });
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

@@ -55,9 +55,8 @@ The RLS policies scope data through `workspace_members`. Private rooms additiona
 ## Verification
 
 ```bash
-npm run typecheck
-npm test
-npm run build
+npm run check
+npm run audit:prod
 npm run test:e2e
 ```
 
@@ -65,7 +64,7 @@ The E2E suite starts the dev server and verifies the office shell and local task
 
 ## Deployment
 
-Deploy the Next.js app to Vercel and configure the same public Supabase variables there. Apply database migrations before the first production deployment. A future dedicated multiplayer service should use its own deployment and validate workspace membership on the server before accepting movement or interaction traffic.
+Deploy the Next.js app to Vercel and configure the same public Supabase variables there. Set `NEXT_PUBLIC_SITE_URL` to the canonical HTTPS origin, apply database migrations before the first production deployment, and configure TURN credentials before enabling huddles for external networks. The `/api/health` endpoint reports release identity and backend mode without exposing secrets. Every push and pull request is gated by type checking, linting, unit tests, a production build, a production dependency audit, and Playwright browser tests. See `DEPLOYMENT.md` for the release checklist and rollback procedure.
 
 ## Architecture boundaries
 

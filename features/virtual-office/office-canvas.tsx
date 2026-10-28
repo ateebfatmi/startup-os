@@ -1,6 +1,6 @@
 "use client";
 
-import { ContactShadows, Html, OrthographicCamera, RoundedBox } from "@react-three/drei";
+import { ContactShadows, OrthographicCamera, RoundedBox } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -88,7 +88,9 @@ export function OfficeCanvas() {
   }, [lightingMode]);
 
   return (
-    <Canvas
+    <div className="relative h-full w-full">
+      <span className="sr-only">You</span>
+      <Canvas
       dpr={[1, 2]}
       shadows
       style={{ width: "100%", height: "100%" }}
@@ -141,7 +143,60 @@ export function OfficeCanvas() {
       <ClickTargetMarker />
       <LocalPlayer />
       <RemotePlayers />
-    </Canvas>
+      </Canvas>
+    </div>
+  );
+}
+
+function SpriteLabel({
+  text,
+  position = [0, 0, 0],
+  background = "rgba(23, 33, 27, 0.94)",
+  color = "#ffffff",
+  width = 2.1,
+}: {
+  text: string;
+  position?: [number, number, number];
+  background?: string;
+  color?: string;
+  width?: number;
+}) {
+  const texture = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 128;
+    const context = canvas.getContext("2d");
+    if (!context) return null;
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = background;
+    context.beginPath();
+    context.roundRect(8, 8, canvas.width - 16, canvas.height - 16, 54);
+    context.fill();
+    context.strokeStyle = "rgba(255,255,255,0.2)";
+    context.lineWidth = 4;
+    context.stroke();
+    context.fillStyle = color;
+    context.font = "700 46px ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(text, canvas.width / 2, canvas.height / 2 + 1, canvas.width - 48);
+
+    const nextTexture = new THREE.CanvasTexture(canvas);
+    nextTexture.colorSpace = THREE.SRGBColorSpace;
+    nextTexture.minFilter = THREE.LinearFilter;
+    nextTexture.magFilter = THREE.LinearFilter;
+    nextTexture.needsUpdate = true;
+    return nextTexture;
+  }, [background, color, text]);
+
+  useEffect(() => () => texture?.dispose(), [texture]);
+  if (!texture) return null;
+
+  return (
+    <sprite position={position} scale={[width, 0.5, 1]} renderOrder={1000}>
+      <spriteMaterial map={texture} transparent depthTest={false} depthWrite={false} toneMapped={false} />
+    </sprite>
   );
 }
 
@@ -445,15 +500,12 @@ function LocalPlayer() {
         </mesh>
       </group>
 
-      {/* Sleek Overhead Tag */}
-      <Html center position={[0, 1.78, 0]}>
-        <div className="pointer-events-none select-none flex items-center gap-1.5 rounded-full bg-[#17211b]/90 backdrop-blur-sm px-2.5 py-0.5 text-[10px] font-bold text-white shadow-md ring-1 ring-white/20 whitespace-nowrap">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#c8f560]" />
-          <span>You</span>
-          {isCaffeinated && <span className="text-[9px] text-amber-300">☕</span>}
-          {isSitting && <span className="text-[9px] text-blue-300">🪑</span>}
-        </div>
-      </Html>
+      <SpriteLabel
+        text={`● You${isCaffeinated ? "  ☕" : ""}${isSitting ? "  Seated" : ""}`}
+        position={[0, 1.78, 0]}
+        color="#ffffff"
+        width={isCaffeinated || isSitting ? 2.8 : 1.8}
+      />
     </group>
   );
 }
@@ -520,11 +572,7 @@ function RemotePlayer({ player }: { player: ReturnType<typeof useOfficeStore.get
           <meshStandardMaterial color="#1f2d26" roughness={0.7} />
         </mesh>
       </group>
-      <Html center position={[0, 1.78, 0]}>
-        <div className="pointer-events-none select-none rounded-full bg-white/95 px-2.5 py-0.5 text-[10px] font-bold text-[#17211b] shadow-md ring-1 ring-black/10 whitespace-nowrap">
-          {player.name}
-        </div>
-      </Html>
+      <SpriteLabel text={player.name} position={[0, 1.78, 0]} background="rgba(255,255,255,0.96)" color="#17211b" width={2.2} />
     </group>
   );
 }
@@ -616,13 +664,7 @@ function OfficeEnvironment() {
               <circleGeometry args={[0.52, 32]} />
               <meshBasicMaterial color={isNear ? "#c8f560" : "#ffffff"} transparent opacity={isNear ? 0.15 : 0.04} />
             </mesh>
-            {isNear && (
-              <Html center position={[0, 0.22, 0]}>
-                <div className="pointer-events-none select-none whitespace-nowrap rounded-full bg-[#17211b]/95 border border-[#c8f560]/40 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#c8f560] shadow-lg animate-pulse">
-                  {zone.label}
-                </div>
-              </Html>
-            )}
+            {isNear && <SpriteLabel text={zone.label.toUpperCase()} position={[0, 0.32, 0]} color="#c8f560" width={2.4} />}
           </group>
         );
       })}
@@ -1511,13 +1553,7 @@ function EspressoStation() {
         </mesh>
       </group>
       {/* Subtle hover indicator */}
-      {hovered && (
-        <Html center position={[0, 1.58, 0]}>
-          <div className="pointer-events-none select-none rounded-full bg-[#173f2b] border border-white/20 px-2.5 py-0.5 text-[9px] font-bold text-white shadow-lg whitespace-nowrap">
-            ☕ Click to Brew Espresso (+Speed)
-          </div>
-        </Html>
-      )}
+      {hovered && <SpriteLabel text="Brew Espresso (+Speed)" position={[0, 1.58, 0]} width={3.4} />}
     </group>
   );
 }
@@ -1587,19 +1623,15 @@ function VinylLofiPlayer() {
       {/* Floating Animated Music Notes */}
       {lofiPlaying && (
         <group ref={noteRef} position={[0, 1.25, 0]}>
-          <Html center>
-            <div className="pointer-events-none select-none text-xs font-black text-[#c8f560] animate-bounce">
-              ♫ ♪
-            </div>
-          </Html>
+          <SpriteLabel text="♫  ♪" color="#c8f560" background="rgba(23,63,43,0.88)" width={1.3} />
         </group>
       )}
       {hovered && (
-        <Html center position={[0, 1.2, 0]}>
-          <div className="pointer-events-none select-none rounded-full bg-[#173f2b] border border-white/20 px-2 py-0.5 text-[9px] font-bold text-white shadow-lg whitespace-nowrap">
-            {lofiPlaying ? "📻 Lofi: Playing ♫ (Click to pause)" : "📻 Click for Lofi Beats"}
-          </div>
-        </Html>
+        <SpriteLabel
+          text={lofiPlaying ? "Lofi playing — click to pause" : "Click for lofi beats"}
+          position={[0, 1.2, 0]}
+          width={3.4}
+        />
       )}
     </group>
   );

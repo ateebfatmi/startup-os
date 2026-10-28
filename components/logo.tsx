@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 
 interface LogoProps {
   size?: "sm" | "md" | "lg" | "xl" | number;
@@ -40,12 +41,13 @@ export function Logo({
         className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-black/10 transition-transform hover:scale-105"
         style={{ width: dimension, height: dimension }}
       >
-        <img
+        <Image
           src="/logo.png"
           alt="PZ Logo"
           className="h-full w-full object-contain p-0.5"
           width={dimension}
           height={dimension}
+          sizes={`${dimension}px`}
         />
       </div>
       {showText && (

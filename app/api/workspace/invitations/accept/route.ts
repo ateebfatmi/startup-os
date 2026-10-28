@@ -27,7 +27,7 @@ export async function GET(request: Request) {
       });
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase.rpc("get_invitation_by_token", {
       token_text: validated.token,
     });
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, workspaceId: "northstar-demo", isLocalDemo: true });
     }
 
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Authentication required to accept invitation" }, { status: 401 });
