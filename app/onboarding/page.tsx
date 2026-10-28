@@ -14,6 +14,7 @@ const templates = [
 ] as const;
 
 const workspaceTypes = ["Startup", "Agency", "Remote team", "Community"] as const;
+const avatarColors = ["#ff8a4c", "#58a77b", "#6c86d9", "#d06fa9", "#7863c6"] as const;
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function OnboardingPage() {
   const [name, setName] = useState("Northstar Labs");
   const [workspaceType, setWorkspaceType] = useState<(typeof workspaceTypes)[number]>("Startup");
   const [template, setTemplate] = useState<(typeof templates)[number]["id"]>("remote-hq");
+  const [avatarColor, setAvatarColor] = useState<(typeof avatarColors)[number]>("#ff8a4c");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -47,6 +49,7 @@ export default function OnboardingPage() {
       window.localStorage.setItem("orbit-workspace-name", workspaceName);
       window.localStorage.setItem("orbit-workspace-type", workspaceType);
       window.localStorage.setItem("orbit-office-template", template);
+      window.localStorage.setItem("orbit-avatar-color", avatarColor);
       router.push("/office");
       return;
     }
@@ -54,7 +57,7 @@ export default function OnboardingPage() {
     const supabase = createSupabaseBrowserClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) { setMessage("Your session expired. Sign in again to continue."); setSubmitting(false); return; }
-    const { error: profileError } = await supabase.from("profiles").upsert({ id: user.id, display_name: profileName }, { onConflict: "id" });
+    const { error: profileError } = await supabase.from("profiles").upsert({ id: user.id, display_name: profileName, avatar_config: { model: "orbit-avatar-v1", color: avatarColor } }, { onConflict: "id" });
     if (profileError) { setMessage(profileError.message); setSubmitting(false); return; }
 
     const slug = buildWorkspaceSlug(workspaceName, user.id);
@@ -67,6 +70,7 @@ export default function OnboardingPage() {
     window.localStorage.setItem("orbit-workspace-name", workspaceName);
     window.localStorage.setItem("orbit-workspace-type", workspaceType);
     window.localStorage.setItem("orbit-office-template", template);
+    window.localStorage.setItem("orbit-avatar-color", avatarColor);
     window.localStorage.setItem("orbit-workspace-id", String(workspaceId));
     router.push("/office");
     router.refresh();
@@ -76,6 +80,7 @@ export default function OnboardingPage() {
     <section className="rounded-[28px] border border-black/[.07] bg-[#fffdf7] p-5 shadow-panel md:p-7">
       <div className="grid gap-5 sm:grid-cols-2"><Field label="Your display name" icon={<UserRound size={18} />}><input value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoComplete="name" className="h-12 w-full bg-transparent pl-11 pr-4 outline-none" placeholder="Ateeb Fatmi" /></Field><Field label="Workspace name" icon={<Building2 size={18} />}><input value={name} onChange={(event) => setName(event.target.value)} className="h-12 w-full bg-transparent pl-11 pr-4 outline-none" /></Field></div>
       <fieldset className="mt-7"><legend className="text-sm font-bold">What kind of team is this?</legend><div className="mt-3 flex flex-wrap gap-2">{workspaceTypes.map((item) => <button type="button" key={item} onClick={() => setWorkspaceType(item)} className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${workspaceType === item ? "border-[#315e45] bg-[#173f2b] text-white" : "border-black/10 bg-white text-[#68736b] hover:border-black/25"}`}>{item}</button>)}</div></fieldset>
+      <fieldset className="mt-7"><legend className="text-sm font-bold">Choose your avatar jacket</legend><div className="mt-3 flex gap-3">{avatarColors.map((color) => <button type="button" key={color} aria-label={`Avatar color ${color}`} aria-pressed={avatarColor === color} onClick={() => setAvatarColor(color)} className={`grid h-12 w-12 place-items-center rounded-2xl border-4 border-white shadow-md ${avatarColor === color ? "ring-2 ring-[#173f2b]" : ""}`} style={{ background: color }}>{avatarColor === color && <Check size={17} className="text-white" />}</button>)}</div></fieldset>
       <fieldset className="mt-7"><legend className="text-sm font-bold">Choose an office layout</legend><div className="mt-3 grid gap-3">{templates.map((item) => <button type="button" key={item.id} onClick={() => setTemplate(item.id)} className={`flex items-center gap-4 rounded-2xl border p-4 text-left transition ${template === item.id ? "border-[#315e45] bg-[#eef6e6]" : "border-black/[.08] bg-white hover:border-black/20"}`}><span className={`grid h-11 w-11 place-items-center rounded-xl ${template === item.id ? "bg-[#173f2b] text-[#c8f560]" : "bg-black/5 text-[#68736b]"}`}><Users size={19} /></span><span className="flex-1"><strong className="block text-sm">{item.title}</strong><span className="mt-1 block text-xs leading-5 text-[#68736b]">{item.note}</span></span>{template === item.id && <Check size={18} className="text-[#315e45]" />}</button>)}</div></fieldset>
       {message && <p className="mt-5 rounded-xl bg-red-50 p-3 text-sm text-red-800">{message}</p>}
       <Button className="mt-7 w-full" disabled={submitting || !name.trim() || !displayName.trim()} onClick={() => void createWorkspace()}>{submitting ? <><Loader2 className="animate-spin" size={17} /> Creating your office…</> : hasSupabaseConfig ? "Create workspace" : "Enter local demo"}</Button>

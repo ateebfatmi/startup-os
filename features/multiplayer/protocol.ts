@@ -33,5 +33,5 @@ export function normalizeSnapshot(snapshot: PlayerSnapshot): PlayerSnapshot {
 
 export function snapshotChanged(previous: PlayerSnapshot | null, current: PlayerSnapshot) {
   if (!previous) return true;
-  return Math.hypot(current.x - previous.x, current.z - previous.z) > 0.015 || Math.abs(current.rotation - previous.rotation) > 0.025 || current.roomId !== previous.roomId || current.status !== previous.status;
+  return Math.hypot(current.x - previous.x, current.z - previous.z) > 0.015 || Math.abs(current.rotation - previous.rotation) > 0.025 || current.roomId !== previous.roomId || current.status !== previous.status || current.name !== previous.name || current.color !== previous.color;
 }

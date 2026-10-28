@@ -32,7 +32,7 @@
 - [x] Pixel-ratio cap and restrained lighting/shadow cost.
 - [x] Premium atelier layout with limestone flooring, walnut furniture, smoked-glass rooms, brass detailing, tailored lighting, reception, executive boardroom, focus library, and lounge.
 - [x] Collision geometry aligned with premium partitions and reception furniture.
-- [ ] Replace capsule avatar with an asset-backed animation adapter.
+- [x] Replace capsule avatars with a self-authored GLTF asset adapter, named idle/walk clips, tint customization, and a procedural failure fallback.
 - [x] Load, place, remove, render, validate, and collide with saved workspace office objects from Supabase or local fallback.
 - [x] Persist workspace office themes, signature accents, terrace visibility, and planting density in `office_layouts`.
 - [ ] Add touch/click-to-move controls.

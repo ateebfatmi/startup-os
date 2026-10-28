@@ -10,11 +10,13 @@ import { useOfficeStore } from "./store";
 import { playChime, playCoffeeSound, playLofiMusic, playSlideClick, stopLofiMusic } from "./audio";
 import { OFFICE_THEME_PALETTES } from "./office-design";
 import { OFFICE_OBJECT_CATALOG, officeObjectCollider, type OfficeObject } from "./office-object-catalog";
+import { AvatarModel } from "./avatar-model";
 
 const keys = new Set<string>();
 
 export function OfficeCanvas() {
   const lightingMode = useOfficeStore((state) => state.lightingMode);
+  const avatarAssetReady = useOfficeStore((state) => state.avatarAssetReady);
 
   // Dynamic Lighting Themes
   const lighting = useMemo(() => {
@@ -92,6 +94,7 @@ export function OfficeCanvas() {
   return (
     <div className="relative h-full w-full">
       <span className="sr-only">You</span>
+      {avatarAssetReady && <span className="sr-only">Animated GLTF avatar ready</span>}
       <Canvas
       dpr={[1, 2]}
       shadows
@@ -308,14 +311,11 @@ function ClickTargetMarker() {
 
 function LocalPlayer() {
   const group = useRef<THREE.Group>(null);
-  const leftLegRef = useRef<THREE.Mesh>(null);
-  const rightLegRef = useRef<THREE.Mesh>(null);
-  const torsoRef = useRef<THREE.Group>(null);
-
   const position = useRef(new THREE.Vector2(0, 1.6));
   const velocity = useRef(new THREE.Vector2());
   const rotation = useRef(Math.PI);
   const walkPhase = useRef(0);
+  const motion = useRef(0);
   const lastStoreUpdate = useRef(0);
 
   const setPlayerTransform = useOfficeStore((state) => state.setPlayerTransform);
@@ -328,6 +328,7 @@ function LocalPlayer() {
   const isCaffeinated = useOfficeStore((state) => state.isCaffeinated);
   const isSitting = useOfficeStore((state) => state.isSitting);
   const setIsSitting = useOfficeStore((state) => state.setIsSitting);
+  const setAvatarAssetReady = useOfficeStore((state) => state.setAvatarAssetReady);
 
   // Keyboard controls
   useEffect(() => {
@@ -383,6 +384,7 @@ function LocalPlayer() {
     if (velocity.current.lengthSq() < 0.005) velocity.current.set(0, 0);
 
     const speed = velocity.current.length();
+    motion.current = speed;
 
     // Walking animation phase
     if (speed > 0.1) {
@@ -412,26 +414,6 @@ function LocalPlayer() {
       group.current.position.set(next.x, targetY, next.z);
       group.current.rotation.y = rotation.current;
 
-      // Body lean into acceleration
-      if (torsoRef.current) {
-        torsoRef.current.rotation.x = isSitting ? 0.1 : speed > 0.2 ? -0.1 : 0;
-      }
-
-      // Leg stepping animation
-      if (leftLegRef.current && rightLegRef.current) {
-        if (isSitting) {
-          leftLegRef.current.rotation.x = -Math.PI / 2.3;
-          rightLegRef.current.rotation.x = -Math.PI / 2.3;
-          leftLegRef.current.position.z = 0.14;
-          rightLegRef.current.position.z = 0.14;
-        } else {
-          const legSwing = Math.sin(walkPhase.current) * 0.5;
-          leftLegRef.current.rotation.x = legSwing;
-          rightLegRef.current.rotation.x = -legSwing;
-          leftLegRef.current.position.z = 0;
-          rightLegRef.current.position.z = 0;
-        }
-      }
     }
 
     // Nearby interaction zone detection
@@ -455,56 +437,7 @@ function LocalPlayer() {
         <meshBasicMaterial color="#000000" transparent opacity={0.25} />
       </mesh>
 
-      {/* Main Avatar Body Group */}
-      <group ref={torsoRef}>
-        {/* Torso Capsule */}
-        <mesh castShadow position={[0, 0.58, 0]}>
-          <capsuleGeometry args={[0.32, 0.58, 8, 16]} />
-          <meshStandardMaterial color={isCaffeinated ? "#ff7030" : "#ff8a4c"} roughness={0.65} metalness={0.1} />
-        </mesh>
-
-        {/* Head */}
-        <mesh castShadow position={[0, 1.18, 0]}>
-          <sphereGeometry args={[0.26, 20, 20]} />
-          <meshStandardMaterial color="#6b3d2b" roughness={0.75} />
-        </mesh>
-
-        {/* Visor / Face Direction */}
-        <mesh position={[0, 1.2, 0.22]} rotation-x={-0.1}>
-          <boxGeometry args={[0.24, 0.08, 0.12]} />
-          <meshStandardMaterial color="#221510" roughness={0.3} metalness={0.4} />
-        </mesh>
-
-        {/* Steaming Coffee Cup in Hand when Caffeinated */}
-        {isCaffeinated && (
-          <group position={[0.35, 0.62, 0.2]}>
-            <mesh castShadow>
-              <cylinderGeometry args={[0.07, 0.05, 0.16, 16]} />
-              <meshStandardMaterial color="#ffffff" roughness={0.2} />
-            </mesh>
-            <mesh position={[0, 0.09, 0]}>
-              <cylinderGeometry args={[0.075, 0.075, 0.03, 16]} />
-              <meshStandardMaterial color="#173f2b" roughness={0.4} />
-            </mesh>
-            <mesh position={[0, 0.16, 0]}>
-              <ringGeometry args={[0.02, 0.05, 12]} />
-              <meshBasicMaterial color="#ffffff" transparent opacity={0.6} />
-            </mesh>
-          </group>
-        )}
-      </group>
-
-      {/* Stepping Animated Legs */}
-      <group position={[0, 0.24, 0]}>
-        <mesh ref={leftLegRef} position={[-0.14, 0, 0]} castShadow>
-          <capsuleGeometry args={[0.09, 0.28, 6, 12]} />
-          <meshStandardMaterial color="#1f2d26" roughness={0.7} />
-        </mesh>
-        <mesh ref={rightLegRef} position={[0.14, 0, 0]} castShadow>
-          <capsuleGeometry args={[0.09, 0.28, 6, 12]} />
-          <meshStandardMaterial color="#1f2d26" roughness={0.7} />
-        </mesh>
-      </group>
+      <AvatarModel color={isCaffeinated ? "#ff7030" : "#ff8a4c"} motion={motion} seated={isSitting} caffeinated={isCaffeinated} onAssetReady={() => setAvatarAssetReady(true)} />
 
       <SpriteLabel
         text={`● You${isCaffeinated ? "  ☕" : ""}${isSitting ? "  Seated" : ""}`}
@@ -523,11 +456,9 @@ function RemotePlayers() {
 
 function RemotePlayer({ player }: { player: ReturnType<typeof useOfficeStore.getState>["player"] }) {
   const group = useRef<THREE.Group>(null);
-  const leftLegRef = useRef<THREE.Mesh>(null);
-  const rightLegRef = useRef<THREE.Mesh>(null);
   const targetPosition = useRef(new THREE.Vector3(player.x, 0.06, player.z));
   const targetRotation = useRef(player.rotation);
-  const walkPhase = useRef(0);
+  const motion = useRef(0);
 
   useEffect(() => {
     targetPosition.current.set(player.x, 0.06, player.z);
@@ -537,21 +468,12 @@ function RemotePlayer({ player }: { player: ReturnType<typeof useOfficeStore.get
   useFrame((_, delta) => {
     if (!group.current) return;
     const dist = group.current.position.distanceTo(targetPosition.current);
-    if (dist > 0.05) {
-      walkPhase.current += delta * 12;
-    } else {
-      walkPhase.current = THREE.MathUtils.lerp(walkPhase.current, 0, 0.2);
-    }
+    motion.current = dist / Math.max(delta, 0.001);
 
     group.current.position.lerp(targetPosition.current, 1 - Math.exp(-delta * 10));
     const difference = Math.atan2(Math.sin(targetRotation.current - group.current.rotation.y), Math.cos(targetRotation.current - group.current.rotation.y));
     group.current.rotation.y += difference * (1 - Math.exp(-delta * 12));
 
-    if (leftLegRef.current && rightLegRef.current) {
-      const legSwing = Math.sin(walkPhase.current) * 0.45;
-      leftLegRef.current.rotation.x = legSwing;
-      rightLegRef.current.rotation.x = -legSwing;
-    }
   });
 
   return (
@@ -560,24 +482,7 @@ function RemotePlayer({ player }: { player: ReturnType<typeof useOfficeStore.get
         <ringGeometry args={[0.22, 0.44, 24]} />
         <meshBasicMaterial color="#000000" transparent opacity={0.2} />
       </mesh>
-      <mesh castShadow position={[0, 0.58, 0]}>
-        <capsuleGeometry args={[0.32, 0.58, 8, 16]} />
-        <meshStandardMaterial color={player.color} roughness={0.65} />
-      </mesh>
-      <mesh castShadow position={[0, 1.18, 0]}>
-        <sphereGeometry args={[0.26, 20, 20]} />
-        <meshStandardMaterial color="#5b443a" roughness={0.75} />
-      </mesh>
-      <group position={[0, 0.24, 0]}>
-        <mesh ref={leftLegRef} position={[-0.14, 0, 0]} castShadow>
-          <capsuleGeometry args={[0.09, 0.28, 6, 12]} />
-          <meshStandardMaterial color="#1f2d26" roughness={0.7} />
-        </mesh>
-        <mesh ref={rightLegRef} position={[0.14, 0, 0]} castShadow>
-          <capsuleGeometry args={[0.09, 0.28, 6, 12]} />
-          <meshStandardMaterial color="#1f2d26" roughness={0.7} />
-        </mesh>
-      </group>
+      <AvatarModel color={player.color} motion={motion} />
       <SpriteLabel text={player.name} position={[0, 1.78, 0]} background="rgba(255,255,255,0.96)" color="#17211b" width={2.2} />
     </group>
   );

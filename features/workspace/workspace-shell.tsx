@@ -74,7 +74,7 @@ export function WorkspaceShell() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const [{ data: profile }, availableWorkspaces] = await Promise.all([
-        supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
+        supabase.from("profiles").select("display_name, avatar_config").eq("id", user.id).maybeSingle(),
         fetchMyWorkspaces(),
       ]);
       const selectedWorkspace = availableWorkspaces.find((workspace) => workspace.id === localIdentity.workspaceId) || availableWorkspaces[0];
@@ -90,6 +90,12 @@ export function WorkspaceShell() {
       window.localStorage.setItem("orbit-display-name", nextIdentity.displayName);
       window.localStorage.setItem("orbit-workspace-name", nextIdentity.workspaceName);
       window.localStorage.setItem("orbit-workspace-id", nextIdentity.workspaceId);
+      const avatarConfig = profile?.avatar_config as { color?: unknown } | null;
+      if (typeof avatarConfig?.color === "string" && /^#[0-9a-f]{6}$/i.test(avatarConfig.color)) {
+        window.localStorage.setItem("orbit-avatar-color", avatarConfig.color);
+        const player = useOfficeStore.getState().player;
+        useOfficeStore.getState().setPlayerIdentity({ id: player.id, name: nextIdentity.displayName, color: avatarConfig.color });
+      }
     })();
     return () => { active = false; };
   }, []);

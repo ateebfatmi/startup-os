@@ -13,7 +13,9 @@ function getSessionIdentity() {
   const id = storedId ?? crypto.randomUUID();
   if (!storedId) window.sessionStorage.setItem("orbit-player-id", id);
   const colorIndex = Array.from(id).reduce((total, char) => total + char.charCodeAt(0), 0) % AVATAR_COLORS.length;
-  return { id, name: window.localStorage.getItem("orbit-display-name") || "Teammate", color: AVATAR_COLORS[colorIndex] };
+  const savedColor = window.localStorage.getItem("orbit-avatar-color");
+  const color = savedColor && /^#[0-9a-f]{6}$/i.test(savedColor) ? savedColor : AVATAR_COLORS[colorIndex];
+  return { id, name: window.localStorage.getItem("orbit-display-name") || "Teammate", color };
 }
 
 export function useMultiplayer(workspaceId: string) {

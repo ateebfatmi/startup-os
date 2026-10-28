@@ -23,6 +23,7 @@ type OfficeState = {
   zoomLevel: number;
   officeDesign: OfficeDesignSettings;
   officeObjects: OfficeObject[];
+  avatarAssetReady: boolean;
   setPlayerTransform: (x: number, z: number, rotation: number) => void;
   setPlayerIdentity: (identity: Pick<PlayerSnapshot, "id" | "name" | "color">) => void;
   upsertRemotePlayer: (player: PlayerSnapshot) => void;
@@ -50,6 +51,7 @@ type OfficeState = {
   resetZoom: () => void;
   setOfficeDesign: (design: OfficeDesignSettings) => void;
   setOfficeObjects: (objects: OfficeObject[]) => void;
+  setAvatarAssetReady: (ready: boolean) => void;
 };
 
 export const useOfficeStore = create<OfficeState>((set) => ({
@@ -70,6 +72,7 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   zoomLevel: 1.0,
   officeDesign: DEFAULT_OFFICE_DESIGN,
   officeObjects: [],
+  avatarAssetReady: false,
   setPlayerTransform: (x, z, rotation) => set((state) => ({ player: { ...state.player, x, z, rotation, updatedAt: Date.now() } })),
   setPlayerIdentity: (identity) => set((state) => ({ player: { ...state.player, ...identity } })),
   upsertRemotePlayer: (player) => set((state) => player.id === state.player.id ? state : ({ remotePlayers: { ...state.remotePlayers, [player.id]: player } })),
@@ -104,4 +107,5 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   resetZoom: () => set({ zoomLevel: 1.0 }),
   setOfficeDesign: (officeDesign) => set({ officeDesign }),
   setOfficeObjects: (officeObjects) => set({ officeObjects }),
+  setAvatarAssetReady: (avatarAssetReady) => set({ avatarAssetReady }),
 }));

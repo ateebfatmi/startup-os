@@ -29,5 +29,6 @@ describe("multiplayer protocol", () => {
     expect(snapshotChanged(snapshot, { ...snapshot, x: 1.005, updatedAt: 2_000 })).toBe(false);
     expect(snapshotChanged(snapshot, { ...snapshot, x: 1.1, updatedAt: 2_000 })).toBe(true);
     expect(snapshotChanged(snapshot, { ...snapshot, status: "focus", updatedAt: 2_000 })).toBe(true);
+    expect(snapshotChanged(snapshot, { ...snapshot, color: "#6c86d9", updatedAt: 2_000 })).toBe(true);
   });
 });
