@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, BarChart3, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, CreditCard, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, MonitorUp, Moon, Music, Palette, PhoneOff, Plug, Plus, Radio, Search, Sparkles, Sun, Sunset, Target, User, Users, Video, VideoOff, Wifi, X } from "lucide-react";
+import { Activity, BarChart3, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, CreditCard, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, MonitorUp, Moon, Music, Palette, PenTool, PhoneOff, Plug, Plus, Radio, Search, Sparkles, Sun, Sunset, Target, User, Users, Video, VideoOff, Wifi, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +44,7 @@ const nav = [
   { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "meetings", label: "Meetings", icon: CalendarDays },
   { id: "files", label: "Files", icon: Files },
+  { id: "whiteboard", label: "Whiteboard", icon: PenTool },
   { id: "activity", label: "Activity", icon: Activity },
   { id: "design", label: "Office design", icon: Palette },
   { id: "billing", label: "Billing", icon: CreditCard },
@@ -145,7 +146,7 @@ export function WorkspaceShell() {
           ) : <DashboardView view={view} {...data} workspaceId={identity.workspaceId} workspaceRole={identity.workspaceRole} />}
         </div>
       </div>
-      <FeatureDialog kind={activePanel} onClose={closePanel} tasks={data.tasks} moveTask={data.moveTask} addTask={data.addTask} huddle={huddle} />
+      <FeatureDialog kind={activePanel} onClose={closePanel} tasks={data.tasks} moveTask={data.moveTask} addTask={data.addTask} huddle={huddle} workspaceId={identity.workspaceId} />
     </main>
   );
 }
@@ -351,6 +352,7 @@ function DashboardView({ view, tasks, moveTask, addTask, workspaceId, workspaceR
   if (view === "analytics") return <div className="h-full overflow-auto"><AnalyticsView workspaceId={workspaceId} /></div>;
   if (view === "meetings") return <div className="h-full overflow-auto"><MeetingsView workspaceId={workspaceId} /></div>;
   if (view === "files") return <div className="h-full overflow-auto"><DocumentsView workspaceId={workspaceId} /></div>;
+  if (view === "whiteboard") return <div className="h-full overflow-auto"><div className="mx-auto max-w-6xl space-y-5 p-4 md:p-7"><div><div className="text-xs font-bold tracking-[.18em] text-[#4b7a5e]">LIVE CANVAS</div><h2 className="mt-2 text-3xl font-bold">Whiteboard</h2><p className="mt-1 text-sm text-[#68736b]">Sketch, arrange ideas, and merge teammates’ changes in real time.</p></div><WhiteboardPanel workspaceId={workspaceId} /></div></div>;
   if (view === "activity") return <div className="h-full overflow-auto"><ActivityView workspaceId={workspaceId} /></div>;
   if (view === "design") return <div className="h-full overflow-auto"><OfficeDesignView workspaceId={workspaceId} canEdit={workspaceRole === "owner" || workspaceRole === "admin"} /></div>;
   if (view === "billing") return <div className="h-full overflow-auto"><BillingView workspaceId={workspaceId} canManage={workspaceRole === "owner" || workspaceRole === "admin"} /></div>;
@@ -370,10 +372,10 @@ function Overview({ view, tasks }: { view: Exclude<View, "office" | "projects" |
 
 function Metric({ label, value, note, color }: { label: string; value: string; note: string; color: string }) { return <div className="rounded-[24px] border border-black/[.07] bg-[#fffdf7] p-5"><div className="flex items-center justify-between text-sm text-[#68736b]"><span>{label}</span><span className="h-3 w-3 rounded-full" style={{ background: color }} /></div><div className="mt-4 text-4xl font-bold tracking-[-.05em]">{value}</div><div className="mt-1 text-xs text-[#68736b]">{note}</div></div>; }
 
-function FeatureDialog({ kind, onClose, tasks, moveTask, addTask, huddle }: { kind: ReturnType<typeof useOfficeStore.getState>["activePanel"]; onClose: () => void; tasks: ReturnType<typeof useWorkspaceData>["tasks"]; moveTask: ReturnType<typeof useWorkspaceData>["moveTask"]; addTask: ReturnType<typeof useWorkspaceData>["addTask"]; huddle: HuddleController }) {
+function FeatureDialog({ kind, onClose, tasks, moveTask, addTask, huddle, workspaceId }: { kind: ReturnType<typeof useOfficeStore.getState>["activePanel"]; onClose: () => void; tasks: ReturnType<typeof useWorkspaceData>["tasks"]; moveTask: ReturnType<typeof useWorkspaceData>["moveTask"]; addTask: ReturnType<typeof useWorkspaceData>["addTask"]; huddle: HuddleController; workspaceId: string }) {
   if (!kind) return null;
   if (kind === "projects") return <Dialog open title="Project board" onClose={onClose}><KanbanView workspaceId="northstar-demo" /></Dialog>;
-  if (kind === "whiteboard") return <Dialog open title="Spatial Whiteboard" onClose={onClose}><WhiteboardPanel /></Dialog>;
+  if (kind === "whiteboard") return <Dialog open title="Spatial Whiteboard" onClose={onClose}><WhiteboardPanel workspaceId={workspaceId} /></Dialog>;
   if (kind === "focus") return <Dialog open title="Focus pod" onClose={onClose}><FocusPanel /></Dialog>;
   if (kind === "ai_assistant") return <Dialog open title="AI Startup Copilot" onClose={onClose}><AIAssistantPanel tasks={tasks} addTask={addTask} /></Dialog>;
   return <Dialog open title="Weekly product pulse" onClose={onClose}><MeetingPanel huddle={huddle} /></Dialog>;

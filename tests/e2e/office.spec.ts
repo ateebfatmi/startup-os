@@ -73,6 +73,27 @@ test("synchronizes presence across two office tabs", async ({ context }) => {
   await expect(first.getByText("1 online", { exact: true })).toBeVisible();
 });
 
+test("merges and persists whiteboard changes across two tabs", async ({ context }) => {
+  const first = await context.newPage();
+  const second = await context.newPage();
+  await Promise.all([first.goto("/office"), second.goto("/office")]);
+  await Promise.all([
+    first.getByRole("button", { name: "Whiteboard" }).click(),
+    second.getByRole("button", { name: "Whiteboard" }).click(),
+  ]);
+  await expect(first.getByText("Live · saved")).toBeVisible();
+  await expect(second.getByText("Live · saved")).toBeVisible();
+  await first.getByRole("button", { name: "Note" }).click();
+  await expect(second.getByLabel("Sticky note")).toBeVisible();
+  await first.getByLabel("Sticky note").fill("Interview five design partners");
+  await first.getByLabel("Sticky note").blur();
+  await expect(second.getByLabel("Sticky note")).toHaveValue("Interview five design partners");
+  await expect(first.getByText("Live · saved")).toBeVisible();
+  await first.getByRole("button", { name: "Overview" }).click();
+  await first.getByRole("button", { name: "Whiteboard" }).click();
+  await expect(first.getByLabel("Sticky note")).toHaveValue("Interview five design partners");
+});
+
 test("joins a real permission-gated huddle across two tabs", async ({ context }) => {
   test.setTimeout(90_000);
   const first = await context.newPage();

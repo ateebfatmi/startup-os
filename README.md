@@ -8,6 +8,7 @@ Orbit is a spatial startup operating system built around a navigable 3D office. 
 - A persistent office design studio with Founder Atelier, Biophilic Studio, and Midnight Lab directions, signature accent selection, and workspace-level terrace/planting controls.
 - Responsive WASD/arrow movement, eased velocity, facing direction, office bounds, and furniture collision.
 - Contextual project-table, meeting-room, whiteboard, and focus-pod interactions.
+- Persistent workspace whiteboard with logical-clock operation merging, realtime multi-user updates, drawing, notes, text, shapes, undo/redo, and PNG export.
 - Live cross-tab presence and avatar movement through a typed transport layer, with smoothed remote avatars, payload validation, heartbeats, stale-player cleanup, and automatic Supabase Realtime selection when configured.
 - Real, permission-gated WebRTC huddles with audio/video tracks, microphone/camera controls, screen sharing, speaking indicators, peer status, directed SDP/ICE signaling, and complete media cleanup.
 - Synced availability states (`available`, `focus`, `do not disturb`, `away`) and deterministic departure delivery across browser tabs.
