@@ -40,3 +40,11 @@ test("keeps commercial billing inert in local demo mode", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Choose Pro" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Choose Business" })).toBeDisabled();
 });
+
+test("navigates with the command search and renders executive analytics", async ({ page }) => {
+  await page.goto("/office");
+  await page.getByLabel("Search workspace").fill("Analytics");
+  await page.getByRole("button", { name: "Analytics" }).last().click();
+  await expect(page.getByRole("heading", { name: "Operating pulse" })).toBeVisible();
+  await expect(page.getByText("Task completion")).toBeVisible();
+});

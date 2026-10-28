@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, CreditCard, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, MonitorUp, Moon, Music, Palette, PhoneOff, Plus, Radio, Search, Sparkles, Sun, Sunset, Target, User, Users, Video, VideoOff, Wifi, X } from "lucide-react";
+import { Activity, BarChart3, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, CreditCard, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, MonitorUp, Moon, Music, Palette, PhoneOff, Plus, Radio, Search, Sparkles, Sun, Sunset, Target, User, Users, Video, VideoOff, Wifi, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,7 @@ import { MeetingsView } from "./meetings-view";
 import { GoalsView } from "./goals-view";
 import { fetchNotifications, markNotificationRead, type WorkspaceNotification } from "./operating-system-service";
 import { BillingView } from "./billing-view";
+import { AnalyticsView } from "./analytics-view";
 
 const nav = [
   { id: "office", label: "Office", icon: DoorOpen },
@@ -39,6 +40,7 @@ const nav = [
   { id: "projects", label: "Projects", icon: FolderKanban },
   { id: "tasks", label: "My tasks", icon: CheckSquare2 },
   { id: "goals", label: "Goals", icon: Target },
+  { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "meetings", label: "Meetings", icon: CalendarDays },
   { id: "files", label: "Files", icon: Files },
   { id: "activity", label: "Activity", icon: Activity },
@@ -117,7 +119,7 @@ export function WorkspaceShell() {
     <main className="flex h-[100dvh] overflow-hidden bg-[#f4f1e8]">
       <Sidebar view={view} setView={setView} mobileNav={mobileNav} onClose={() => setMobileNav(false)} workspaceName={identity.workspaceName} workspaceId={identity.workspaceId} workspaces={workspaces} onSelectWorkspace={selectWorkspace} onExit={async () => { if (hasSupabaseConfig) await createSupabaseBrowserClient().auth.signOut(); ["orbit-display-name", "orbit-workspace-name", "orbit-workspace-id", "orbit-workspace-type", "orbit-office-template"].forEach((key) => window.localStorage.removeItem(key)); router.push("/login"); router.refresh(); }} />
       <div className="relative flex min-w-0 flex-1 flex-col">
-        <Topbar view={view} onMenu={() => setMobileNav(true)} displayName={identity.displayName} />
+        <Topbar view={view} onMenu={() => setMobileNav(true)} displayName={identity.displayName} onNavigate={setView} />
         <div className="relative isolate min-h-0 flex-1">
           {view === "office" ? (
             <>
@@ -172,15 +174,18 @@ function Sidebar({ view, setView, mobileNav, onClose, workspaceName, workspaceId
   </>;
 }
 
-function Topbar({ view, onMenu, displayName }: { view: View; onMenu: () => void; displayName: string }) {
+function Topbar({ view, onMenu, displayName, onNavigate }: { view: View; onMenu: () => void; displayName: string; onNavigate: (view: View) => void }) {
   const title = nav.find((item) => item.id === view)?.label ?? "Office";
   const teammateCount = useOfficeStore((state) => Object.keys(state.remotePlayers).length);
   const availability = useOfficeStore((state) => state.avatarStatus);
   const setAvailability = useOfficeStore((state) => state.setAvatarStatus);
-  return <header className="z-20 flex h-16 shrink-0 items-center gap-3 border-b border-black/[.07] bg-[#fffdf7]/95 px-4 backdrop-blur-md md:px-5">
+  const [query, setQuery] = useState(""); const [searchOpen, setSearchOpen] = useState(false);
+  useEffect(() => { const shortcut = (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); setSearchOpen(true); } if (event.key === "Escape") setSearchOpen(false); }; window.addEventListener("keydown", shortcut); return () => window.removeEventListener("keydown", shortcut); }, []);
+  const matches = nav.filter((item) => item.label.toLowerCase().includes(query.toLowerCase()));
+  return <header className="relative z-20 flex h-16 shrink-0 items-center gap-3 border-b border-black/[.07] bg-[#fffdf7]/95 px-4 backdrop-blur-md md:px-5">
     <button className="grid h-10 w-10 place-items-center rounded-xl hover:bg-black/5 lg:hidden" onClick={onMenu}><Menu size={20} /></button>
     <div><h1 className="text-base font-bold tracking-tight">{title}</h1><p className="hidden text-xs text-[#68736b] sm:block">Friday, October 9 · {teammateCount ? `${teammateCount} teammate${teammateCount === 1 ? "" : "s"} nearby` : "Waiting for teammates"}</p></div>
-    <div className="ml-auto hidden w-full max-w-xs items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2 text-[#68736b] md:flex"><Search size={16} /><input className="w-full bg-transparent text-sm outline-none" placeholder="Search workspace" aria-label="Search workspace" /><kbd className="rounded bg-black/5 px-1.5 py-0.5 text-xs">⌘K</kbd></div>
+    <div className="relative ml-auto hidden w-full max-w-xs md:block"><div className="flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2 text-[#68736b]"><Search size={16} /><input value={query} onChange={(e) => { setQuery(e.target.value); setSearchOpen(true); }} onFocus={() => setSearchOpen(true)} className="w-full bg-transparent text-sm outline-none" placeholder="Jump to…" aria-label="Search workspace" /><kbd className="rounded bg-black/5 px-1.5 py-0.5 text-xs">⌘K</kbd></div>{searchOpen && <div className="absolute inset-x-0 top-12 overflow-hidden rounded-2xl border border-black/10 bg-[#fffdf7] p-1.5 shadow-2xl">{matches.map((item) => <button key={item.id} onClick={() => { onNavigate(item.id); setSearchOpen(false); setQuery(""); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm hover:bg-black/5"><item.icon size={16} /><span>{item.label}</span></button>)}{matches.length === 0 && <div className="p-3 text-center text-xs text-[#68736b]">No workspace destination found.</div>}</div>}</div>
     <Button size="sm" onClick={() => useOfficeStore.getState().openPanel("ai_assistant")} className="hidden sm:flex items-center gap-1.5 bg-[#173f2b] text-[#c8f560] hover:bg-[#20573c] border-none shadow-sm"><Bot size={16} /> AI Copilot</Button>
     <Button variant="ghost" size="icon" aria-label="Help"><CircleHelp size={19} /></Button>
     <NotificationMenu />
@@ -341,6 +346,7 @@ function DashboardView({ view, tasks, moveTask, addTask, workspaceId, workspaceR
   if (view === "projects") return <div className="h-full overflow-auto"><ProjectsView workspaceId={workspaceId} /></div>;
   if (view === "tasks") return <div className="h-full overflow-auto"><KanbanView workspaceId={workspaceId} /></div>;
   if (view === "goals") return <div className="h-full overflow-auto"><GoalsView workspaceId={workspaceId} /></div>;
+  if (view === "analytics") return <div className="h-full overflow-auto"><AnalyticsView workspaceId={workspaceId} /></div>;
   if (view === "meetings") return <div className="h-full overflow-auto"><MeetingsView workspaceId={workspaceId} /></div>;
   if (view === "files") return <div className="h-full overflow-auto"><DocumentsView workspaceId={workspaceId} /></div>;
   if (view === "activity") return <div className="h-full overflow-auto"><ActivityView workspaceId={workspaceId} /></div>;
