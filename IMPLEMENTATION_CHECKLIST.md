@@ -62,4 +62,4 @@
 - [x] Executive operating analytics and command-search navigation.
 - [x] Secure OAuth connection lifecycle, token refresh, connection verification, and idempotent meeting/task imports for Google Calendar, Slack, GitHub, and Linear.
 - [x] Persistent operation-merged whiteboard with drawing, notes, text, shapes, selection, movement, undo/redo, export, and realtime multi-tab synchronization.
-- [ ] Two-browser multiplayer and media tests, access-control audit, and FPS benchmark.
+- [x] Two-browser multiplayer/media/whiteboard tests, static access-control regression audit, measured FPS benchmark, and reduced rendering mode.

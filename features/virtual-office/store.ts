@@ -25,6 +25,9 @@ type OfficeState = {
   officeObjects: OfficeObject[];
   avatarAssetReady: boolean;
   touchInput: { x: number; z: number };
+  qualityMode: "high" | "reduced";
+  measuredFps: number;
+  rendererClass: "unknown" | "hardware" | "software";
   setPlayerTransform: (x: number, z: number, rotation: number) => void;
   setPlayerIdentity: (identity: Pick<PlayerSnapshot, "id" | "name" | "color">) => void;
   upsertRemotePlayer: (player: PlayerSnapshot) => void;
@@ -54,6 +57,9 @@ type OfficeState = {
   setOfficeObjects: (objects: OfficeObject[]) => void;
   setAvatarAssetReady: (ready: boolean) => void;
   setTouchInput: (input: { x: number; z: number }) => void;
+  setQualityMode: (mode: "high" | "reduced") => void;
+  setMeasuredFps: (fps: number) => void;
+  setRendererClass: (value: "hardware" | "software") => void;
 };
 
 export const useOfficeStore = create<OfficeState>((set) => ({
@@ -76,6 +82,9 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   officeObjects: [],
   avatarAssetReady: false,
   touchInput: { x: 0, z: 0 },
+  qualityMode: "high",
+  measuredFps: 0,
+  rendererClass: "unknown",
   setPlayerTransform: (x, z, rotation) => set((state) => ({ player: { ...state.player, x, z, rotation, updatedAt: Date.now() } })),
   setPlayerIdentity: (identity) => set((state) => ({ player: { ...state.player, ...identity } })),
   upsertRemotePlayer: (player) => set((state) => player.id === state.player.id ? state : ({ remotePlayers: { ...state.remotePlayers, [player.id]: player } })),
@@ -112,4 +121,7 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   setOfficeObjects: (officeObjects) => set({ officeObjects }),
   setAvatarAssetReady: (avatarAssetReady) => set({ avatarAssetReady }),
   setTouchInput: (touchInput) => set({ touchInput }),
+  setQualityMode: (qualityMode) => set({ qualityMode }),
+  setMeasuredFps: (measuredFps) => set({ measuredFps }),
+  setRendererClass: (rendererClass) => set({ rendererClass }),
 }));

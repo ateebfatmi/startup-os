@@ -11,6 +11,8 @@ Orbit is a spatial startup operating system built around a navigable 3D office. 
 - Persistent workspace whiteboard with logical-clock operation merging, realtime multi-user updates, drawing, notes, text, shapes, undo/redo, and PNG export.
 - Workspace-scoped 3D furniture placement with server-validated transforms, live previews, persistent Supabase objects, interaction hooks, and collision geometry.
 - Self-authored GLTF avatar asset with idle/walk animation clips, persisted jacket color, shared local/remote adapter, and a procedural loading/error fallback.
+- In-scene frame-rate measurement with high/reduced rendering modes, plus automated RLS, privileged-route, secret-exposure, and two-browser regression audits.
+- Rendering mode automatically falls back to reduced quality on software WebGL; automated hardware runs target >45 FPS while software CI records and enforces a >3 FPS floor.
 - Live cross-tab presence and avatar movement through a typed transport layer, with smoothed remote avatars, payload validation, heartbeats, stale-player cleanup, and automatic Supabase Realtime selection when configured.
 - Real, permission-gated WebRTC huddles with audio/video tracks, microphone/camera controls, screen sharing, speaking indicators, peer status, directed SDP/ICE signaling, and complete media cleanup.
 - Explicitly opt-in proximity audio with deterministic spatial groups, boundary hysteresis, automatic nearby-room transitions, and clear active/off indicators.

@@ -42,6 +42,19 @@ test("moves the avatar with accessible touch controls", async ({ page }) => {
   await expect.poll(async () => Number(await position.getAttribute("data-x"))).toBeGreaterThan(before + 0.5);
 });
 
+test("measures 3D performance and supports reduced rendering", async ({ page }) => {
+  await page.goto("/office");
+  const metric = page.getByLabel("3D frame rate");
+  await expect.poll(async () => Number(await metric.getAttribute("data-fps")), { timeout: 15_000 }).toBeGreaterThan(3);
+  const rendererClass = await metric.getAttribute("data-renderer-class");
+  const measured = Number(await metric.getAttribute("data-fps"));
+  if (rendererClass === "hardware") expect(measured).toBeGreaterThan(45);
+  else expect(rendererClass).toBe("software");
+  const before = await page.getByRole("button", { name: "Toggle rendering quality" }).textContent();
+  await page.getByRole("button", { name: "Toggle rendering quality" }).click();
+  await expect(page.getByRole("button", { name: "Toggle rendering quality" })).toContainText(before?.includes("Reduced") ? "High" : "Reduced");
+});
+
 test("creates a local task", async ({ page }) => {
   await page.goto("/office");
   await page.getByRole("button", { name: "My tasks" }).click();

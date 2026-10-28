@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, AudioLines, BarChart3, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, CreditCard, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, MonitorUp, Moon, Music, Palette, PenTool, PhoneOff, Plug, Plus, Radio, Search, Sparkles, Sun, Sunset, Target, User, Users, Video, VideoOff, VolumeX, Wifi, X } from "lucide-react";
+import { Activity, AudioLines, BarChart3, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, CreditCard, DoorOpen, Files, FolderKanban, Gauge, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, MonitorUp, Moon, Music, Palette, PenTool, PhoneOff, Plug, Plus, Radio, Search, Sparkles, Sun, Sunset, Target, User, Users, Video, VideoOff, VolumeX, Wifi, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -241,6 +241,9 @@ function OfficeHud({ rightRail, onToggleRail, tasks, displayName }: { rightRail:
   const zoomLevel = useOfficeStore((state) => state.zoomLevel);
   const zoomIn = useOfficeStore((state) => state.zoomIn);
   const zoomOut = useOfficeStore((state) => state.zoomOut);
+  const qualityMode = useOfficeStore((state) => state.qualityMode);
+  const setQualityMode = useOfficeStore((state) => state.setQualityMode);
+  const measuredFps = useOfficeStore((state) => state.measuredFps);
   const onlineCount = Object.keys(remotePlayers).length + 1;
 
   return <>
@@ -304,6 +307,8 @@ function OfficeHud({ rightRail, onToggleRail, tasks, displayName }: { rightRail:
               </>
             )}
           </button>
+
+          <button onClick={() => setQualityMode(qualityMode === "high" ? "reduced" : "high")} aria-label="Toggle rendering quality" className="flex items-center gap-1.5 rounded-lg border border-black/10 bg-white/90 px-2.5 py-1 text-xs font-semibold text-[#173f2b] shadow-xs transition hover:bg-black/5" title="Toggle high and reduced rendering modes"><Gauge size={13} className={measuredFps && measuredFps < 45 ? "text-amber-600" : "text-emerald-600"} /><span>{qualityMode === "high" ? "High" : "Reduced"} · {measuredFps ? Math.round(measuredFps) : "—"} FPS</span></button>
 
           {/* Camera View Toggle */}
           <button

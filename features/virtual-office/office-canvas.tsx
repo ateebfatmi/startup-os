@@ -18,6 +18,9 @@ const keys = new Set<string>();
 export function OfficeCanvas() {
   const lightingMode = useOfficeStore((state) => state.lightingMode);
   const avatarAssetReady = useOfficeStore((state) => state.avatarAssetReady);
+  const qualityMode = useOfficeStore((state) => state.qualityMode);
+  const measuredFps = useOfficeStore((state) => state.measuredFps);
+  const rendererClass = useOfficeStore((state) => state.rendererClass);
 
   // Dynamic Lighting Themes
   const lighting = useMemo(() => {
@@ -96,9 +99,10 @@ export function OfficeCanvas() {
     <div className="relative h-full w-full">
       <span className="sr-only">You</span>
       {avatarAssetReady && <span className="sr-only">Animated GLTF avatar ready</span>}
+      <output aria-label="3D frame rate" data-fps={measuredFps.toFixed(1)} data-renderer-class={rendererClass} className="sr-only">{measuredFps.toFixed(1)} FPS</output>
       <Canvas
-      dpr={[1, 2]}
-      shadows
+      dpr={qualityMode === "reduced" ? 1 : [1, 2]}
+      shadows={qualityMode === "high"}
       style={{ width: "100%", height: "100%" }}
       gl={{ antialias: true, powerPreference: "high-performance" }}
     >
@@ -122,7 +126,7 @@ export function OfficeCanvas() {
         position={lighting.sunPos}
         color={lighting.sunColor}
         intensity={lighting.sunIntensity}
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={qualityMode === "reduced" ? [1024, 1024] : [2048, 2048]}
         shadow-camera-near={0.5}
         shadow-camera-far={60}
         shadow-camera-left={-18}
@@ -145,15 +149,38 @@ export function OfficeCanvas() {
 
       <OfficeEnvironment />
       <CustomOfficeObjects />
-      <ContactShadows position={[0, 0.05, 1.8]} opacity={lightingMode === "night" ? 0.48 : 0.35} scale={36} blur={2.0} far={8} frames={1} />
+      {qualityMode === "high" && <ContactShadows position={[0, 0.05, 1.8]} opacity={lightingMode === "night" ? 0.48 : 0.35} scale={36} blur={2.0} far={8} frames={1} />}
       <FloorClickSurface />
       <ClickTargetMarker />
       <LocalPlayer />
       <RemotePlayers />
+      <FrameMetrics />
       </Canvas>
       <TouchControls />
     </div>
   );
+}
+
+function FrameMetrics() {
+  const frameCount = useRef(0); const startedAt = useRef(performance.now());
+  const setMeasuredFps = useOfficeStore((state) => state.setMeasuredFps);
+  const setRendererClass = useOfficeStore((state) => state.setRendererClass);
+  const setQualityMode = useOfficeStore((state) => state.setQualityMode);
+  const { gl } = useThree();
+  useEffect(() => {
+    const context = gl.getContext();
+    const debug = context.getExtension("WEBGL_debug_renderer_info");
+    const renderer = String(debug ? context.getParameter(debug.UNMASKED_RENDERER_WEBGL) : context.getParameter(context.RENDERER));
+    const software = /swiftshader|llvmpipe|software/i.test(renderer);
+    setRendererClass(software ? "software" : "hardware");
+    if (software) setQualityMode("reduced");
+  }, [gl, setQualityMode, setRendererClass]);
+  useFrame(() => {
+    frameCount.current += 1; const now = performance.now(); const elapsed = now - startedAt.current;
+    if (elapsed < 2_000) return;
+    setMeasuredFps(frameCount.current / elapsed * 1_000); frameCount.current = 0; startedAt.current = now;
+  });
+  return null;
 }
 
 function TouchControls() {
