@@ -29,6 +29,48 @@ test("opens the 3D office shell", async ({ page }) => {
   expect((await ice.json()).iceServers.length).toBeGreaterThan(0);
 });
 
+test("navigates the office with a live room map", async ({ page }) => {
+  await page.goto("/office");
+  await page.getByRole("button", { name: "Expand office map" }).click();
+  await expect(page.getByRole("button", { name: "Collapse office map" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Walk to Executive Boardroom" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Walk to Sky Terrace" })).toBeVisible();
+  await page.getByRole("button", { name: "Walk to Sky Terrace" }).click();
+  await expect(page.getByRole("button", { name: "Collapse office map" })).toBeVisible();
+});
+
+test("helps users discover controls and jump to a workspace destination", async ({ page }) => {
+  await page.goto("/office");
+  await page.getByRole("button", { name: "Help and keyboard shortcuts" }).click();
+  const help = page.getByRole("dialog", { name: "Make yourself at home" });
+  await expect(help.getByText("Explore the office")).toBeVisible();
+  await expect(help.getByText("Huddles and proximity audio are opt-in.")).toBeVisible();
+  await help.getByRole("button", { name: "Close dialog" }).click();
+
+  await page.keyboard.press("Control+K");
+  const search = page.getByRole("dialog", { name: "Search workspace" });
+  await search.getByRole("textbox", { name: "Search destinations" }).fill("team");
+  await search.getByRole("button", { name: "Team Manage" }).dispatchEvent("click");
+  await expect(page.getByRole("heading", { name: "Team", exact: true })).toBeVisible();
+});
+
+test("generates a grounded professional PRD and requires task review", async ({ page }) => {
+  await page.goto("/office");
+  await page.getByRole("button", { name: "AI Copilot" }).click();
+  const copilot = page.getByRole("dialog", { name: "AI Startup Copilot" });
+  await copilot.getByRole("button", { name: /PRD Implementation-ready spec/ }).click();
+  await copilot.getByLabel("What outcome do you need?").fill("Guided onboarding");
+  await copilot.getByRole("button", { name: "Generate" }).click();
+
+  await expect(copilot.getByText("Professional local mode")).toBeVisible();
+  await expect(copilot.getByText("## 5. Non-goals")).toBeVisible();
+  await expect(copilot.getByText("Context used")).toBeVisible();
+  await expect(copilot.getByRole("button", { name: "Add 3 selected tasks" })).toBeVisible();
+  await copilot.getByLabel("Select Prototype and test Guided onboarding").uncheck();
+  await copilot.getByRole("button", { name: "Add 2 selected tasks" }).click();
+  await expect(copilot.getByText("Added 2 reviewed tasks to My tasks.")).toBeVisible();
+});
+
 test("moves the avatar with accessible touch controls", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/office");

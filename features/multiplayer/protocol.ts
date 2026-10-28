@@ -1,10 +1,12 @@
 import { OFFICE_BOUNDS } from "@/features/virtual-office/collision";
 import type { PlayerSnapshot } from "@/features/virtual-office/types";
+import { OFFICE_ROOMS } from "@/features/virtual-office/office-data";
 
 export const NETWORK_RATE_HZ = 12;
 export const STALE_PLAYER_MS = 15_000;
 const MAX_NAME_LENGTH = 80;
 const AVAILABILITY = new Set(["available", "focus", "do_not_disturb", "away"]);
+const ROOM_IDS = new Set(OFFICE_ROOMS.map((room) => room.id));
 
 export function isPlayerSnapshot(value: unknown): value is PlayerSnapshot {
   if (!value || typeof value !== "object") return false;
@@ -17,6 +19,7 @@ export function isPlayerSnapshot(value: unknown): value is PlayerSnapshot {
     typeof snapshot.rotation === "number" && Number.isFinite(snapshot.rotation) && Math.abs(snapshot.rotation) <= Math.PI * 4 &&
     typeof snapshot.updatedAt === "number" && Number.isFinite(snapshot.updatedAt) &&
     typeof snapshot.color === "string" && /^#[0-9a-f]{6}$/i.test(snapshot.color) &&
+    (snapshot.roomId === undefined || ROOM_IDS.has(snapshot.roomId)) &&
     (snapshot.status === undefined || AVAILABILITY.has(snapshot.status))
   );
 }

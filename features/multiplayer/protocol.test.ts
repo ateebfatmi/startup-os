@@ -17,6 +17,8 @@ describe("multiplayer protocol", () => {
     expect(isPlayerSnapshot(snapshot)).toBe(true);
     expect(isPlayerSnapshot({ ...snapshot, x: 100 })).toBe(false);
     expect(isPlayerSnapshot({ ...snapshot, color: "red" })).toBe(false);
+    expect(isPlayerSnapshot({ ...snapshot, roomId: "not-a-real-room" })).toBe(false);
+    expect(isPlayerSnapshot({ ...snapshot, roomId: "atrium" })).toBe(true);
   });
 
   it("normalizes names and rotations", () => {

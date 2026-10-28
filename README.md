@@ -27,6 +27,7 @@ Orbit is a spatial startup operating system built around a navigable 3D office. 
 - Database-backed project portfolio and Kanban task management supporting full CRUD, task comments, member assignment, deadlines, priority filtering (`urgent`, `high`, `medium`, `low`), and project categorization.
 - Persistent meeting scheduling with shared notes and linked resources, company objectives, measurable key results, progress tracking, and event-driven personal notifications.
 - Executive workspace analytics and a keyboard-accessible command search for navigating every operating surface.
+- Professional workspace-aware Copilot for strategy, implementation-ready PRDs, evidence-conscious investor narratives, and grounded sprint briefs. Gemini is used when configured; a transparent local fallback remains available, and every suggested task requires explicit review before creation.
 - Owner/admin OAuth connections for Google Calendar, Slack, GitHub, and Linear with signed CSRF state, AES-256-GCM encrypted server-side tokens, automatic token refresh, and idempotent imports into meetings and tasks.
 - Owner/admin billing with Stripe Checkout, signed webhook synchronization, seat quantities, subscription status, and customer-portal access.
 - Private workspace file library with a 25 MB limit, MIME allowlist, owner/admin deletion rules, and short-lived signed download URLs.
@@ -47,6 +48,12 @@ npm run dev
 ```
 
 Open `http://localhost:3000`. Without Supabase credentials, `/login` clearly offers a local demo and task changes are saved only in browser storage.
+
+### AI Copilot
+
+Set the server-only `GEMINI_API_KEY` to enable live Gemini generation. `GEMINI_MODEL` defaults to `gemini-3.8-flash` and can be changed without rebuilding. Never prefix either variable with `NEXT_PUBLIC_`.
+
+Without a provider key, Copilot clearly reports **Professional local mode** and uses its deterministic, evidence-conscious fallback. Both modes ground outputs in the task records sent by the workspace, label confidence and context, avoid fabricated business metrics, and require the user to review selected tasks before adding them.
 
 ## Supabase setup
 

@@ -43,7 +43,7 @@ export function Logo({
       >
         <Image
           src="/logo.png"
-          alt="PZ Logo"
+          alt="PZ Orbit"
           className="h-full w-full object-contain p-0.5"
           width={dimension}
           height={dimension}

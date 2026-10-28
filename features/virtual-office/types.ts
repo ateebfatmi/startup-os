@@ -13,6 +13,17 @@ export type InteractionZone = Vec2 & {
   kind: InteractionKind;
 };
 
+export type OfficeRoom = {
+  id: string;
+  name: string;
+  shortName: string;
+  description: string;
+  color: string;
+  bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
+  destination: Vec2;
+  labelPosition: Vec2;
+};
+
 export type PlayerSnapshot = {
   id: string;
   name: string;

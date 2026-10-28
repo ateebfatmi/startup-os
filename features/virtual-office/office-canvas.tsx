@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Hand } from "lucide-react";
 import * as THREE from "three";
 import { COLLIDERS, resolveMovement } from "./collision";
-import { INTERACTION_ZONES } from "./office-data";
+import { INTERACTION_ZONES, OFFICE_ROOMS } from "./office-data";
 import { useOfficeStore } from "./store";
 import { playChime, playCoffeeSound, playLofiMusic, playSlideClick, stopLofiMusic } from "./audio";
 import { OFFICE_THEME_PALETTES } from "./office-design";
@@ -637,6 +637,7 @@ function OfficeEnvironment() {
       <AIPod />
       <LightingDetails />
       {design.plantsEnabled && <Plants />}
+      <RoomWayfinding />
 
       {/* Clean, Subtle Interactive Zone Floor Rings */}
       {INTERACTION_ZONES.map((zone) => {
@@ -657,6 +658,40 @@ function OfficeEnvironment() {
       })}
     </group>
   );
+}
+
+function RoomWayfinding() {
+  return <group>
+    {OFFICE_ROOMS.map((room) => <group key={room.id} position={[room.labelPosition.x, 0.055, room.labelPosition.z]}>
+      <mesh rotation-x={-Math.PI / 2}>
+        <planeGeometry args={[2.55, 0.5]} />
+        <meshBasicMaterial color="#fffdf7" transparent opacity={0.82} />
+      </mesh>
+      <mesh position={[-1.08, 0.004, 0]} rotation-x={-Math.PI / 2}>
+        <planeGeometry args={[0.08, 0.3]} />
+        <meshBasicMaterial color={room.color} />
+      </mesh>
+      <SpriteLabel text={room.shortName.toUpperCase()} position={[0.12, 0.18, 0]} background="rgba(255,253,247,.94)" color="#173f2b" width={2.25} />
+    </group>)}
+    <StandupNook />
+  </group>;
+}
+
+function StandupNook() {
+  return <group position={[0, 0, -1.7]}>
+    <mesh castShadow position={[0, 0.56, 0]}>
+      <cylinderGeometry args={[0.72, 0.58, 1.08, 24]} />
+      <meshStandardMaterial color="#e7ddca" roughness={0.55} />
+    </mesh>
+    <mesh position={[0, 1.12, 0]}>
+      <cylinderGeometry args={[0.78, 0.78, 0.08, 28]} />
+      <meshStandardMaterial color="#315641" roughness={0.4} />
+    </mesh>
+    {[0, Math.PI * 2 / 3, Math.PI * 4 / 3].map((angle) => <group key={angle} position={[Math.sin(angle) * 1.25, 0, Math.cos(angle) * 1.25]}>
+      <mesh castShadow position={[0, 0.42, 0]}><cylinderGeometry args={[0.25, 0.25, 0.08, 18]} /><meshStandardMaterial color="#d39a68" /></mesh>
+      <mesh position={[0, 0.2, 0]}><cylinderGeometry args={[0.035, 0.035, 0.4, 10]} /><meshStandardMaterial color="#28342e" metalness={0.55} /></mesh>
+    </group>)}
+  </group>;
 }
 
 function Floor() {

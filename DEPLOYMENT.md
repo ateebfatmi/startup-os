@@ -12,6 +12,7 @@
 - Set Stripe’s secret key, webhook signing secret, and recurring Pro/Business price IDs. Send Stripe events to `/api/billing/webhook`.
 - Generate `INTEGRATION_ENCRYPTION_KEY` with 32 random bytes encoded as base64 and set a separate high-entropy `INTEGRATION_STATE_SECRET`.
 - Register provider callback URLs as `/api/integrations/{provider}/callback` for `google_calendar`, `slack`, `github`, and `linear`, then set each provider client ID and secret.
+- Set the server-only `GEMINI_API_KEY` and optional `GEMINI_MODEL` to enable live Copilot generation. Verify that provider failures fall back visibly and never expose the key to browser bundles or logs.
 - After connecting, run a manual sync from Integrations and confirm Calendar events become meetings, GitHub/Linear issues become tasks, and Slack authorization verifies successfully.
 
 ## Backend preparation
@@ -41,6 +42,7 @@ After deployment, verify:
 - A huddle connects through TURN from two separate networks.
 - A test-mode checkout, webhook update, and customer-portal return flow complete successfully before enabling live-mode Stripe keys.
 - Browser console and platform logs contain no secrets or unhandled errors.
+- Copilot identifies the active provider, grounds a sprint brief in real workspace tasks, avoids invented pitch metrics, and creates no suggested task until the user explicitly selects and confirms it.
 
 ## Rollback
 

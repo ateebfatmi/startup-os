@@ -4,6 +4,7 @@ import { create } from "zustand";
 import type { Availability, ConnectionState, InteractionKind, PlayerSnapshot } from "./types";
 import { DEFAULT_OFFICE_DESIGN, type OfficeDesignSettings } from "./office-design";
 import type { OfficeObject } from "./office-object-catalog";
+import { getOfficeRoomAt } from "./office-data";
 
 type OfficeState = {
   player: PlayerSnapshot;
@@ -85,7 +86,7 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   qualityMode: "high",
   measuredFps: 0,
   rendererClass: "unknown",
-  setPlayerTransform: (x, z, rotation) => set((state) => ({ player: { ...state.player, x, z, rotation, updatedAt: Date.now() } })),
+  setPlayerTransform: (x, z, rotation) => set((state) => ({ player: { ...state.player, x, z, rotation, roomId: getOfficeRoomAt(x, z)?.id, updatedAt: Date.now() } })),
   setPlayerIdentity: (identity) => set((state) => ({ player: { ...state.player, ...identity } })),
   upsertRemotePlayer: (player) => set((state) => player.id === state.player.id ? state : ({ remotePlayers: { ...state.remotePlayers, [player.id]: player } })),
   removeRemotePlayer: (id) => set((state) => {
