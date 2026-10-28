@@ -58,5 +58,6 @@
 - [x] Meeting scheduling, objective/key-result tracking, and event-driven notifications.
 - [ ] Persistent meeting notes and linked resources.
 - [x] Persistent activity feed and audit trail.
+- [x] Stripe subscription foundation with owner/admin authorization, Checkout, customer portal, signed webhooks, and workspace billing state.
 - [ ] Collaborative whiteboard CRDT/realtime synchronization.
 - [ ] Two-browser multiplayer and media tests, access-control audit, and FPS benchmark.

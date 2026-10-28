@@ -20,6 +20,7 @@ Orbit is a spatial startup operating system built around a navigable 3D office. 
 - Multi-workspace membership discovery and switching without signing out.
 - Database-backed project portfolio and Kanban task management supporting full CRUD, task comments, member assignment, deadlines, priority filtering (`urgent`, `high`, `medium`, `low`), and project categorization.
 - Persistent meeting scheduling, company objectives, measurable key results, progress tracking, and event-driven personal notifications.
+- Owner/admin billing with Stripe Checkout, signed webhook synchronization, seat quantities, subscription status, and customer-portal access.
 - Private workspace file library with a 25 MB limit, MIME allowlist, owner/admin deletion rules, and short-lived signed download URLs.
 - Immutable activity feed for project, task, comment, file, and membership changes.
 - Local demo persistence for projects, tasks, task comments, files, team directory, and invitations when no backend credentials are configured.

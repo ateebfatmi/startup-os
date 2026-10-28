@@ -9,6 +9,7 @@
 - Keep `SUPABASE_SERVICE_ROLE_KEY` server-only. Never expose it through a `NEXT_PUBLIC_` variable.
 - Configure `NEXT_PUBLIC_ICE_SERVERS` as a JSON array with production STUN and TURN servers. Use short-lived TURN credentials when possible.
 - Prefer `TURN_CREDENTIALS_URL` plus the server-only `TURN_CREDENTIALS_TOKEN` for ephemeral credentials; retain `NEXT_PUBLIC_ICE_SERVERS` as a fallback.
+- Set Stripe’s secret key, webhook signing secret, and recurring Pro/Business price IDs. Send Stripe events to `/api/billing/webhook`.
 
 ## Backend preparation
 
@@ -33,6 +34,7 @@ After deployment, verify:
 - A project, task, comment, invitation, and member-role update persist after refresh.
 - Two authenticated browsers see presence updates.
 - A huddle connects through TURN from two separate networks.
+- A test-mode checkout, webhook update, and customer-portal return flow complete successfully before enabling live-mode Stripe keys.
 - Browser console and platform logs contain no secrets or unhandled errors.
 
 ## Rollback

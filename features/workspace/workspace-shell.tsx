@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, MonitorUp, Moon, Music, Palette, PhoneOff, Plus, Radio, Search, Sparkles, Sun, Sunset, Target, User, Users, Video, VideoOff, Wifi, X } from "lucide-react";
+import { Activity, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, CreditCard, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, MonitorUp, Moon, Music, Palette, PhoneOff, Plus, Radio, Search, Sparkles, Sun, Sunset, Target, User, Users, Video, VideoOff, Wifi, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,7 @@ import { OfficeDesignView } from "./office-design-view";
 import { MeetingsView } from "./meetings-view";
 import { GoalsView } from "./goals-view";
 import { fetchNotifications, markNotificationRead, type WorkspaceNotification } from "./operating-system-service";
+import { BillingView } from "./billing-view";
 
 const nav = [
   { id: "office", label: "Office", icon: DoorOpen },
@@ -42,6 +43,7 @@ const nav = [
   { id: "files", label: "Files", icon: Files },
   { id: "activity", label: "Activity", icon: Activity },
   { id: "design", label: "Office design", icon: Palette },
+  { id: "billing", label: "Billing", icon: CreditCard },
   { id: "team", label: "Team", icon: Users },
 ] as const;
 
@@ -343,6 +345,7 @@ function DashboardView({ view, tasks, moveTask, addTask, workspaceId, workspaceR
   if (view === "files") return <div className="h-full overflow-auto"><DocumentsView workspaceId={workspaceId} /></div>;
   if (view === "activity") return <div className="h-full overflow-auto"><ActivityView workspaceId={workspaceId} /></div>;
   if (view === "design") return <div className="h-full overflow-auto"><OfficeDesignView workspaceId={workspaceId} canEdit={workspaceRole === "owner" || workspaceRole === "admin"} /></div>;
+  if (view === "billing") return <div className="h-full overflow-auto"><BillingView workspaceId={workspaceId} canManage={workspaceRole === "owner" || workspaceRole === "admin"} /></div>;
   if (view === "team") return <div className="h-full overflow-auto"><TeamView workspaceId={workspaceId} /></div>;
   return <div className="h-full overflow-auto p-4 md:p-7"><Overview view={view} tasks={tasks} /></div>;
 }

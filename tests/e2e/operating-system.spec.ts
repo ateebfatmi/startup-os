@@ -32,3 +32,11 @@ test("opens and reads workspace notifications", async ({ page }) => {
   await page.getByText("Welcome to Orbit").click();
   await expect(page.getByText("0 unread")).toBeVisible();
 });
+
+test("keeps commercial billing inert in local demo mode", async ({ page }) => {
+  await page.goto("/office");
+  await page.getByRole("button", { name: "Billing" }).click();
+  await expect(page.getByText("Billing is safely disabled in local demo mode.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Choose Pro" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Choose Business" })).toBeDisabled();
+});
