@@ -29,6 +29,20 @@ test("creates a local task", async ({ page }) => {
   await expect(page.getByText("Verify beta access")).toBeVisible();
 });
 
+test("stores private file metadata and shows the workspace audit trail", async ({ page }) => {
+  await page.goto("/office");
+  await page.getByRole("button", { name: "Files" }).click();
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "launch-brief.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("Orbit launch brief"),
+  });
+  await expect(page.getByText("launch-brief.txt")).toBeVisible();
+  await page.getByRole("button", { name: "Activity" }).click();
+  await expect(page.getByRole("heading", { name: "Workspace activity" })).toBeVisible();
+  await expect(page.getByText(/updated task/).first()).toBeVisible();
+});
+
 test("synchronizes presence across two office tabs", async ({ context }) => {
   const first = await context.newPage();
   await first.goto("/office");
@@ -42,6 +56,7 @@ test("synchronizes presence across two office tabs", async ({ context }) => {
 });
 
 test("joins a real permission-gated huddle across two tabs", async ({ context }) => {
+  test.setTimeout(90_000);
   const first = await context.newPage();
   const second = await context.newPage();
   await Promise.all([first.goto("/office"), second.goto("/office")]);

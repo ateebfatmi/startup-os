@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, DoorOpen, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, Moon, Music, PhoneOff, Plus, Radio, Search, Sparkles, Sun, Sunset, User, Users, Video, VideoOff, Wifi, X } from "lucide-react";
+import { Activity, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, Moon, Music, PhoneOff, Plus, Radio, Search, Sparkles, Sun, Sunset, User, Users, Video, VideoOff, Wifi, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,9 @@ import { KanbanView } from "./kanban-view";
 import { AIAssistantPanel } from "./ai-assistant-panel";
 import { WhiteboardPanel } from "./whiteboard-panel";
 import type { TaskStatus } from "./sample-data";
+import { ActivityView } from "./activity-view";
+import { DocumentsView } from "./documents-view";
+import { DEMO_WORKSPACE, fetchMyWorkspaces, type WorkspaceSummary } from "./workspace-service";
 
 const nav = [
   { id: "office", label: "Office", icon: DoorOpen },
@@ -29,6 +32,8 @@ const nav = [
   { id: "projects", label: "Projects", icon: FolderKanban },
   { id: "tasks", label: "My tasks", icon: CheckSquare2 },
   { id: "meetings", label: "Meetings", icon: CalendarDays },
+  { id: "files", label: "Files", icon: Files },
+  { id: "activity", label: "Activity", icon: Activity },
   { id: "team", label: "Team", icon: Users },
 ] as const;
 
@@ -37,6 +42,7 @@ type View = (typeof nav)[number]["id"];
 export function WorkspaceShell() {
   const router = useRouter();
   const [identity, setIdentity] = useState({ displayName: "Ateeb Fatmi", workspaceName: "Northstar Labs", workspaceId: "northstar-demo" });
+  const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([DEMO_WORKSPACE]);
   useEffect(() => {
     const localIdentity = {
       displayName: window.localStorage.getItem("orbit-display-name") || "Ateeb Fatmi",
@@ -50,18 +56,18 @@ export function WorkspaceShell() {
       const supabase = createSupabaseBrowserClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const [{ data: profile }, { data: memberships }] = await Promise.all([
+      const [{ data: profile }, availableWorkspaces] = await Promise.all([
         supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
-        supabase.from("workspace_members").select("workspace_id, workspaces(name)").eq("user_id", user.id).limit(1),
+        fetchMyWorkspaces(),
       ]);
-      const membership = memberships?.[0] as { workspace_id: string; workspaces: { name?: string } | { name?: string }[] | null } | undefined;
-      const relatedWorkspace = Array.isArray(membership?.workspaces) ? membership.workspaces[0] : membership?.workspaces;
+      const selectedWorkspace = availableWorkspaces.find((workspace) => workspace.id === localIdentity.workspaceId) || availableWorkspaces[0];
       const nextIdentity = {
         displayName: profile?.display_name || localIdentity.displayName,
-        workspaceName: relatedWorkspace?.name || localIdentity.workspaceName,
-        workspaceId: membership?.workspace_id || localIdentity.workspaceId,
+        workspaceName: selectedWorkspace?.name || localIdentity.workspaceName,
+        workspaceId: selectedWorkspace?.id || localIdentity.workspaceId,
       };
       if (!active) return;
+      setWorkspaces(availableWorkspaces);
       setIdentity(nextIdentity);
       window.localStorage.setItem("orbit-display-name", nextIdentity.displayName);
       window.localStorage.setItem("orbit-workspace-name", nextIdentity.workspaceName);
@@ -69,6 +75,12 @@ export function WorkspaceShell() {
     })();
     return () => { active = false; };
   }, []);
+  const selectWorkspace = (workspace: WorkspaceSummary) => {
+    setIdentity((current) => ({ ...current, workspaceId: workspace.id, workspaceName: workspace.name }));
+    window.localStorage.setItem("orbit-workspace-id", workspace.id);
+    window.localStorage.setItem("orbit-workspace-name", workspace.name);
+    useOfficeStore.getState().clearRemotePlayers();
+  };
   useMultiplayer(identity.workspaceId);
   const huddle = useHuddle(identity.workspaceId, "weekly-product-pulse");
   const [view, setView] = useState<View>("office");
@@ -84,7 +96,7 @@ export function WorkspaceShell() {
 
   return (
     <main className="flex h-[100dvh] overflow-hidden bg-[#f4f1e8]">
-      <Sidebar view={view} setView={setView} mobileNav={mobileNav} onClose={() => setMobileNav(false)} workspaceName={identity.workspaceName} onExit={async () => { if (hasSupabaseConfig) await createSupabaseBrowserClient().auth.signOut(); ["orbit-display-name", "orbit-workspace-name", "orbit-workspace-id", "orbit-workspace-type", "orbit-office-template"].forEach((key) => window.localStorage.removeItem(key)); router.push("/login"); router.refresh(); }} />
+      <Sidebar view={view} setView={setView} mobileNav={mobileNav} onClose={() => setMobileNav(false)} workspaceName={identity.workspaceName} workspaceId={identity.workspaceId} workspaces={workspaces} onSelectWorkspace={selectWorkspace} onExit={async () => { if (hasSupabaseConfig) await createSupabaseBrowserClient().auth.signOut(); ["orbit-display-name", "orbit-workspace-name", "orbit-workspace-id", "orbit-workspace-type", "orbit-office-template"].forEach((key) => window.localStorage.removeItem(key)); router.push("/login"); router.refresh(); }} />
       <div className="relative flex min-w-0 flex-1 flex-col">
         <Topbar view={view} onMenu={() => setMobileNav(true)} displayName={identity.displayName} />
         <div className="relative isolate min-h-0 flex-1">
@@ -115,7 +127,8 @@ export function WorkspaceShell() {
   );
 }
 
-function Sidebar({ view, setView, mobileNav, onClose, workspaceName, onExit }: { view: View; setView: (view: View) => void; mobileNav: boolean; onClose: () => void; workspaceName: string; onExit: () => Promise<void> }) {
+function Sidebar({ view, setView, mobileNav, onClose, workspaceName, workspaceId, workspaces, onSelectWorkspace, onExit }: { view: View; setView: (view: View) => void; mobileNav: boolean; onClose: () => void; workspaceName: string; workspaceId: string; workspaces: WorkspaceSummary[]; onSelectWorkspace: (workspace: WorkspaceSummary) => void; onExit: () => Promise<void> }) {
+  const [workspaceMenu, setWorkspaceMenu] = useState(false);
   return <>
     {mobileNav && <button className="fixed inset-0 z-30 bg-black/35 lg:hidden" aria-label="Close navigation" onClick={onClose} />}
     <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-[#173f2b] p-3 text-[#f5f0e4] transition-transform lg:static lg:translate-x-0 ${mobileNav ? "translate-x-0" : "-translate-x-full"}`}>
@@ -123,10 +136,11 @@ function Sidebar({ view, setView, mobileNav, onClose, workspaceName, onExit }: {
         <div className="flex items-center gap-2.5"><div className="grid h-9 w-9 place-items-center rounded-xl bg-[#c8f560] text-[#173f2b]"><Command size={20} strokeWidth={2.5} /></div><span className="text-lg font-bold tracking-tight">orbit</span></div>
         <button className="lg:hidden" onClick={onClose}><X size={20} /></button>
       </div>
-      <button className="my-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.08] p-3 text-left">
+      <button onClick={() => setWorkspaceMenu((value) => !value)} aria-expanded={workspaceMenu} className="mt-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.08] p-3 text-left">
         <div className="grid h-9 w-9 place-items-center rounded-xl bg-[#ff8a4c] text-sm font-bold text-[#311b13]">{initialsFor(workspaceName)}</div>
         <div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold">{workspaceName}</div><div className="text-xs text-white/55">{hasSupabaseConfig ? "Private workspace" : "Local demo"}</div></div><ChevronDown size={16} className="text-white/50" />
       </button>
+      {workspaceMenu && <div className="mb-3 mt-1 rounded-2xl border border-white/10 bg-[#214d38] p-1.5 shadow-xl">{workspaces.map((workspace) => <button key={workspace.id} onClick={() => { onSelectWorkspace(workspace); setWorkspaceMenu(false); }} className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm ${workspace.id === workspaceId ? "bg-[#c8f560] text-[#173f2b]" : "text-white/75 hover:bg-white/10"}`}><span className="min-w-0 flex-1 truncate font-semibold">{workspace.name}</span><span className="text-[10px] uppercase opacity-60">{workspace.role}</span></button>)}</div>}
       <nav className="mt-2 space-y-1" aria-label="Workspace">
         {nav.map((item) => <button key={item.id} onClick={() => { setView(item.id); onClose(); }} className={`flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium transition ${view === item.id ? "bg-[#c8f560] text-[#173f2b]" : "text-white/67 hover:bg-white/[.07] hover:text-white"}`}><item.icon size={18} /><span>{item.label}</span>{item.id === "tasks" && <span className="ml-auto rounded-full bg-white/10 px-2 text-xs">3</span>}</button>)}
       </nav>
@@ -291,6 +305,8 @@ function OfficeHud({ rightRail, onToggleRail, tasks, displayName }: { rightRail:
 function DashboardView({ view, tasks, moveTask, addTask, workspaceId }: { view: Exclude<View, "office">; tasks: ReturnType<typeof useWorkspaceData>["tasks"]; moveTask: ReturnType<typeof useWorkspaceData>["moveTask"]; addTask: ReturnType<typeof useWorkspaceData>["addTask"]; workspaceId: string }) {
   if (view === "projects") return <div className="h-full overflow-auto"><ProjectsView workspaceId={workspaceId} /></div>;
   if (view === "tasks") return <div className="h-full overflow-auto"><KanbanView workspaceId={workspaceId} /></div>;
+  if (view === "files") return <div className="h-full overflow-auto"><DocumentsView workspaceId={workspaceId} /></div>;
+  if (view === "activity") return <div className="h-full overflow-auto"><ActivityView workspaceId={workspaceId} /></div>;
   if (view === "team") return <div className="h-full overflow-auto"><TeamView workspaceId={workspaceId} /></div>;
   return <div className="h-full overflow-auto p-4 md:p-7"><Overview view={view} tasks={tasks} /></div>;
 }

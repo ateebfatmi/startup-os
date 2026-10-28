@@ -27,8 +27,21 @@ export class BrowserChannelTransport implements MultiplayerTransport {
   private readonly handlePageHide = () => {
     if (this.latest) this.post({ type: "leave", playerId: this.latest.id });
   };
+  private readonly handleStorage = (event: StorageEvent) => {
+    if (event.key !== this.storageKey || !event.newValue || !this.events) return;
+    try {
+      const envelope = JSON.parse(event.newValue) as { message?: Partial<BrowserMessage> };
+      if (envelope.message?.type === "leave" && typeof envelope.message.playerId === "string") {
+        this.events.onLeave(envelope.message.playerId);
+      }
+    } catch {
+      // Ignore malformed events from unrelated scripts on the same origin.
+    }
+  };
 
   constructor(private readonly workspaceId: string) {}
+
+  private get storageKey() { return `orbit-presence-event:${this.workspaceId}`; }
 
   async connect(events: MultiplayerEvents) {
     this.events = events;
@@ -39,6 +52,7 @@ export class BrowserChannelTransport implements MultiplayerTransport {
     }
     this.channel = new BroadcastChannel(`orbit:${this.workspaceId}`);
     window.addEventListener("pagehide", this.handlePageHide);
+    window.addEventListener("storage", this.handleStorage);
     this.channel.onmessage = (event: MessageEvent<unknown>) => {
       const message = event.data as Partial<BrowserMessage>;
       if ((message.type === "join" || message.type === "snapshot" || message.type === "heartbeat") && isPlayerSnapshot(message.player)) {
@@ -59,13 +73,19 @@ export class BrowserChannelTransport implements MultiplayerTransport {
   async disconnect() {
     if (this.latest) this.post({ type: "leave", playerId: this.latest.id });
     window.removeEventListener("pagehide", this.handlePageHide);
+    window.removeEventListener("storage", this.handleStorage);
     if (this.heartbeat) clearInterval(this.heartbeat);
     this.channel?.close();
     this.channel = null;
     this.events?.onState("offline", "Local network");
   }
 
-  private post(message: BrowserMessage) { this.channel?.postMessage(message); }
+  private post(message: BrowserMessage) {
+    this.channel?.postMessage(message);
+    if (message.type === "leave") {
+      window.localStorage.setItem(this.storageKey, JSON.stringify({ nonce: crypto.randomUUID(), message }));
+    }
+  }
 }
 
 export class SupabaseRealtimeTransport implements MultiplayerTransport {

@@ -23,6 +23,7 @@ type OfficeState = {
   setPlayerIdentity: (identity: Pick<PlayerSnapshot, "id" | "name" | "color">) => void;
   upsertRemotePlayer: (player: PlayerSnapshot) => void;
   removeRemotePlayer: (id: string) => void;
+  clearRemotePlayers: () => void;
   pruneRemotePlayers: (olderThan: number) => void;
   setConnectionState: (state: ConnectionState, transportLabel?: string) => void;
   setNearbyAction: (action: OfficeState["nearbyAction"]) => void;
@@ -69,6 +70,7 @@ export const useOfficeStore = create<OfficeState>((set) => ({
     delete remotePlayers[id];
     return { remotePlayers };
   }),
+  clearRemotePlayers: () => set({ remotePlayers: {} }),
   pruneRemotePlayers: (olderThan) => set((state) => ({ remotePlayers: Object.fromEntries(Object.entries(state.remotePlayers).filter(([, player]) => player.updatedAt >= olderThan)) })),
   setConnectionState: (connectionState, transportLabel) => set((state) => ({ connectionState, transportLabel: transportLabel ?? state.transportLabel })),
   setNearbyAction: (nearbyAction) => set({ nearbyAction }),

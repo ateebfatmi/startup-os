@@ -14,8 +14,11 @@ Orbit is a spatial startup operating system built around a navigable 3D office. 
 - Authenticated onboarding that updates the member profile, creates a private workspace through the `create_workspace` RPC, saves workspace type, and persists the selected office template.
 - Server-side workspace invitation workflow with raw token generation, SHA-256 token hashing in PostgreSQL, expiration, single-use invitation acceptance page (`/invite/accept`), email validation, and role assignment.
 - Workspace member directory and administration UI supporting roles (`owner`, `admin`, `member`, `guest`), server-authorized role updates, member removal, and final-owner protection.
+- Multi-workspace membership discovery and switching without signing out.
 - Database-backed project portfolio and Kanban task management supporting full CRUD, task comments, member assignment, deadlines, priority filtering (`urgent`, `high`, `medium`, `low`), and project categorization.
-- Local demo persistence for projects, tasks, task comments, team directory, and invitations when no backend credentials are configured.
+- Private workspace file library with a 25 MB limit, MIME allowlist, owner/admin deletion rules, and short-lived signed download URLs.
+- Immutable activity feed for project, task, comment, file, and membership changes.
+- Local demo persistence for projects, tasks, task comments, files, team directory, and invitations when no backend credentials are configured.
 - Supabase migrations containing core workspace models, RLS, user bootstrap, atomic workspace creation, and RPC functions for secure invitation acceptance and member management.
 
 The sample people, tasks, and meetings are visibly contained within the **Local demo** workspace. They are not represented as live product data.
@@ -35,7 +38,7 @@ Open `http://localhost:3000`. Without Supabase credentials, `/login` clearly off
 ## Supabase setup
 
 1. Create a Supabase project.
-2. Apply `supabase/migrations/202610090001_initial_schema.sql` with the Supabase CLI or SQL editor.
+2. Apply every SQL file in `supabase/migrations` in filename order with the Supabase CLI or SQL editor.
 3. Copy the project URL and anon key into `.env.local`.
 4. Add `http://localhost:3000` and the production Vercel origin to the Auth redirect allowlist.
 5. Never expose `SUPABASE_SERVICE_ROLE_KEY` to browser code. It is reserved for server-only administrative operations.
@@ -71,9 +74,9 @@ Deploy the Next.js app to Vercel and configure the same public Supabase variable
 - `features/virtual-office`: frame-loop simulation, scene, collision, interaction definitions, and local player store.
 - `features/multiplayer`: transport interface, browser and Supabase adapters, validation, rate limiting, presence, and lifecycle handling.
 - `features/communication`: permission-gated media capture, WebRTC peer lifecycle, signaling adapters, ICE configuration, and call state.
-- `features/workspace`: product shell and temporary local data adapter.
+- `features/workspace`: product shell, Supabase repositories, workspace switching, audit history, and private file library.
 - `lib/supabase`: credential-aware database client boundary.
 - `supabase/migrations`: persistent schema and authorization.
 - `tests`: deterministic movement tests and browser workflows.
 
-See `IMPLEMENTATION_CHECKLIST.md` for completed scope and the next milestone. Authenticated cross-device Supabase verification, production TURN, full database-backed Startup OS CRUD, and collaborative whiteboard synchronization remain explicit follow-up work.
+See `IMPLEMENTATION_CHECKLIST.md` for completed scope and the next milestone. Authenticated cross-device Supabase verification, production TURN, meeting/notification workflows, and collaborative whiteboard synchronization remain explicit follow-up work.

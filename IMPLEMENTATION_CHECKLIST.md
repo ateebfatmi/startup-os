@@ -17,6 +17,9 @@
 - [x] Connect onboarding and profile setup to `create_workspace` RPC when credentials exist, with a personalized local fallback.
 - [x] Complete registration, email verification callback, password recovery, Google OAuth entry, logout, and protected session middleware.
 - [x] Build invitation acceptance and member administration workflow (server-side token creation, SHA-256 token hashing, expiration, single-use acceptance, workspace role enforcement, final-owner protection, member directory, and local demo fallbacks).
+- [x] Add membership-aware workspace switching with persisted selection.
+- [x] Add private file storage with MIME/size restrictions, RLS, signed downloads, and local-demo metadata.
+- [x] Add database-triggered activity history for projects, tasks, comments, files, and membership changes.
 
 ## Phase 2 — 3D office
 
@@ -49,6 +52,7 @@
 - [ ] Add speaking indicators, proximity grouping, and automatic proximity audio.
 - [ ] Migrate larger group calls from peer mesh to an SFU provider.
 - [x] Full project/task/comment/member CRUD through server-authorized repositories, Zod validation, Kanban filters, task assignment, deadlines, and priorities.
-- [ ] Meeting scheduling, persistent notes/resources, notifications, and activity feed.
+- [ ] Meeting scheduling, persistent notes/resources, and notifications.
+- [x] Persistent activity feed and audit trail.
 - [ ] Collaborative whiteboard CRDT/realtime synchronization.
 - [ ] Two-browser multiplayer and media tests, access-control audit, and FPS benchmark.
