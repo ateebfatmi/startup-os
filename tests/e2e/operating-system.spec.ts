@@ -48,3 +48,14 @@ test("navigates with the command search and renders executive analytics", async 
   await expect(page.getByRole("heading", { name: "Operating pulse" })).toBeVisible();
   await expect(page.getByText("Task completion")).toBeVisible();
 });
+
+test("shows secure integration setup without exposing connect actions in demo mode", async ({ page }) => {
+  await page.goto("/office");
+  await page.getByRole("button", { name: "Integrations" }).click();
+  await expect(page.getByRole("heading", { name: "Connect your operating stack" })).toBeVisible();
+  await expect(page.getByText("Google Calendar", { exact: true })).toBeVisible();
+  await expect(page.getByText("Slack", { exact: true })).toBeVisible();
+  await expect(page.getByText("GitHub", { exact: true })).toBeVisible();
+  await expect(page.getByText("Linear", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Configure credentials first" }).first()).toBeDisabled();
+});

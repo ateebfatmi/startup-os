@@ -10,6 +10,9 @@
 - Configure `NEXT_PUBLIC_ICE_SERVERS` as a JSON array with production STUN and TURN servers. Use short-lived TURN credentials when possible.
 - Prefer `TURN_CREDENTIALS_URL` plus the server-only `TURN_CREDENTIALS_TOKEN` for ephemeral credentials; retain `NEXT_PUBLIC_ICE_SERVERS` as a fallback.
 - Set Stripe’s secret key, webhook signing secret, and recurring Pro/Business price IDs. Send Stripe events to `/api/billing/webhook`.
+- Generate `INTEGRATION_ENCRYPTION_KEY` with 32 random bytes encoded as base64 and set a separate high-entropy `INTEGRATION_STATE_SECRET`.
+- Register provider callback URLs as `/api/integrations/{provider}/callback` for `google_calendar`, `slack`, `github`, and `linear`, then set each provider client ID and secret.
+- After connecting, run a manual sync from Integrations and confirm Calendar events become meetings, GitHub/Linear issues become tasks, and Slack authorization verifies successfully.
 
 ## Backend preparation
 
