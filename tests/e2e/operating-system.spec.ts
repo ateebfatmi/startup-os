@@ -61,8 +61,10 @@ test("keeps commercial billing inert in local demo mode", async ({ page }) => {
 
 test("navigates with the command search and renders executive analytics", async ({ page }) => {
   await page.goto("/office");
-  await page.getByLabel("Search workspace").fill("Analytics");
-  await page.getByRole("button", { name: "Analytics" }).last().click();
+  await page.getByRole("button", { name: "Search workspace" }).click();
+  const search = page.getByRole("dialog", { name: "Search workspace" });
+  await search.getByRole("textbox", { name: "Search destinations" }).fill("Analytics");
+  await search.getByRole("button", { name: "Analytics Plan & ship" }).click();
   await expect(page.getByRole("heading", { name: "Operating pulse" })).toBeVisible();
   await expect(page.getByText("Task completion")).toBeVisible();
 });

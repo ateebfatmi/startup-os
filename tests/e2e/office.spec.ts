@@ -153,15 +153,15 @@ test("places persistent collision-aware office furniture", async ({ page }) => {
 test("synchronizes presence across two office tabs", async ({ context }) => {
   const first = await context.newPage();
   await first.goto("/office");
-  await expect(first.getByText("1 online", { exact: true })).toBeVisible();
+  await expect(first.getByText("1 online", { exact: true }).first()).toBeVisible();
   const second = await context.newPage();
   await second.goto("/office");
-  await expect(first.getByText("2 online", { exact: true })).toBeVisible();
-  await expect(second.getByText("2 online", { exact: true })).toBeVisible();
+  await expect(first.getByText("2 online", { exact: true }).first()).toBeVisible();
+  await expect(second.getByText("2 online", { exact: true }).first()).toBeVisible();
   await first.getByLabel("Availability").selectOption("focus");
   await expect(second.getByText("focus", { exact: true })).toBeVisible();
   await second.close();
-  await expect(first.getByText("1 online", { exact: true })).toBeVisible();
+  await expect(first.getByText("1 online", { exact: true }).first()).toBeVisible();
 });
 
 test("forms an opt-in proximity audio group across nearby tabs", async ({ context }) => {
@@ -169,8 +169,8 @@ test("forms an opt-in proximity audio group across nearby tabs", async ({ contex
   const first = await context.newPage();
   const second = await context.newPage();
   await Promise.all([first.goto("/office"), second.goto("/office")]);
-  await expect(first.getByText("2 online", { exact: true })).toBeVisible();
-  await expect(second.getByText("2 online", { exact: true })).toBeVisible();
+  await expect(first.getByText("2 online", { exact: true }).first()).toBeVisible();
+  await expect(second.getByText("2 online", { exact: true }).first()).toBeVisible();
   await Promise.all([
     first.getByRole("button", { name: "Enable proximity audio" }).click(),
     second.getByRole("button", { name: "Enable proximity audio" }).click(),
