@@ -21,6 +21,8 @@
 3. Enable the intended OAuth providers and verify their provider-side callback URLs.
 4. Test RLS with an owner, member, guest, and a user outside the workspace.
 
+The shipped Realtime transport and peer-mesh WebRTC topology target small startup teams. Do not market large-room capacity until a dedicated movement service and SFU are configured and load-tested.
+
 ## Release gate
 
 ```bash

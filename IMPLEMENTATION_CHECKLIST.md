@@ -43,17 +43,13 @@
 - [x] Immediate localhost cross-tab presence with join, leave, heartbeat, and stale-player cleanup.
 - [x] Supabase Realtime presence/broadcast transport selected automatically when configured.
 - [x] Smoothed remote-avatar interpolation independent of local movement.
-- [ ] Verify authenticated Supabase Realtime presence across two separate devices.
-- [ ] Add server-side movement validation for a dedicated WebSocket deployment.
 - [x] Permission-gated manual WebRTC audio/video huddles for small groups.
 - [x] Local and Supabase Realtime signaling adapters with directed SDP/ICE exchange.
 - [x] Microphone/camera track controls, participant states, and media cleanup.
 - [x] ICE candidate buffering for out-of-order signaling.
-- [ ] Configure production TURN credentials and verify calls across restrictive networks.
 - [x] Add authenticated short-lived TURN credential discovery with static ICE fallback.
 - [x] Add speaking indicators, screen sharing, and synced availability states.
 - [x] Add deterministic proximity groups, join/leave hysteresis, explicit microphone opt-in, and automatic audio-room transitions.
-- [ ] Migrate larger group calls from peer mesh to an SFU provider.
 - [x] Full project/task/comment/member CRUD through server-authorized repositories, Zod validation, Kanban filters, task assignment, deadlines, and priorities.
 - [x] Meeting scheduling, objective/key-result tracking, and event-driven notifications.
 - [x] Persistent, member-editable meeting notes and validated linked resources.
@@ -63,3 +59,10 @@
 - [x] Secure OAuth connection lifecycle, token refresh, connection verification, and idempotent meeting/task imports for Google Calendar, Slack, GitHub, and Linear.
 - [x] Persistent operation-merged whiteboard with drawing, notes, text, shapes, selection, movement, undo/redo, export, and realtime multi-tab synchronization.
 - [x] Two-browser multiplayer/media/whiteboard tests, static access-control regression audit, measured FPS benchmark, and reduced rendering mode.
+
+## Deployment and scale gates
+
+- [ ] Verify authenticated Supabase Realtime presence across two physical devices after production Supabase is configured.
+- [ ] Configure production TURN credentials and verify calls from two restrictive, separate networks.
+- [ ] Deploy a server-authoritative movement WebSocket before raising concurrency beyond the current small-team Realtime envelope.
+- [ ] Migrate calls to a configured SFU provider before enabling large-group rooms; the current peer mesh is intentionally limited to small huddles.

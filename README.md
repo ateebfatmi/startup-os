@@ -1,6 +1,6 @@
 # Orbit
 
-Orbit is a spatial startup operating system built around a navigable 3D office. The current milestone delivers the application foundation and an interactive Phase 2 office, while keeping the database and networking layers separate from the render loop.
+Orbit is a spatial startup operating system built around a navigable 3D office. The current small-team release combines the production application foundation, premium 3D office, realtime collaboration, Startup OS workflows, integrations, and commercial infrastructure while keeping database and networking concerns outside the render loop.
 
 ## What works now
 
@@ -76,7 +76,7 @@ npm run audit:prod
 npm run test:e2e
 ```
 
-The E2E suite starts the dev server and verifies the office shell and local task creation. Install the Playwright Chromium runtime once with `npx playwright install chromium` if it is not present.
+The E2E suite starts the dev server and verifies 23 workflows, including avatar loading, touch movement, measured rendering performance, persistent furniture, two-tab presence, proximity audio, whiteboard merging, WebRTC huddles, meetings, resources, goals, billing safety, integrations, and project/task workflows. Install the Playwright Chromium runtime once with `npx playwright install chromium` if it is not present.
 
 ## Deployment
 
@@ -92,4 +92,4 @@ Deploy the Next.js app to Vercel and configure the same public Supabase variable
 - `supabase/migrations`: persistent schema and authorization.
 - `tests`: deterministic movement tests and browser workflows.
 
-See `IMPLEMENTATION_CHECKLIST.md` for completed scope and the next milestone. Authenticated cross-device Supabase verification, production TURN, meeting/notification workflows, and collaborative whiteboard synchronization remain explicit follow-up work.
+See `IMPLEMENTATION_CHECKLIST.md` and `PRODUCTION_READINESS.md` for completed scope and deployment gates. Only environment-dependent validation and scale upgrades remain: physical-device Supabase verification, restrictive-network TURN testing, a dedicated authoritative movement service for higher concurrency, and an SFU before large-group calling.
