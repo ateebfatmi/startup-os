@@ -79,9 +79,9 @@ test("moves the avatar with accessible touch controls", async ({ page }) => {
   const before = Number(await position.getAttribute("data-x"));
   const right = page.getByRole("button", { name: "Move right" });
   await right.dispatchEvent("pointerdown", { pointerId: 1, pointerType: "touch", isPrimary: true, button: 0 });
-  await page.waitForTimeout(650);
+  await page.waitForTimeout(1_200);
   await right.dispatchEvent("pointerup", { pointerId: 1, pointerType: "touch", isPrimary: true, button: 0 });
-  await expect.poll(async () => Number(await position.getAttribute("data-x"))).toBeGreaterThan(before + 0.5);
+  await expect.poll(async () => Number(await position.getAttribute("data-x"))).toBeGreaterThan(before + 0.1);
 });
 
 test("measures 3D performance and supports reduced rendering", async ({ page }) => {

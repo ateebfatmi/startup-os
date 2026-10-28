@@ -3,7 +3,8 @@ import type { PlayerSnapshot } from "@/features/virtual-office/types";
 import { OFFICE_ROOMS } from "@/features/virtual-office/office-data";
 
 export const NETWORK_RATE_HZ = 12;
-export const STALE_PLAYER_MS = 15_000;
+export const STALE_PLAYER_MS = 10_000;
+export const STALE_PLAYER_SWEEP_MS = 2_000;
 const MAX_NAME_LENGTH = 80;
 const AVAILABILITY = new Set(["available", "focus", "do_not_disturb", "away"]);
 const ROOM_IDS = new Set(OFFICE_ROOMS.map((room) => room.id));

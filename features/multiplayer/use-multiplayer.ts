@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useOfficeStore } from "@/features/virtual-office/store";
 import type { PlayerSnapshot } from "@/features/virtual-office/types";
-import { NETWORK_RATE_HZ, snapshotChanged, STALE_PLAYER_MS } from "./protocol";
+import { NETWORK_RATE_HZ, snapshotChanged, STALE_PLAYER_MS, STALE_PLAYER_SWEEP_MS } from "./protocol";
 import { createTransport } from "./transport";
 
 const AVATAR_COLORS = ["#58a77b", "#6c86d9", "#d06fa9", "#e5a13e", "#7863c6"];
@@ -42,7 +42,7 @@ export function useMultiplayer(workspaceId: string) {
         void transport.publish(current);
       }
     }, Math.round(1000 / NETWORK_RATE_HZ));
-    const pruneTimer = window.setInterval(() => useOfficeStore.getState().pruneRemotePlayers(Date.now() - STALE_PLAYER_MS), 5_000);
+    const pruneTimer = window.setInterval(() => useOfficeStore.getState().pruneRemotePlayers(Date.now() - STALE_PLAYER_MS), STALE_PLAYER_SWEEP_MS);
 
     return () => {
       disposed = true;
