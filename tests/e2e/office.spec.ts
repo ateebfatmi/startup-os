@@ -59,6 +59,23 @@ test("customizes and persists the office design", async ({ page }) => {
   await expect(page.getByLabel("Penthouse terrace")).not.toBeChecked();
 });
 
+test("places persistent collision-aware office furniture", async ({ page }) => {
+  await page.goto("/office");
+  await page.getByRole("button", { name: "Office design" }).click();
+  await page.getByLabel("Office object").selectOption("whiteboard");
+  await page.getByLabel("X position").fill("2");
+  await page.getByLabel("Z position").fill("8");
+  await page.getByLabel("Rotation").fill("90");
+  await page.getByRole("button", { name: "Place" }).click();
+  await expect(page.getByText("Object placed and saved to the shared office.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Remove Collaboration whiteboard" })).toBeVisible();
+  await page.reload();
+  await page.getByRole("button", { name: "Office design" }).click();
+  await expect(page.getByRole("button", { name: "Remove Collaboration whiteboard" })).toBeVisible();
+  await page.getByRole("button", { name: "Remove Collaboration whiteboard" }).click();
+  await expect(page.getByText("Object removed from the shared office.")).toBeVisible();
+});
+
 test("synchronizes presence across two office tabs", async ({ context }) => {
   const first = await context.newPage();
   await first.goto("/office");

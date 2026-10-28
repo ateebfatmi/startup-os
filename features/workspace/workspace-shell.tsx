@@ -34,6 +34,7 @@ import { fetchNotifications, markNotificationRead, type WorkspaceNotification } 
 import { BillingView } from "./billing-view";
 import { AnalyticsView } from "./analytics-view";
 import { IntegrationsView } from "./integrations-view";
+import { loadOfficeObjects } from "./office-object-service";
 
 const nav = [
   { id: "office", label: "Office", icon: DoorOpen },
@@ -94,8 +95,8 @@ export function WorkspaceShell() {
   }, []);
   useEffect(() => {
     let active = true;
-    void loadOfficeDesign(identity.workspaceId).then((design) => {
-      if (active) useOfficeStore.getState().setOfficeDesign(design);
+    void Promise.all([loadOfficeDesign(identity.workspaceId), loadOfficeObjects(identity.workspaceId)]).then(([design, objects]) => {
+      if (active) { useOfficeStore.getState().setOfficeDesign(design); useOfficeStore.getState().setOfficeObjects(objects); }
     }).catch((error) => console.error("Could not load office design", error));
     return () => { active = false; };
   }, [identity.workspaceId]);

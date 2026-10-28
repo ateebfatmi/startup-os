@@ -33,7 +33,7 @@
 - [x] Premium atelier layout with limestone flooring, walnut furniture, smoked-glass rooms, brass detailing, tailored lighting, reception, executive boardroom, focus library, and lounge.
 - [x] Collision geometry aligned with premium partitions and reception furniture.
 - [ ] Replace capsule avatar with an asset-backed animation adapter.
-- [ ] Load saved office layouts and objects from Supabase.
+- [x] Load, place, remove, render, validate, and collide with saved workspace office objects from Supabase or local fallback.
 - [x] Persist workspace office themes, signature accents, terrace visibility, and planting density in `office_layouts`.
 - [ ] Add touch/click-to-move controls.
 

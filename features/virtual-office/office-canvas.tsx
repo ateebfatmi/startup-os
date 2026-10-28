@@ -9,6 +9,7 @@ import { INTERACTION_ZONES } from "./office-data";
 import { useOfficeStore } from "./store";
 import { playChime, playCoffeeSound, playLofiMusic, playSlideClick, stopLofiMusic } from "./audio";
 import { OFFICE_THEME_PALETTES } from "./office-design";
+import { OFFICE_OBJECT_CATALOG, officeObjectCollider, type OfficeObject } from "./office-object-catalog";
 
 const keys = new Set<string>();
 
@@ -139,6 +140,7 @@ export function OfficeCanvas() {
       <CitySkyline skylineConfig={lighting.skyline} />
 
       <OfficeEnvironment />
+      <CustomOfficeObjects />
       <ContactShadows position={[0, 0.05, 1.8]} opacity={lightingMode === "night" ? 0.48 : 0.35} scale={36} blur={2.0} far={8} frames={1} />
       <FloorClickSurface />
       <ClickTargetMarker />
@@ -389,9 +391,11 @@ function LocalPlayer() {
       walkPhase.current = THREE.MathUtils.lerp(walkPhase.current, 0, 0.15);
     }
 
+    const customObjects = useOfficeStore.getState().officeObjects;
     const next = resolveMovement(
       { x: position.current.x, z: position.current.y },
       { x: position.current.x + velocity.current.x * delta, z: position.current.y + velocity.current.y * delta },
+      [...COLLIDERS, ...customObjects.map(officeObjectCollider)],
     );
 
     // Cancel clickTarget if blocked
@@ -432,7 +436,8 @@ function LocalPlayer() {
 
     // Nearby interaction zone detection
     const zone = INTERACTION_ZONES.find((item) => Math.hypot(item.x - next.x, item.z - next.z) <= item.radius);
-    const action = zone ? { kind: zone.kind, label: zone.hint } : null;
+    const customAction = customObjects.find((item) => item.interaction && Math.hypot(item.transform.x - next.x, item.transform.z - next.z) <= 1.45);
+    const action = zone ? { kind: zone.kind, label: zone.hint } : customAction?.interaction || null;
     if (action?.kind !== useOfficeStore.getState().nearbyAction?.kind) setNearbyAction(action);
 
     const now = performance.now();
@@ -617,6 +622,25 @@ function CitySkyline({ skylineConfig }: { skylineConfig: { towerColor: string; w
       ))}
     </group>
   );
+}
+
+function CustomOfficeObjects() {
+  const objects = useOfficeStore((state) => state.officeObjects);
+  return <group>{objects.map((object) => <CustomOfficeObject key={object.id} object={object} />)}</group>;
+}
+
+function CustomOfficeObject({ object }: { object: OfficeObject }) {
+  const openPanel = useOfficeStore((state) => state.openPanel);
+  const { x, y, z, rotationY, scale } = object.transform;
+  const interactive = Boolean(object.interaction);
+  return <group position={[x, y, z]} rotation-y={rotationY} scale={scale} onClick={interactive ? (event) => { event.stopPropagation(); openPanel(object.interaction!.kind); } : undefined}>
+    {object.assetKey === "planter" && <><RoundedBox args={[0.75, 0.55, 0.75]} radius={0.1} position={[0, 0.28, 0]} castShadow><meshStandardMaterial color="#6a4b36" roughness={0.8} /></RoundedBox><mesh position={[0, 0.78, 0]} castShadow><sphereGeometry args={[0.46, 14, 10]} /><meshStandardMaterial color="#47705a" roughness={0.9} /></mesh></>}
+    {object.assetKey === "floor_lamp" && <><mesh position={[0, 0.06, 0]} castShadow><cylinderGeometry args={[0.28, 0.34, 0.12, 20]} /><meshStandardMaterial color="#7b633d" metalness={0.75} roughness={0.3} /></mesh><mesh position={[0, 1.05, 0]} castShadow><cylinderGeometry args={[0.035, 0.045, 2, 12]} /><meshStandardMaterial color="#b69350" metalness={0.8} roughness={0.25} /></mesh><mesh position={[0, 2.03, 0]} castShadow><coneGeometry args={[0.38, 0.55, 20, 1, true]} /><meshStandardMaterial color="#f1dfb5" roughness={0.7} side={THREE.DoubleSide} /></mesh><pointLight position={[0, 1.9, 0]} intensity={3} distance={3.5} color="#ffdca0" /></>}
+    {object.assetKey === "lounge_bench" && <><RoundedBox args={[2.4, 0.42, 0.85]} radius={0.15} position={[0, 0.38, 0]} castShadow><meshStandardMaterial color="#435a50" roughness={0.9} /></RoundedBox><RoundedBox args={[2.2, 0.55, 0.2]} radius={0.08} position={[0, 0.82, -0.34]} castShadow><meshStandardMaterial color="#365047" roughness={0.9} /></RoundedBox></>}
+    {object.assetKey === "whiteboard" && <><RoundedBox args={[2.4, 1.55, 0.14]} radius={0.08} position={[0, 1.15, 0]} castShadow><meshStandardMaterial color="#715439" roughness={0.65} /></RoundedBox><mesh position={[0, 1.15, 0.081]}><planeGeometry args={[2.15, 1.3]} /><meshStandardMaterial color="#f7f3e8" roughness={0.45} /></mesh><mesh position={[-0.72, 1.34, 0.09]} rotation-z={-0.08}><boxGeometry args={[0.55, 0.045, 0.025]} /><meshBasicMaterial color="#c8f560" /></mesh></>}
+    {object.assetKey === "focus_pod" && <><RoundedBox args={[1.5, 2.2, 1.5]} radius={0.25} position={[0, 1.1, 0]} castShadow><meshStandardMaterial color="#263d35" roughness={0.65} /></RoundedBox><mesh position={[0, 1.12, 0.756]}><planeGeometry args={[1.05, 1.55]} /><meshStandardMaterial color="#88a99a" transparent opacity={0.42} metalness={0.2} roughness={0.2} /></mesh><pointLight position={[0, 1.7, 0]} intensity={4} distance={2.5} color="#c8f560" /></>}
+    {interactive && <SpriteLabel text={OFFICE_OBJECT_CATALOG[object.assetKey].label} position={[0, object.assetKey === "floor_lamp" ? 2.6 : 2.45, 0]} width={2.5} />}
+  </group>;
 }
 
 function OfficeEnvironment() {
