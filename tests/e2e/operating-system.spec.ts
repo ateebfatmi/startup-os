@@ -11,6 +11,24 @@ test("schedules a persistent workspace meeting", async ({ page }) => {
   await expect(page.getByText("Investor readiness review")).toBeVisible();
 });
 
+test("persists shared meeting notes and linked resources", async ({ page }) => {
+  await page.goto("/office");
+  await page.getByRole("button", { name: "Meetings" }).click();
+  await page.getByRole("button", { name: "Notes & resources" }).first().click();
+  const dialog = page.getByRole("dialog", { name: /workspace$/ });
+  await dialog.getByLabel("Shared meeting notes").fill("Decision: ship the guided beta on Friday.");
+  await dialog.getByRole("button", { name: "Save notes" }).click();
+  await expect(dialog.getByText("Meeting notes saved")).toBeVisible();
+  await dialog.getByLabel("Resource title").fill("Launch brief");
+  await dialog.getByLabel("Resource URL").fill("https://example.com/launch-brief");
+  await dialog.getByLabel("Resource description").fill("Final launch narrative and owners");
+  await dialog.getByRole("button", { name: "Link resource" }).click();
+  await expect(dialog.getByRole("link", { name: /Launch brief/ })).toBeVisible();
+  await dialog.getByRole("button", { name: "Close dialog" }).click();
+  await page.getByRole("button", { name: "Notes & resources" }).first().click();
+  await expect(page.getByRole("dialog", { name: /workspace$/ }).getByLabel("Shared meeting notes")).toHaveValue("Decision: ship the guided beta on Friday.");
+});
+
 test("creates a measurable company objective", async ({ page }) => {
   await page.goto("/office");
   await page.getByRole("button", { name: "Goals" }).click();

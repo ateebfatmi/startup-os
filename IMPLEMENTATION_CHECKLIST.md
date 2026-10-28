@@ -56,7 +56,7 @@
 - [ ] Migrate larger group calls from peer mesh to an SFU provider.
 - [x] Full project/task/comment/member CRUD through server-authorized repositories, Zod validation, Kanban filters, task assignment, deadlines, and priorities.
 - [x] Meeting scheduling, objective/key-result tracking, and event-driven notifications.
-- [ ] Persistent meeting notes and linked resources.
+- [x] Persistent, member-editable meeting notes and validated linked resources.
 - [x] Persistent activity feed and audit trail.
 - [x] Stripe subscription foundation with owner/admin authorization, Checkout, customer portal, signed webhooks, and workspace billing state.
 - [x] Executive operating analytics and command-search navigation.
