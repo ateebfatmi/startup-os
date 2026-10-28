@@ -55,7 +55,8 @@
 - [ ] Add proximity grouping and automatic proximity audio.
 - [ ] Migrate larger group calls from peer mesh to an SFU provider.
 - [x] Full project/task/comment/member CRUD through server-authorized repositories, Zod validation, Kanban filters, task assignment, deadlines, and priorities.
-- [ ] Meeting scheduling, persistent notes/resources, and notifications.
+- [x] Meeting scheduling, objective/key-result tracking, and event-driven notifications.
+- [ ] Persistent meeting notes and linked resources.
 - [x] Persistent activity feed and audit trail.
 - [ ] Collaborative whiteboard CRDT/realtime synchronization.
 - [ ] Two-browser multiplayer and media tests, access-control audit, and FPS benchmark.

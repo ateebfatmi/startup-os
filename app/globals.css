@@ -21,11 +21,17 @@ body {
   color: var(--ink);
   font-family: "Avenir Next", Avenir, "Segoe UI", ui-sans-serif, system-ui, sans-serif;
 }
-button, input, textarea { font: inherit; }
+button, input, textarea, select { font: inherit; }
 button { cursor: pointer; }
-button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible {
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
   outline: 3px solid rgba(89, 168, 125, .42);
   outline-offset: 2px;
+}
+
+@layer components {
+  .input {
+    @apply h-11 w-full rounded-xl border border-black/10 bg-white px-3 outline-none transition focus:border-[#4b7a5e];
+  }
 }
 
 .grid-noise {

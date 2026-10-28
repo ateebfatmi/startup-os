@@ -56,6 +56,9 @@ export function describeActivity(event: ActivityEvent): string {
     task_comments: "comment",
     shared_documents: "file",
     workspace_members: "membership",
+    objectives: "objective",
+    key_results: "key result",
+    meetings: "meeting",
   } as Record<string, string>)[event.objectType] || event.objectType.replaceAll("_", " ");
   return `${action} ${object}${event.name ? ` “${event.name}”` : ""}`;
 }

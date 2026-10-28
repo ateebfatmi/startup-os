@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, MonitorUp, Moon, Music, Palette, PhoneOff, Plus, Radio, Search, Sparkles, Sun, Sunset, User, Users, Video, VideoOff, Wifi, X } from "lucide-react";
+import { Activity, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, MonitorUp, Moon, Music, Palette, PhoneOff, Plus, Radio, Search, Sparkles, Sun, Sunset, Target, User, Users, Video, VideoOff, Wifi, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -28,12 +28,16 @@ import { DocumentsView } from "./documents-view";
 import { DEMO_WORKSPACE, fetchMyWorkspaces, type WorkspaceSummary } from "./workspace-service";
 import { loadOfficeDesign } from "./office-design-service";
 import { OfficeDesignView } from "./office-design-view";
+import { MeetingsView } from "./meetings-view";
+import { GoalsView } from "./goals-view";
+import { fetchNotifications, markNotificationRead, type WorkspaceNotification } from "./operating-system-service";
 
 const nav = [
   { id: "office", label: "Office", icon: DoorOpen },
   { id: "overview", label: "Overview", icon: LayoutGrid },
   { id: "projects", label: "Projects", icon: FolderKanban },
   { id: "tasks", label: "My tasks", icon: CheckSquare2 },
+  { id: "goals", label: "Goals", icon: Target },
   { id: "meetings", label: "Meetings", icon: CalendarDays },
   { id: "files", label: "Files", icon: Files },
   { id: "activity", label: "Activity", icon: Activity },
@@ -177,10 +181,23 @@ function Topbar({ view, onMenu, displayName }: { view: View; onMenu: () => void;
     <div className="ml-auto hidden w-full max-w-xs items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2 text-[#68736b] md:flex"><Search size={16} /><input className="w-full bg-transparent text-sm outline-none" placeholder="Search workspace" aria-label="Search workspace" /><kbd className="rounded bg-black/5 px-1.5 py-0.5 text-xs">⌘K</kbd></div>
     <Button size="sm" onClick={() => useOfficeStore.getState().openPanel("ai_assistant")} className="hidden sm:flex items-center gap-1.5 bg-[#173f2b] text-[#c8f560] hover:bg-[#20573c] border-none shadow-sm"><Bot size={16} /> AI Copilot</Button>
     <Button variant="ghost" size="icon" aria-label="Help"><CircleHelp size={19} /></Button>
-    <Button variant="ghost" size="icon" aria-label="Notifications" className="relative"><Bell size={19} /><span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#ff8a4c]" /></Button>
+    <NotificationMenu />
     <label className="hidden items-center gap-2 rounded-xl border border-black/10 bg-white px-2 py-1.5 text-xs font-semibold text-[#4d5a52] xl:flex"><span className={`h-2 w-2 rounded-full ${availability === "available" ? "bg-[#55ac74]" : availability === "focus" ? "bg-blue-500" : availability === "away" ? "bg-amber-500" : "bg-red-500"}`} /><select aria-label="Availability" value={availability} onChange={(event) => setAvailability(event.target.value as Availability)} className="bg-transparent outline-none"><option value="available">Available</option><option value="focus">Focusing</option><option value="do_not_disturb">Do not disturb</option><option value="away">Away</option></select></label>
     <button className="grid h-9 w-9 place-items-center rounded-full bg-[#efad73] text-xs font-bold" aria-label={`${displayName} profile`}>{initialsFor(displayName)}</button>
   </header>;
+}
+
+function NotificationMenu() {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<WorkspaceNotification[]>([]);
+  const [loading, setLoading] = useState(false);
+  const unread = items.filter((item) => !item.readAt).length;
+  const toggle = async () => {
+    const next = !open; setOpen(next);
+    if (next) { setLoading(true); try { setItems(await fetchNotifications()); } finally { setLoading(false); } }
+  };
+  const read = async (item: WorkspaceNotification) => { await markNotificationRead(item.id); setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, readAt: new Date().toISOString() } : entry)); };
+  return <div className="relative"><Button variant="ghost" size="icon" aria-label="Notifications" aria-expanded={open} className="relative" onClick={() => void toggle()}><Bell size={19} />{unread > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#ff8a4c]" />}</Button>{open && <div className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-black/10 bg-[#fffdf7] shadow-2xl"><div className="border-b border-black/[.07] p-4"><h3 className="text-sm font-bold">Notifications</h3><p className="mt-0.5 text-xs text-[#68736b]">{unread} unread</p></div>{loading ? <div className="grid place-items-center p-8"><Loader2 className="animate-spin" size={18} /></div> : <div className="max-h-80 overflow-auto">{items.map((item) => <button key={item.id} onClick={() => void read(item)} className={`block w-full border-b border-black/[.05] p-4 text-left last:border-0 ${item.readAt ? "opacity-60" : "bg-[#f4f8ed]"}`}><div className="text-sm font-semibold">{item.title}</div><div className="mt-1 text-xs text-[#68736b]">{item.body}</div></button>)}{items.length === 0 && <div className="p-8 text-center text-sm text-[#68736b]">You’re all caught up.</div>}</div>}</div>}</div>;
 }
 
 function OfficeHud({ rightRail, onToggleRail, tasks, displayName }: { rightRail: boolean; onToggleRail: () => void; tasks: { status: string }[]; displayName: string }) {
@@ -321,6 +338,8 @@ function OfficeHud({ rightRail, onToggleRail, tasks, displayName }: { rightRail:
 function DashboardView({ view, tasks, moveTask, addTask, workspaceId, workspaceRole }: { view: Exclude<View, "office">; tasks: ReturnType<typeof useWorkspaceData>["tasks"]; moveTask: ReturnType<typeof useWorkspaceData>["moveTask"]; addTask: ReturnType<typeof useWorkspaceData>["addTask"]; workspaceId: string; workspaceRole: WorkspaceSummary["role"] }) {
   if (view === "projects") return <div className="h-full overflow-auto"><ProjectsView workspaceId={workspaceId} /></div>;
   if (view === "tasks") return <div className="h-full overflow-auto"><KanbanView workspaceId={workspaceId} /></div>;
+  if (view === "goals") return <div className="h-full overflow-auto"><GoalsView workspaceId={workspaceId} /></div>;
+  if (view === "meetings") return <div className="h-full overflow-auto"><MeetingsView workspaceId={workspaceId} /></div>;
   if (view === "files") return <div className="h-full overflow-auto"><DocumentsView workspaceId={workspaceId} /></div>;
   if (view === "activity") return <div className="h-full overflow-auto"><ActivityView workspaceId={workspaceId} /></div>;
   if (view === "design") return <div className="h-full overflow-auto"><OfficeDesignView workspaceId={workspaceId} canEdit={workspaceRole === "owner" || workspaceRole === "admin"} /></div>;
