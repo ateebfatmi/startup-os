@@ -29,6 +29,19 @@ test("opens the 3D office shell", async ({ page }) => {
   expect((await ice.json()).iceServers.length).toBeGreaterThan(0);
 });
 
+test("moves the avatar with accessible touch controls", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/office");
+  const position = page.getByLabel("Player position");
+  await expect(position).toBeVisible();
+  const before = Number(await position.getAttribute("data-x"));
+  const right = page.getByRole("button", { name: "Move right" });
+  await right.dispatchEvent("pointerdown", { pointerId: 1, pointerType: "touch", isPrimary: true, button: 0 });
+  await page.waitForTimeout(650);
+  await right.dispatchEvent("pointerup", { pointerId: 1, pointerType: "touch", isPrimary: true, button: 0 });
+  await expect.poll(async () => Number(await position.getAttribute("data-x"))).toBeGreaterThan(before + 0.5);
+});
+
 test("creates a local task", async ({ page }) => {
   await page.goto("/office");
   await page.getByRole("button", { name: "My tasks" }).click();

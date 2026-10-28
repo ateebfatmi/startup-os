@@ -3,6 +3,7 @@
 import { ContactShadows, OrthographicCamera, RoundedBox } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Hand } from "lucide-react";
 import * as THREE from "three";
 import { COLLIDERS, resolveMovement } from "./collision";
 import { INTERACTION_ZONES } from "./office-data";
@@ -150,8 +151,33 @@ export function OfficeCanvas() {
       <LocalPlayer />
       <RemotePlayers />
       </Canvas>
+      <TouchControls />
     </div>
   );
+}
+
+function TouchControls() {
+  const setTouchInput = useOfficeStore((state) => state.setTouchInput);
+  const nearbyAction = useOfficeStore((state) => state.nearbyAction);
+  const openPanel = useOfficeStore((state) => state.openPanel);
+  const player = useOfficeStore((state) => state.player);
+  const bind = (x: number, z: number) => ({
+    onPointerDown: (event: React.PointerEvent<HTMLButtonElement>) => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); setTouchInput({ x, z }); },
+    onPointerUp: (event: React.PointerEvent<HTMLButtonElement>) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); setTouchInput({ x: 0, z: 0 }); },
+    onPointerCancel: () => setTouchInput({ x: 0, z: 0 }),
+  });
+  return <div className="pointer-events-none absolute inset-x-0 bottom-20 z-20 flex items-end justify-between px-4 md:hidden">
+    <div className="pointer-events-auto grid grid-cols-3 grid-rows-3 gap-1 rounded-[22px] border border-white/40 bg-[#fffdf7]/90 p-2 shadow-xl backdrop-blur touch-none">
+      <span /><TouchButton label="Move up" icon={ArrowUp} {...bind(0, -1)} /><span />
+      <TouchButton label="Move left" icon={ArrowLeft} {...bind(-1, 0)} /><div aria-label="Player position" data-x={player.x.toFixed(2)} data-z={player.z.toFixed(2)} className="grid h-11 w-11 place-items-center rounded-xl bg-[#173f2b] text-[9px] font-bold text-[#c8f560]">MOVE</div><TouchButton label="Move right" icon={ArrowRight} {...bind(1, 0)} />
+      <span /><TouchButton label="Move down" icon={ArrowDown} {...bind(0, 1)} /><span />
+    </div>
+    <button aria-label="Interact" disabled={!nearbyAction} onClick={() => nearbyAction && openPanel(nearbyAction.kind)} className="pointer-events-auto grid h-14 w-14 place-items-center rounded-full border border-white/40 bg-[#c8f560]/95 text-[#173f2b] shadow-xl backdrop-blur disabled:opacity-40"><Hand size={21} /></button>
+  </div>;
+}
+
+function TouchButton({ label, icon: Icon, ...events }: { label: string; icon: typeof ArrowUp; onPointerDown: React.PointerEventHandler<HTMLButtonElement>; onPointerUp: React.PointerEventHandler<HTMLButtonElement>; onPointerCancel: React.PointerEventHandler<HTMLButtonElement> }) {
+  return <button aria-label={label} className="grid h-11 w-11 touch-none place-items-center rounded-xl bg-white text-[#173f2b] shadow-sm active:bg-[#c8f560]" {...events}><Icon size={19} /></button>;
 }
 
 function SpriteLabel({
@@ -358,6 +384,8 @@ function LocalPlayer() {
       Number(keys.has("d") || keys.has("arrowright")) - Number(keys.has("a") || keys.has("arrowleft")),
       Number(keys.has("s") || keys.has("arrowdown")) - Number(keys.has("w") || keys.has("arrowup")),
     );
+    const touch = useOfficeStore.getState().touchInput;
+    if (wasd.lengthSq() === 0 && (touch.x || touch.z)) wasd.set(touch.x, touch.z);
 
     // Stand up if movement key pressed
     if (wasd.lengthSq() > 0 && isSitting) {

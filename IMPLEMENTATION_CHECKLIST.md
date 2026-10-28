@@ -35,7 +35,7 @@
 - [x] Replace capsule avatars with a self-authored GLTF asset adapter, named idle/walk clips, tint customization, and a procedural failure fallback.
 - [x] Load, place, remove, render, validate, and collide with saved workspace office objects from Supabase or local fallback.
 - [x] Persist workspace office themes, signature accents, terrace visibility, and planting density in `office_layouts`.
-- [ ] Add touch/click-to-move controls.
+- [x] Add collision-aware click-to-move and held mobile touch controls with an explicit interaction button.
 
 ## Later phases
 
