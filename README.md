@@ -13,6 +13,7 @@ Orbit is a spatial startup operating system built around a navigable 3D office. 
 - Self-authored GLTF avatar asset with idle/walk animation clips, persisted jacket color, shared local/remote adapter, and a procedural loading/error fallback.
 - Live cross-tab presence and avatar movement through a typed transport layer, with smoothed remote avatars, payload validation, heartbeats, stale-player cleanup, and automatic Supabase Realtime selection when configured.
 - Real, permission-gated WebRTC huddles with audio/video tracks, microphone/camera controls, screen sharing, speaking indicators, peer status, directed SDP/ICE signaling, and complete media cleanup.
+- Explicitly opt-in proximity audio with deterministic spatial groups, boundary hysteresis, automatic nearby-room transitions, and clear active/off indicators.
 - Synced availability states (`available`, `focus`, `do not disturb`, `away`) and deterministic departure delivery across browser tabs.
 - Authenticated ICE discovery that can exchange a server-only provider token for short-lived TURN credentials without exposing that token to browsers.
 - A responsive app shell, overview, local Kanban workflow, login, and workspace onboarding.

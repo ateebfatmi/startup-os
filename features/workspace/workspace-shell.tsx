@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, BarChart3, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, CreditCard, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, MonitorUp, Moon, Music, Palette, PenTool, PhoneOff, Plug, Plus, Radio, Search, Sparkles, Sun, Sunset, Target, User, Users, Video, VideoOff, Wifi, X } from "lucide-react";
+import { Activity, AudioLines, BarChart3, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, CreditCard, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Maximize2, Menu, Mic, MicOff, MonitorUp, Moon, Music, Palette, PenTool, PhoneOff, Plug, Plus, Radio, Search, Sparkles, Sun, Sunset, Target, User, Users, Video, VideoOff, VolumeX, Wifi, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +35,7 @@ import { BillingView } from "./billing-view";
 import { AnalyticsView } from "./analytics-view";
 import { IntegrationsView } from "./integrations-view";
 import { loadOfficeObjects } from "./office-object-service";
+import { useProximityAudio, type ProximityAudioController } from "@/features/communication/use-proximity-audio";
 
 const nav = [
   { id: "office", label: "Office", icon: DoorOpen },
@@ -114,6 +115,7 @@ export function WorkspaceShell() {
   };
   useMultiplayer(identity.workspaceId);
   const huddle = useHuddle(identity.workspaceId, "weekly-product-pulse");
+  const proximity = useProximityAudio(huddle);
   const [view, setView] = useState<View>("office");
   const [mobileNav, setMobileNav] = useState(false);
   const [rightRail, setRightRail] = useState(true);
@@ -135,6 +137,7 @@ export function WorkspaceShell() {
             <>
               <div className="absolute inset-0 z-0"><OfficeCanvas /></div>
               <OfficeHud rightRail={rightRail} onToggleRail={() => setRightRail((value) => !value)} tasks={data.tasks} displayName={identity.displayName} />
+              <ProximityAudioControl controller={proximity} />
               <AnimatePresence>
                 {nearbyAction && (
                   <motion.button initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} onClick={() => openPanel(nearbyAction.kind)} className="absolute bottom-24 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 rounded-2xl bg-[#17211b] px-4 py-3 text-sm font-semibold text-white shadow-2xl">
@@ -156,6 +159,11 @@ export function WorkspaceShell() {
       <FeatureDialog kind={activePanel} onClose={closePanel} tasks={data.tasks} moveTask={data.moveTask} addTask={data.addTask} huddle={huddle} workspaceId={identity.workspaceId} />
     </main>
   );
+}
+
+function ProximityAudioControl({ controller }: { controller: ProximityAudioController }) {
+  const busy = controller.status === "requesting_permission" || controller.status === "joining";
+  return <div className="absolute bottom-24 left-4 z-20 hidden max-w-64 rounded-2xl border border-white/45 bg-[#fffdf7]/90 p-3 shadow-xl backdrop-blur md:block"><div className="flex items-center gap-2"><span className={`grid h-9 w-9 place-items-center rounded-xl ${controller.active ? "bg-[#c8f560] text-[#173f2b]" : "bg-black/5 text-[#68736b]"}`}>{controller.active ? <AudioLines size={17} /> : <VolumeX size={17} />}</span><div className="min-w-0 flex-1"><div className="text-xs font-bold">{controller.active ? "Proximity audio active" : controller.enabled ? "Proximity audio ready" : "Proximity audio off"}</div><div className="truncate text-[10px] text-[#68736b]">{controller.group ? `${controller.group.names.join(", ")} nearby` : "Move near a teammate to connect"}</div></div></div><button aria-label={controller.enabled ? "Disable proximity audio" : "Enable proximity audio"} onClick={controller.toggle} className={`mt-2 w-full rounded-xl px-3 py-2 text-xs font-bold ${controller.enabled ? "bg-[#173f2b] text-white" : "bg-[#c8f560] text-[#173f2b]"}`}>{busy ? "Requesting microphone…" : controller.enabled ? "Disable" : "Enable with microphone"}</button></div>;
 }
 
 function Sidebar({ view, setView, mobileNav, onClose, workspaceName, workspaceId, workspaces, onSelectWorkspace, onExit }: { view: View; setView: (view: View) => void; mobileNav: boolean; onClose: () => void; workspaceName: string; workspaceId: string; workspaces: WorkspaceSummary[]; onSelectWorkspace: (workspace: WorkspaceSummary) => void; onExit: () => Promise<void> }) {

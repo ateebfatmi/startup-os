@@ -109,6 +109,27 @@ test("synchronizes presence across two office tabs", async ({ context }) => {
   await expect(first.getByText("1 online", { exact: true })).toBeVisible();
 });
 
+test("forms an opt-in proximity audio group across nearby tabs", async ({ context }) => {
+  test.setTimeout(90_000);
+  const first = await context.newPage();
+  const second = await context.newPage();
+  await Promise.all([first.goto("/office"), second.goto("/office")]);
+  await expect(first.getByText("2 online", { exact: true })).toBeVisible();
+  await expect(second.getByText("2 online", { exact: true })).toBeVisible();
+  await Promise.all([
+    first.getByRole("button", { name: "Enable proximity audio" }).click(),
+    second.getByRole("button", { name: "Enable proximity audio" }).click(),
+  ]);
+  await expect(first.getByText("Proximity audio active")).toBeVisible();
+  await expect(second.getByText("Proximity audio active")).toBeVisible();
+  await expect(first.getByText(/Teammate nearby/)).toBeVisible();
+  await Promise.all([
+    first.getByRole("button", { name: "Disable proximity audio" }).click(),
+    second.getByRole("button", { name: "Disable proximity audio" }).click(),
+  ]);
+  await expect(first.getByText("Proximity audio off")).toBeVisible();
+});
+
 test("merges and persists whiteboard changes across two tabs", async ({ context }) => {
   const first = await context.newPage();
   const second = await context.newPage();

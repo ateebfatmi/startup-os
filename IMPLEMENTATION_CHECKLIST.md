@@ -52,7 +52,7 @@
 - [ ] Configure production TURN credentials and verify calls across restrictive networks.
 - [x] Add authenticated short-lived TURN credential discovery with static ICE fallback.
 - [x] Add speaking indicators, screen sharing, and synced availability states.
-- [ ] Add proximity grouping and automatic proximity audio.
+- [x] Add deterministic proximity groups, join/leave hysteresis, explicit microphone opt-in, and automatic audio-room transitions.
 - [ ] Migrate larger group calls from peer mesh to an SFU provider.
 - [x] Full project/task/comment/member CRUD through server-authorized repositories, Zod validation, Kanban filters, task assignment, deadlines, and priorities.
 - [x] Meeting scheduling, objective/key-result tracking, and event-driven notifications.
