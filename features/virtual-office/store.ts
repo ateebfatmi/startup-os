@@ -20,8 +20,16 @@ type OfficeState = {
   isCaffeinated: boolean;
   lofiPlaying: boolean;
   boardroomSlide: number;
+  isScreenSharing: boolean;
+  screenStream: MediaStream | null;
+  presenterName: string | null;
   avatarStatus: Availability;
   zoomLevel: number;
+  proximityPlayers: string[];
+  activeAITeammate: "dev" | "design" | "finance" | null;
+  recentEmotes: Array<{ id: string; playerId: string; emoji: string; x: number; y: number; z: number; createdAt: number }>;
+  avatarOutfit: { hat?: string; glasses?: boolean; jacketColor?: string };
+  startupMetrics: { mrr: number; burnRate: number; runwayMonths: number; activePRs: number };
   officeDesign: OfficeDesignSettings;
   officeObjects: OfficeObject[];
   avatarAssetReady: boolean;
@@ -49,6 +57,14 @@ type OfficeState = {
   setLofiPlaying: (playing: boolean) => void;
   toggleLofi: () => void;
   nextBoardroomSlide: () => void;
+  prevBoardroomSlide: () => void;
+  setBoardroomSlide: (slide: number) => void;
+  setScreenSharing: (active: boolean, stream?: MediaStream | null, presenterName?: string | null) => void;
+  setProximityPlayers: (players: string[]) => void;
+  openAITeammate: (teammate: "dev" | "design" | "finance") => void;
+  closeAITeammate: () => void;
+  triggerEmote: (emoji: string, playerId?: string) => void;
+  setAvatarOutfit: (outfit: Partial<OfficeState["avatarOutfit"]>) => void;
   setAvatarStatus: (status: Availability) => void;
   setZoomLevel: (zoom: number) => void;
   zoomIn: () => void;
@@ -77,8 +93,16 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   isCaffeinated: false,
   lofiPlaying: false,
   boardroomSlide: 0,
+  isScreenSharing: false,
+  screenStream: null,
+  presenterName: null,
   avatarStatus: "available",
   zoomLevel: 1.0,
+  proximityPlayers: [],
+  activeAITeammate: null,
+  recentEmotes: [],
+  avatarOutfit: { jacketColor: "#ff8a4c", glasses: false },
+  startupMetrics: { mrr: 48200, burnRate: 14500, runwayMonths: 18.4, activePRs: 4 },
   officeDesign: DEFAULT_OFFICE_DESIGN,
   officeObjects: [],
   avatarAssetReady: false,
@@ -113,6 +137,19 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   setLofiPlaying: (lofiPlaying) => set({ lofiPlaying }),
   toggleLofi: () => set((state) => ({ lofiPlaying: !state.lofiPlaying })),
   nextBoardroomSlide: () => set((state) => ({ boardroomSlide: (state.boardroomSlide + 1) % 3 })),
+  prevBoardroomSlide: () => set((state) => ({ boardroomSlide: (state.boardroomSlide - 1 + 3) % 3 })),
+  setBoardroomSlide: (boardroomSlide) => set({ boardroomSlide }),
+  setScreenSharing: (isScreenSharing, screenStream = null, presenterName = null) => set({ isScreenSharing, screenStream, presenterName }),
+  setProximityPlayers: (proximityPlayers) => set({ proximityPlayers }),
+  openAITeammate: (activeAITeammate) => set({ activeAITeammate }),
+  closeAITeammate: () => set({ activeAITeammate: null }),
+  triggerEmote: (emoji, playerId = "local") => set((state) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const player = playerId === "local" ? state.player : state.remotePlayers[playerId] || state.player;
+    const newEmote = { id, playerId, emoji, x: player.x, y: 1.8, z: player.z, createdAt: Date.now() };
+    return { recentEmotes: [...state.recentEmotes.slice(-20), newEmote] };
+  }),
+  setAvatarOutfit: (outfit) => set((state) => ({ avatarOutfit: { ...state.avatarOutfit, ...outfit } })),
   setAvatarStatus: (avatarStatus) => set((state) => ({ avatarStatus, player: { ...state.player, status: avatarStatus, updatedAt: Date.now() } })),
   setZoomLevel: (zoomLevel) => set({ zoomLevel: Math.max(0.6, Math.min(1.8, zoomLevel)) }),
   zoomIn: () => set((state) => ({ zoomLevel: Math.min(1.8, state.zoomLevel + 0.15) })),

@@ -1,6 +1,6 @@
 "use client";
 
-import { ContactShadows, OrthographicCamera, RoundedBox } from "@react-three/drei";
+import { ContactShadows, Html, OrthographicCamera, RoundedBox } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Hand } from "lucide-react";
@@ -9,6 +9,7 @@ import { COLLIDERS, resolveMovement } from "./collision";
 import { INTERACTION_ZONES, OFFICE_ROOMS } from "./office-data";
 import { useOfficeStore } from "./store";
 import { playChime, playCoffeeSound, playLofiMusic, playSlideClick, stopLofiMusic } from "./audio";
+import { AITeammateAvatars } from "./ai-teammates";
 import { OFFICE_THEME_PALETTES } from "./office-design";
 import { OFFICE_OBJECT_CATALOG, officeObjectCollider, type OfficeObject } from "./office-object-catalog";
 import { AvatarModel } from "./avatar-model";
@@ -603,6 +604,47 @@ function CustomOfficeObject({ object }: { object: OfficeObject }) {
   </group>;
 }
 
+function EmoteParticleManager() {
+  const recentEmotes = useOfficeStore((state) => state.recentEmotes);
+  const [now, setNow] = useState(Date.now());
+
+  useFrame(() => {
+    setNow(Date.now());
+  });
+
+  const activeEmotes = recentEmotes.filter((e) => now - e.createdAt < 2800);
+
+  return (
+    <group>
+      {activeEmotes.map((e) => {
+        const elapsed = (now - e.createdAt) / 1000;
+        const yOffset = elapsed * 0.85;
+        const opacity = Math.max(0, 1 - elapsed / 2.8);
+        const scale = Math.min(1.3, 0.6 + elapsed * 0.7);
+
+        return (
+          <Html
+            key={e.id}
+            center
+            position={[e.x, e.y + yOffset, e.z]}
+            style={{
+              opacity,
+              transform: `scale(${scale})`,
+              transition: "transform 0.05s linear",
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
+            <div className="text-2xl filter drop-shadow-md animate-bounce">
+              {e.emoji}
+            </div>
+          </Html>
+        );
+      })}
+    </group>
+  );
+}
+
 function OfficeEnvironment() {
   const deskPositions = useMemo(() => [[4.8, -4.7], [7, -4.7], [4.8, -2.2], [7, -2.2]] as const, []);
   const activeNearby = useOfficeStore((state) => state.nearbyAction);
@@ -613,6 +655,8 @@ function OfficeEnvironment() {
     <group>
       <Floor />
       {design.terraceEnabled && <PenthouseTerrace />}
+      <AITeammateAvatars />
+      <EmoteParticleManager />
 
       {/* Zone Carpets & Inlays */}
       <RoomRug position={[-5.8, 0.045, -3.7]} color={palette.rug} trim={design.accentColor} size={[6.4, 4.8]} />
@@ -1077,7 +1121,35 @@ function MeetingTable() {
 function BoardroomScreen() {
   const slide = useOfficeStore((state) => state.boardroomSlide);
   const nextSlide = useOfficeStore((state) => state.nextBoardroomSlide);
+  const isScreenSharing = useOfficeStore((state) => state.isScreenSharing);
+  const screenStream = useOfficeStore((state) => state.screenStream);
+  const presenterName = useOfficeStore((state) => state.presenterName);
   const [hovered, setHovered] = useState(false);
+  const [videoTexture, setVideoTexture] = useState<THREE.VideoTexture | null>(null);
+
+  useEffect(() => {
+    if (isScreenSharing && screenStream) {
+      const video = document.createElement("video");
+      video.srcObject = screenStream;
+      video.muted = true;
+      video.playsInline = true;
+      video.play().catch(console.warn);
+
+      const texture = new THREE.VideoTexture(video);
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.format = THREE.RGBAFormat;
+      setVideoTexture(texture);
+
+      return () => {
+        texture.dispose();
+        video.srcObject = null;
+        setVideoTexture(null);
+      };
+    } else {
+      setVideoTexture(null);
+    }
+  }, [isScreenSharing, screenStream]);
 
   const screenTexture = useMemo(() => {
     if (typeof document === "undefined") return null;
@@ -1292,17 +1364,30 @@ function BoardroomScreen() {
       <RoundedBox castShadow args={[3.3, 1.7, 0.08]} radius={0.04}>
         <meshStandardMaterial color="#0c100e" roughness={0.2} metalness={0.8} />
       </RoundedBox>
-      {/* Display Screen with Native 3D Texture */}
-      {screenTexture && (
-        <mesh position={[0, 0, 0.045]}>
-          <planeGeometry args={[3.15, 1.55]} />
+      {/* Display Screen with Native 3D Texture or Live Video Stream */}
+      <mesh position={[0, 0, 0.045]}>
+        <planeGeometry args={[3.15, 1.55]} />
+        {videoTexture ? (
+          <meshBasicMaterial map={videoTexture} />
+        ) : screenTexture ? (
           <meshBasicMaterial map={screenTexture.tex} />
-        </mesh>
+        ) : (
+          <meshBasicMaterial color="#0c100e" />
+        )}
+      </mesh>
+      {/* Live Presenter Pill when Screen Sharing */}
+      {isScreenSharing && (
+        <Html center position={[0, 1.05, 0.06]}>
+          <div className="pointer-events-none select-none flex items-center gap-1.5 rounded-full bg-red-600/90 px-2.5 py-0.5 text-[9px] font-bold text-white shadow-lg animate-pulse whitespace-nowrap">
+            <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" />
+            <span>LIVE SCREEN SHARE · {presenterName || "Presenter"}</span>
+          </div>
+        </Html>
       )}
       {/* Power LED Indicator */}
       <mesh position={[1.5, -0.78, 0.045]}>
         <circleGeometry args={[0.015, 16]} />
-        <meshBasicMaterial color="#c8f560" />
+        <meshBasicMaterial color={isScreenSharing ? "#ff4444" : "#c8f560"} />
       </mesh>
       {/* Subtle hover ring */}
       {hovered && (

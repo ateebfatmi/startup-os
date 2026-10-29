@@ -22,6 +22,8 @@ import { ProjectsView } from "./projects-view";
 import { KanbanView } from "./kanban-view";
 import { AIAssistantPanel } from "./ai-assistant-panel";
 import { WhiteboardPanel } from "./whiteboard-panel";
+import { SpatialOverlays } from "@/features/virtual-office/spatial-overlays";
+import { AITeammateDialog } from "@/features/virtual-office/ai-teammate-dialog";
 import type { TaskStatus } from "./sample-data";
 import type { Availability } from "@/features/virtual-office/types";
 import { ActivityView } from "./activity-view";
@@ -142,6 +144,8 @@ export function WorkspaceShell() {
             <>
               <div className="absolute inset-0 z-0"><OfficeCanvas /></div>
               <OfficeHud rightRail={rightRail} onToggleRail={() => setRightRail((value) => !value)} tasks={data.tasks} displayName={identity.displayName} />
+              <SpatialOverlays displayName={identity.displayName} />
+              <AITeammateDialog />
               <ProximityAudioControl controller={proximity} />
               <AnimatePresence>
                 {nearbyAction && (
