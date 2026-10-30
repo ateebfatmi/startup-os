@@ -9,7 +9,7 @@ import { COLLIDERS, resolveMovement } from "./collision";
 import { INTERACTION_ZONES, OFFICE_ROOMS } from "./office-data";
 import { useOfficeStore } from "./store";
 import { playChime, playCoffeeSound, playLofiMusic, playSlideClick, stopLofiMusic } from "./audio";
-import { AITeammateAvatars } from "./ai-teammates";
+import { AITeammateAvatars, AI_TEAMMATES } from "./ai-teammates";
 import { OFFICE_THEME_PALETTES } from "./office-design";
 import { OFFICE_OBJECT_CATALOG, officeObjectCollider, type OfficeObject } from "./office-object-catalog";
 import { AvatarModel } from "./avatar-model";
@@ -375,11 +375,14 @@ function LocalPlayer() {
   const setPlayerTransform = useOfficeStore((state) => state.setPlayerTransform);
   const setNearbyAction = useOfficeStore((state) => state.setNearbyAction);
   const openPanel = useOfficeStore((state) => state.openPanel);
+  const openAITeammate = useOfficeStore((state) => state.openAITeammate);
   const toggleCameraMode = useOfficeStore((state) => state.toggleCameraMode);
   const nearbyAction = useOfficeStore((state) => state.nearbyAction);
   const clickTarget = useOfficeStore((state) => state.clickTarget);
   const setClickTarget = useOfficeStore((state) => state.setClickTarget);
   const isCaffeinated = useOfficeStore((state) => state.isCaffeinated);
+  const setIsCaffeinated = useOfficeStore((state) => state.setIsCaffeinated);
+  const toggleLofi = useOfficeStore((state) => state.toggleLofi);
   const isSitting = useOfficeStore((state) => state.isSitting);
   const setIsSitting = useOfficeStore((state) => state.setIsSitting);
   const setAvatarAssetReady = useOfficeStore((state) => state.setAvatarAssetReady);
@@ -390,8 +393,19 @@ function LocalPlayer() {
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(event.key)) event.preventDefault();
       keys.add(event.key.toLowerCase());
       if ((event.key.toLowerCase() === "e" || event.key.toLowerCase() === "x" || event.key === "Enter") && nearbyAction) {
-        playChime();
-        openPanel(nearbyAction.kind);
+        if (nearbyAction.teammateId) {
+          playChime();
+          openAITeammate(nearbyAction.teammateId);
+        } else if (nearbyAction.special === "espresso") {
+          playCoffeeSound();
+          setIsCaffeinated(true);
+        } else if (nearbyAction.special === "vinyl") {
+          playChime();
+          toggleLofi();
+        } else {
+          playChime();
+          openPanel(nearbyAction.kind);
+        }
       }
       if (event.key.toLowerCase() === "v") toggleCameraMode();
       if (event.key.toLowerCase() === "f") setIsSitting(!isSitting);
@@ -404,7 +418,7 @@ function LocalPlayer() {
       window.removeEventListener("keyup", up);
       keys.clear();
     };
-  }, [nearbyAction, openPanel, toggleCameraMode, isSitting, setIsSitting]);
+  }, [nearbyAction, openPanel, openAITeammate, toggleCameraMode, isSitting, setIsSitting, setIsCaffeinated, toggleLofi]);
 
   useFrame((_, rawDelta) => {
     const delta = Math.min(rawDelta, 1 / 30);
@@ -475,8 +489,27 @@ function LocalPlayer() {
     // Nearby interaction zone detection
     const zone = INTERACTION_ZONES.find((item) => Math.hypot(item.x - next.x, item.z - next.z) <= item.radius);
     const customAction = customObjects.find((item) => item.interaction && Math.hypot(item.transform.x - next.x, item.transform.z - next.z) <= 1.45);
-    const action = zone ? { kind: zone.kind, label: zone.hint } : customAction?.interaction || null;
-    if (action?.kind !== useOfficeStore.getState().nearbyAction?.kind) setNearbyAction(action);
+
+    // AI Teammates proximity
+    const nearTeammate = Object.values(AI_TEAMMATES).find((t) => Math.hypot(t.position[0] - next.x, t.position[2] - next.z) <= 1.8);
+    // Smart Stations proximity
+    const nearEspresso = Math.hypot(8.1 - next.x, 2.4 - next.z) <= 1.5;
+    const nearVinyl = Math.hypot(6.8 - next.x, 5.2 - next.z) <= 1.5;
+    const nearPhoneBooth = Math.hypot(2.4 - next.x, -6.4 - next.z) <= 1.4;
+
+    const action = nearTeammate
+      ? { kind: "ai_assistant" as const, label: `Talk to ${nearTeammate.name} (${nearTeammate.role})`, teammateId: nearTeammate.id }
+      : nearEspresso
+      ? { kind: "focus" as const, label: "Brew Italian espresso (+Speed boost)", special: "espresso" }
+      : nearVinyl
+      ? { kind: "focus" as const, label: useOfficeStore.getState().lofiPlaying ? "Pause Lo-Fi turntable" : "Play Lo-Fi chill beats", special: "vinyl" }
+      : nearPhoneBooth
+      ? { kind: "focus" as const, label: "Enter acoustic phone booth", special: "phone_booth" }
+      : zone
+      ? { kind: zone.kind, label: zone.hint }
+      : customAction?.interaction || null;
+
+    if (action?.label !== useOfficeStore.getState().nearbyAction?.label) setNearbyAction(action);
 
     const now = performance.now();
     if (now - lastStoreUpdate.current >= 1000 / 20) {
@@ -652,6 +685,88 @@ function EmoteParticleManager() {
   );
 }
 
+function ProximityAudioBeams() {
+  const player = useOfficeStore((state) => state.player);
+  const remotePlayers = useOfficeStore((state) => state.remotePlayers);
+
+  // Find AI teammates within 3.2m
+  const connectedAIs = Object.values(AI_TEAMMATES).filter((t) => {
+    return Math.hypot(t.position[0] - player.x, t.position[2] - player.z) <= 3.2;
+  });
+
+  // Find remote players within 3.2m
+  const connectedRemotes = Object.values(remotePlayers).filter((r) => {
+    return Math.hypot(r.x - player.x, r.z - player.z) <= 3.2;
+  });
+
+  return (
+    <group>
+      {connectedAIs.map((t) => (
+        <AudioConnectionBeam
+          key={t.id}
+          from={[player.x, player.z]}
+          to={[t.position[0], t.position[2]]}
+          color={t.accent}
+          name={t.name}
+        />
+      ))}
+      {connectedRemotes.map((r) => (
+        <AudioConnectionBeam
+          key={r.id}
+          from={[player.x, player.z]}
+          to={[r.x, r.z]}
+          color="#c8f560"
+          name={r.name}
+        />
+      ))}
+    </group>
+  );
+}
+
+function AudioConnectionBeam({
+  from,
+  to,
+  color,
+  name,
+}: {
+  from: [number, number];
+  to: [number, number];
+  color: string;
+  name: string;
+}) {
+  const lineRef = useRef<THREE.Mesh>(null);
+  const dx = to[0] - from[0];
+  const dz = to[1] - from[1];
+  const length = Math.hypot(dx, dz);
+  const angle = Math.atan2(dz, dx);
+  const midX = (from[0] + to[0]) / 2;
+  const midZ = (from[1] + to[1]) / 2;
+
+  useFrame(() => {
+    if (lineRef.current) {
+      const mat = lineRef.current.material as THREE.MeshBasicMaterial;
+      if (mat) {
+        mat.opacity = 0.4 + Math.sin(performance.now() / 240) * 0.25;
+      }
+    }
+  });
+
+  return (
+    <group position={[midX, 0.038, midZ]} rotation-y={-angle}>
+      {/* Glowing Audio Connection Mesh */}
+      <mesh ref={lineRef} rotation-x={-Math.PI / 2}>
+        <planeGeometry args={[length, 0.08]} />
+        <meshBasicMaterial color={color} transparent opacity={0.6} />
+      </mesh>
+      {/* Midpoint WebRTC Proximity Audio Node */}
+      <mesh position={[0, 0.005, 0]} rotation-x={-Math.PI / 2}>
+        <circleGeometry args={[0.08, 16]} />
+        <meshBasicMaterial color={color} />
+      </mesh>
+    </group>
+  );
+}
+
 function OfficeEnvironment() {
   const deskPositions = useMemo(() => [[4.8, -4.7], [7, -4.7], [4.8, -2.2], [7, -2.2]] as const, []);
   const activeNearby = useOfficeStore((state) => state.nearbyAction);
@@ -663,6 +778,7 @@ function OfficeEnvironment() {
       <Floor />
       {design.terraceEnabled && <PenthouseTerrace />}
       <AITeammateAvatars />
+      <ProximityAudioBeams />
       <EmoteParticleManager />
 
       {/* Zone Carpets & Inlays */}
@@ -951,15 +1067,29 @@ function RoomRug({
 }) {
   return (
     <group position={position} rotation-x={-Math.PI / 2}>
+      {/* Base Acoustic Carpet Slab */}
       <mesh receiveShadow>
         <planeGeometry args={size} />
-        <meshStandardMaterial color={color} roughness={0.88} />
+        <meshStandardMaterial color={color} roughness={0.92} metalness={0.02} />
       </mesh>
-      {/* Outer Trim Accent */}
-      <mesh position={[0, 0, 0.005]}>
-        <ringGeometry args={[Math.min(...size) * 0.38, Math.min(...size) * 0.4, 4]} />
-        <meshBasicMaterial color={trim} />
+      {/* Perimeter Stitched Border Frame (Gather.town Room Boundary Highlight) */}
+      <mesh position={[0, 0, 0.003]}>
+        <planeGeometry args={[size[0] - 0.12, size[1] - 0.12]} />
+        <meshBasicMaterial color={color} />
       </mesh>
+      {/* Elegant Architectural Threshold Brass/Graphite Trim Inlay along edges */}
+      {[-size[0] / 2 + 0.03, size[0] / 2 - 0.03].map((x, i) => (
+        <mesh key={`x-${i}`} position={[x, 0, 0.004]}>
+          <planeGeometry args={[0.06, size[1]]} />
+          <meshBasicMaterial color={trim} transparent opacity={0.7} />
+        </mesh>
+      ))}
+      {[-size[1] / 2 + 0.03, size[1] / 2 - 0.03].map((y, i) => (
+        <mesh key={`y-${i}`} position={[0, y, 0.004]}>
+          <planeGeometry args={[size[0], 0.06]} />
+          <meshBasicMaterial color={trim} transparent opacity={0.7} />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -1970,33 +2100,186 @@ function WaterCooler() {
 }
 
 function Whiteboard() {
+  const whiteboardTexture = useMemo(() => {
+    if (typeof document === "undefined") return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = 1024;
+    canvas.height = 512;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
+    // Enamel white surface with ultra subtle warm tone
+    ctx.fillStyle = "#faf8f2";
+    ctx.fillRect(0, 0, 1024, 512);
+
+    // Subtle faint dot grid
+    ctx.fillStyle = "rgba(0, 0, 0, 0.04)";
+    for (let x = 32; x < 1024; x += 32) {
+      for (let y = 32; y < 512; y += 32) {
+        ctx.fillRect(x, y, 2, 2);
+      }
+    }
+
+    // Top Title
+    ctx.fillStyle = "#1e3a2b";
+    ctx.font = "bold 20px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillText("🚀 ORBIT SPRINT #14 · SYSTEM ARCHITECTURE & ROADMAP", 36, 42);
+
+    // Subtitle
+    ctx.fillStyle = "#68736b";
+    ctx.font = "13px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillText("Live Sync: 38/40 Done · YC Seed Cohort · Latency: 18ms", 36, 68);
+
+    // Divider line
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.08)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(36, 85);
+    ctx.lineTo(988, 85);
+    ctx.stroke();
+
+    // Architecture diagram (Left half)
+    ctx.strokeStyle = "#2d5a3f";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(36, 110, 150, 70);
+    ctx.fillStyle = "#2d5a3f";
+    ctx.font = "bold 13px monospace";
+    ctx.fillText("Next.js 15 App", 52, 140);
+    ctx.font = "11px monospace";
+    ctx.fillStyle = "#68736b";
+    ctx.fillText("3D R3F Canvas", 52, 160);
+
+    // Arrow 1
+    ctx.beginPath();
+    ctx.moveTo(186, 145);
+    ctx.lineTo(240, 145);
+    ctx.stroke();
+    ctx.fillText("WebRTC", 192, 138);
+
+    // Box 2
+    ctx.strokeStyle = "#385765";
+    ctx.strokeRect(240, 110, 160, 70);
+    ctx.fillStyle = "#385765";
+    ctx.font = "bold 13px monospace";
+    ctx.fillText("Spatial Audio Mesh", 252, 140);
+    ctx.font = "11px monospace";
+    ctx.fillStyle = "#68736b";
+    ctx.fillText("Log-dist radius 3m", 252, 160);
+
+    // Arrow 2
+    ctx.beginPath();
+    ctx.moveTo(400, 145);
+    ctx.lineTo(454, 145);
+    ctx.stroke();
+
+    // Box 3
+    ctx.strokeStyle = "#7b4d39";
+    ctx.strokeRect(454, 110, 140, 70);
+    ctx.fillStyle = "#7b4d39";
+    ctx.font = "bold 13px monospace";
+    ctx.fillText("Supabase Realtime", 462, 140);
+    ctx.font = "11px monospace";
+    ctx.fillStyle = "#68736b";
+    ctx.fillText("Presence Sync", 462, 160);
+
+    // Vertical Divider
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.08)";
+    ctx.beginPath();
+    ctx.moveTo(630, 95);
+    ctx.lineTo(630, 480);
+    ctx.stroke();
+
+    // Sprint Kanban Columns (Right half)
+    const columns = [
+      { label: "BACKLOG", x: 650, color: "#8b949e" },
+      { label: "IN PROGRESS", x: 770, color: "#d97706" },
+      { label: "SHIPPED", x: 890, color: "#16a34a" },
+    ];
+    columns.forEach((col) => {
+      ctx.fillStyle = col.color;
+      ctx.font = "bold 11px sans-serif";
+      ctx.fillText(col.label, col.x, 115);
+    });
+
+    // Sticky Notes
+    const notes = [
+      { title: "Metronome billing", col: 0, y: 135, bg: "#fee2e2", border: "#fca5a5", author: "Marcus" },
+      { title: "Herman Miller Chairs", col: 2, y: 135, bg: "#dcfce7", border: "#86efac", author: "Maya" },
+      { title: "Gather Private Spaces", col: 2, y: 220, bg: "#dcfce7", border: "#86efac", author: "Alex" },
+      { title: "Proximity Audio Radar", col: 2, y: 305, bg: "#dcfce7", border: "#86efac", author: "Ateeb" },
+      { title: "YC Demo Pitch v3", col: 1, y: 135, bg: "#fef3c7", border: "#fde047", author: "Marcus" },
+      { title: "Audio Connection Beam", col: 1, y: 220, bg: "#fef3c7", border: "#fde047", author: "Alex" },
+    ];
+
+    notes.forEach((note) => {
+      const nx = columns[note.col].x - 5;
+      ctx.fillStyle = note.bg;
+      ctx.strokeStyle = note.border;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(nx, note.y, 105, 68, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#1e293b";
+      ctx.font = "bold 10px sans-serif";
+      ctx.fillText(note.title, nx + 6, note.y + 24, 94);
+
+      ctx.fillStyle = "#64748b";
+      ctx.font = "9px sans-serif";
+      ctx.fillText(`@${note.author}`, nx + 6, note.y + 54);
+    });
+
+    // Marker doodle at bottom left
+    ctx.strokeStyle = "#2563eb";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(120, 310, 40, 0, Math.PI * 1.6);
+    ctx.stroke();
+    ctx.fillStyle = "#2563eb";
+    ctx.font = "12px sans-serif";
+    ctx.fillText("🔥 Target: Oct 30 Beta", 180, 315);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    return tex;
+  }, []);
+
   return (
     <group position={[0, 1.45, -7.6]}>
-      {/* Large Magnetic Glass Board */}
+      {/* Sleek Aluminum Frame */}
       <mesh castShadow>
-        <boxGeometry args={[4.4, 1.76, 0.12]} />
-        <meshStandardMaterial color="#ede8dd" roughness={0.35} />
+        <boxGeometry args={[4.45, 1.8, 0.08]} />
+        <meshStandardMaterial color="#2d3732" roughness={0.3} metalness={0.7} />
       </mesh>
-      <mesh position={[0, 0, 0.065]}>
-        <ringGeometry args={[1.05, 1.09, 4]} />
-        <meshBasicMaterial color="#b08a55" />
+      {/* Porcelain Whiteboard with Dynamic High-Res Texture */}
+      <mesh position={[0, 0, 0.045]}>
+        <planeGeometry args={[4.35, 1.7]} />
+        {whiteboardTexture ? (
+          <meshBasicMaterial map={whiteboardTexture} />
+        ) : (
+          <meshStandardMaterial color="#faf8f2" roughness={0.2} />
+        )}
       </mesh>
-      {/* Sprint Sticky Notes in 3D */}
-      <mesh position={[-1.1, -0.25, 0.08]}>
-        <planeGeometry args={[0.55, 0.55]} />
-        <meshBasicMaterial color="#d9b96d" />
+
+      {/* Extruded Aluminum Marker Tray */}
+      <mesh position={[0, -0.88, 0.08]}>
+        <boxGeometry args={[3.8, 0.04, 0.12]} />
+        <meshStandardMaterial color="#889096" metalness={0.8} roughness={0.2} />
       </mesh>
-      <mesh position={[-0.35, -0.25, 0.08]}>
-        <planeGeometry args={[0.55, 0.55]} />
-        <meshBasicMaterial color="#9bb6a8" />
-      </mesh>
-      <mesh position={[0.4, -0.25, 0.08]}>
-        <planeGeometry args={[0.55, 0.55]} />
-        <meshBasicMaterial color="#c48363" />
-      </mesh>
-      <mesh position={[1.15, -0.25, 0.08]}>
-        <planeGeometry args={[0.55, 0.55]} />
-        <meshBasicMaterial color="#a0c4de" />
+      {/* 4 Dry Erase Markers & Eraser on Tray */}
+      {[-0.8, -0.5, -0.2, 0.1].map((mx, idx) => {
+        const markerColors = ["#111111", "#2563eb", "#16a34a", "#dc2626"];
+        return (
+          <mesh key={mx} position={[mx, -0.85, 0.08]} rotation-z={Math.PI / 2}>
+            <cylinderGeometry args={[0.012, 0.012, 0.16, 10]} />
+            <meshStandardMaterial color={markerColors[idx]} roughness={0.3} />
+          </mesh>
+        );
+      })}
+      {/* Blue Felt Eraser */}
+      <mesh position={[0.6, -0.85, 0.08]}>
+        <boxGeometry args={[0.22, 0.03, 0.06]} />
+        <meshStandardMaterial color="#1e3a8a" roughness={0.9} />
       </mesh>
     </group>
   );
@@ -2093,31 +2376,66 @@ function LightingDetails() {
 }
 
 function Plants() {
+  const plantSpots = useMemo(
+    () => [
+      [-10, -6.4],
+      [9.8, -6.35],
+      [-9.9, 6.35],
+      [9.75, 6.15],
+      [-2.1, 6.3],
+      [2.1, 6.3],
+    ] as const,
+    []
+  );
+
   return (
     <>
-      {[
-        [-10, -6.4],
-        [9.8, -6.35],
-        [-9.9, 6.35],
-        [9.75, 6.15],
-        [-2.1, 6.3],
-        [2.1, 6.3],
-      ].map(([x, z], i) => (
+      {plantSpots.map(([x, z], i) => (
         <group key={i} position={[x, 0, z]}>
+          {/* Fluted Ceramic Architectural Planter Pot */}
           <mesh castShadow position={[0, 0.32, 0]}>
-            <cylinderGeometry args={[0.28, 0.38, 0.64, 20]} />
-            <meshStandardMaterial color={i % 2 ? "#9b7650" : "#31463b"} roughness={0.58} />
+            <cylinderGeometry args={[0.3, 0.25, 0.64, 24]} />
+            <meshStandardMaterial color={i % 2 === 0 ? "#ded8cf" : "#28342e"} roughness={0.4} />
           </mesh>
-          {[-0.26, 0, 0.26].map((offset) => (
-            <mesh
-              key={offset}
-              castShadow
-              position={[offset * 0.55, 0.98 + Math.abs(offset), offset]}
-              rotation-z={offset * 1.5}
-            >
-              <sphereGeometry args={[0.38, 14, 14]} />
-              <meshStandardMaterial color={i % 2 ? "#56745f" : "#456554"} roughness={0.86} />
-            </mesh>
+          {/* Pot Rim Detailing */}
+          <mesh position={[0, 0.64, 0]}>
+            <cylinderGeometry args={[0.32, 0.3, 0.04, 24]} />
+            <meshStandardMaterial color={i % 2 === 0 ? "#c5beb3" : "#1f2a24"} roughness={0.5} />
+          </mesh>
+          {/* Dark Organic Potting Soil */}
+          <mesh position={[0, 0.63, 0]}>
+            <cylinderGeometry args={[0.28, 0.28, 0.02, 20]} />
+            <meshStandardMaterial color="#1c1612" roughness={0.95} />
+          </mesh>
+
+          {/* Woody Plant Stalks */}
+          <mesh position={[0, 0.95, 0]}>
+            <cylinderGeometry args={[0.018, 0.024, 0.65, 8]} />
+            <meshStandardMaterial color="#554132" roughness={0.8} />
+          </mesh>
+          <mesh position={[0.08, 0.9, -0.05]} rotation-z={-0.2} rotation-x={0.15}>
+            <cylinderGeometry args={[0.015, 0.02, 0.55, 8]} />
+            <meshStandardMaterial color="#554132" roughness={0.8} />
+          </mesh>
+          <mesh position={[-0.07, 0.92, 0.06]} rotation-z={0.25} rotation-x={-0.12}>
+            <cylinderGeometry args={[0.015, 0.02, 0.58, 8]} />
+            <meshStandardMaterial color="#554132" roughness={0.8} />
+          </mesh>
+
+          {/* Broad Botanical Monstera / Fiddle-Leaf Fig Leaves */}
+          {[
+            { pos: [0, 1.25, 0.12], rot: [0.35, 0, 0], scale: [1, 1, 1] },
+            { pos: [0.15, 1.15, -0.1], rot: [-0.4, 0.8, -0.3], scale: [0.9, 0.9, 0.9] },
+            { pos: [-0.16, 1.18, 0.05], rot: [0.2, -0.7, 0.4], scale: [0.95, 0.95, 0.95] },
+            { pos: [0.12, 1.38, 0.08], rot: [0.2, 0.4, -0.2], scale: [0.85, 0.85, 0.85] },
+            { pos: [-0.1, 1.42, -0.09], rot: [-0.3, -0.5, 0.3], scale: [0.8, 0.8, 0.8] },
+            { pos: [0, 1.55, 0], rot: [0.1, 0, 0], scale: [0.75, 0.75, 0.75] },
+          ].map((leaf, lidx) => (
+            <group key={lidx} position={leaf.pos as [number, number, number]} rotation={leaf.rot as [number, number, number]} scale={leaf.scale as [number, number, number]}>
+              <RoundedBox args={[0.3, 0.46, 0.016]} radius={0.08} castShadow>
+                <meshStandardMaterial color={lidx % 2 === 0 ? "#285437" : "#326344"} roughness={0.38} metalness={0.08} />
+              </RoundedBox>
+            </group>
           ))}
         </group>
       ))}

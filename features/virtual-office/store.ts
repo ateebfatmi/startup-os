@@ -11,7 +11,7 @@ type OfficeState = {
   remotePlayers: Record<string, PlayerSnapshot>;
   connectionState: ConnectionState;
   transportLabel: string;
-  nearbyAction: { kind: InteractionKind; label: string } | null;
+  nearbyAction: { kind: InteractionKind; label: string; special?: string; teammateId?: "dev" | "design" | "finance" } | null;
   activePanel: InteractionKind | null;
   cameraMode: "top" | "follow";
   clickTarget: { x: number; z: number } | null;

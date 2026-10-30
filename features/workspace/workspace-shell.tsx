@@ -147,14 +147,6 @@ export function WorkspaceShell() {
               <SpatialOverlays displayName={identity.displayName} />
               <AITeammateDialog />
               <ProximityAudioControl controller={proximity} />
-              <AnimatePresence>
-                {nearbyAction && (
-                  <motion.button initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} onClick={() => openPanel(nearbyAction.kind)} className="absolute bottom-24 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 rounded-2xl bg-[#17211b] px-4 py-3 text-sm font-semibold text-white shadow-2xl">
-                    <kbd className="grid h-8 min-w-8 place-items-center rounded-lg bg-white/15 px-2 text-xs">E</kbd>
-                    {nearbyAction.label}
-                  </motion.button>
-                )}
-              </AnimatePresence>
               <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-white/35 bg-[#fffdf7]/90 p-2 shadow-panel backdrop-blur-md">
                 <Button variant={localParticipant?.microphoneEnabled ? "solid" : "outline"} size="icon" onClick={() => inCall ? huddle.toggleMicrophone() : openPanel("meeting")} aria-label={localParticipant?.microphoneEnabled ? "Mute microphone" : "Unmute microphone"}>{localParticipant?.microphoneEnabled ? <Mic size={18} /> : <MicOff size={18} />}</Button>
                 <Button variant={localParticipant?.cameraEnabled ? "solid" : "outline"} size="icon" onClick={() => inCall ? huddle.toggleCamera() : openPanel("meeting")} aria-label={localParticipant?.cameraEnabled ? "Turn camera off" : "Turn camera on"}>{localParticipant?.cameraEnabled ? <Video size={18} /> : <VideoOff size={18} />}</Button>

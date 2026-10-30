@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Monitor, MonitorPlay, Square, ChevronLeft, ChevronRight, Maximize2, Radio, Sparkles, Smile, GitPullRequest, GitMerge, Check, DollarSign, Flame, Clock, Lock, Globe } from "lucide-react";
 import { useOfficeStore } from "./store";
 import { startScreenShare, stopScreenShare } from "./screen-share";
-import { playChime, playSlideClick } from "./audio";
+import { playChime, playCoffeeSound, playSlideClick } from "./audio";
 import { getOfficeRoomAt } from "./office-data";
 
 export function SpatialOverlays({ displayName }: { displayName: string }) {
@@ -18,6 +18,9 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
   const startupMetrics = useOfficeStore((state) => state.startupMetrics);
   const nearbyAction = useOfficeStore((state) => state.nearbyAction);
   const openPanel = useOfficeStore((state) => state.openPanel);
+  const openAITeammate = useOfficeStore((state) => state.openAITeammate);
+  const setIsCaffeinated = useOfficeStore((state) => state.setIsCaffeinated);
+  const toggleLofi = useOfficeStore((state) => state.toggleLofi);
 
   const [showEmoteWheel, setShowEmoteWheel] = useState(false);
   const [showPRModal, setShowPRModal] = useState(false);
@@ -26,10 +29,28 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
 
   // Gather.town Spatial Room & Audio Perimeter Detection
   const currentRoom = getOfficeRoomAt(player.x, player.z);
-  const isPrivateSpace = currentRoom ? ["boardroom", "team-studio", "strategy", "social"].includes(currentRoom.id) : false;
+  const inPhoneBooth = Math.hypot(player.x - 2.4, player.z - (-6.4)) <= 1.4;
+  const isPrivateSpace = inPhoneBooth || (currentRoom ? ["boardroom", "team-studio", "strategy", "social"].includes(currentRoom.id) : false);
 
   // Check proximity to Boardroom: x: [-8.5, -3.8], z: [-5.8, -1.8]
   const inBoardroom = Math.hypot(player.x - (-6.2), player.z - (-3.7)) < 3.8;
+
+  const executeInteraction = () => {
+    if (!nearbyAction) return;
+    if (nearbyAction.teammateId) {
+      playChime();
+      openAITeammate(nearbyAction.teammateId);
+    } else if (nearbyAction.special === "espresso") {
+      playCoffeeSound();
+      setIsCaffeinated(true);
+    } else if (nearbyAction.special === "vinyl") {
+      playChime();
+      toggleLofi();
+    } else {
+      playChime();
+      openPanel(nearbyAction.kind);
+    }
+  };
 
   // Listen for Z key to toggle Emote Wheel, X or E to interact
   useEffect(() => {
@@ -39,13 +60,12 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
         setShowEmoteWheel((prev) => !prev);
       }
       if ((e.key.toLowerCase() === "x" || e.key.toLowerCase() === "e") && nearbyAction) {
-        playChime();
-        openPanel(nearbyAction.kind);
+        executeInteraction();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [nearbyAction, openPanel]);
+  }, [nearbyAction, openPanel, openAITeammate, setIsCaffeinated, toggleLofi]);
 
   const emotes = [
     { emoji: "🚀", label: "Ship it!" },
@@ -82,7 +102,19 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
     <>
       {/* 1. Gather.town Top Audio Perimeter HUD (Private Space / Proximity Audio) */}
       <div className="absolute top-[88px] left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-black/10 px-4 py-1.5 text-xs shadow-xl backdrop-blur-md transition-all duration-200 select-none bg-[#121c17]/95 text-white">
-        {isPrivateSpace ? (
+        {inPhoneBooth ? (
+          <>
+            <span className="flex h-2 w-2 rounded-full bg-[#c8f560] animate-pulse" />
+            <span className="font-bold text-[#c8f560] flex items-center gap-1">
+              <Lock size={12} />
+              <span>Phone Booth</span>
+            </span>
+            <span className="text-white/30">·</span>
+            <span className="font-semibold text-white/95">Acoustic Isolation</span>
+            <span className="text-white/30">·</span>
+            <span className="text-[11px] text-white/70">100% soundproof · 1-on-1 private calls</span>
+          </>
+        ) : isPrivateSpace ? (
           <>
             <span className="flex h-2 w-2 rounded-full bg-[#c8f560] animate-pulse" />
             <span className="font-bold text-[#c8f560] flex items-center gap-1">
@@ -117,10 +149,7 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
             Press <strong className="text-[#c8f560] font-bold">[X]</strong> or <strong className="text-white font-bold">[E]</strong> to {nearbyAction.label.toLowerCase()}
           </span>
           <button
-            onClick={() => {
-              playChime();
-              openPanel(nearbyAction.kind);
-            }}
+            onClick={executeInteraction}
             className="ml-2 rounded-xl bg-white/10 px-3 py-1 text-xs font-bold text-[#c8f560] hover:bg-white/20 transition cursor-pointer"
           >
             Interact
