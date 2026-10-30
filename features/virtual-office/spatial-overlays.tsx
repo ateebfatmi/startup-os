@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Monitor, MonitorPlay, Square, ChevronLeft, ChevronRight, Maximize2, Radio, Sparkles, Smile, GitPullRequest, GitMerge, Check, DollarSign, Flame, Clock } from "lucide-react";
+import { Monitor, MonitorPlay, Square, ChevronLeft, ChevronRight, Maximize2, Radio, Sparkles, Smile, GitPullRequest, GitMerge, Check, DollarSign, Flame, Clock, Lock, Globe } from "lucide-react";
 import { useOfficeStore } from "./store";
 import { startScreenShare, stopScreenShare } from "./screen-share";
 import { playChime, playSlideClick } from "./audio";
+import { getOfficeRoomAt } from "./office-data";
 
 export function SpatialOverlays({ displayName }: { displayName: string }) {
   const player = useOfficeStore((state) => state.player);
@@ -15,25 +16,36 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
   const prevBoardroomSlide = useOfficeStore((state) => state.prevBoardroomSlide);
   const triggerEmote = useOfficeStore((state) => state.triggerEmote);
   const startupMetrics = useOfficeStore((state) => state.startupMetrics);
+  const nearbyAction = useOfficeStore((state) => state.nearbyAction);
+  const openPanel = useOfficeStore((state) => state.openPanel);
 
   const [showEmoteWheel, setShowEmoteWheel] = useState(false);
   const [showPRModal, setShowPRModal] = useState(false);
   const [showFullscreenTV, setShowFullscreenTV] = useState(false);
   const [mergedPRs, setMergedPRs] = useState<number[]>([]);
 
+  // Gather.town Spatial Room & Audio Perimeter Detection
+  const currentRoom = getOfficeRoomAt(player.x, player.z);
+  const isPrivateSpace = currentRoom ? ["boardroom", "team-studio", "strategy", "social"].includes(currentRoom.id) : false;
+
   // Check proximity to Boardroom: x: [-8.5, -3.8], z: [-5.8, -1.8]
   const inBoardroom = Math.hypot(player.x - (-6.2), player.z - (-3.7)) < 3.8;
 
-  // Listen for Z key to toggle Emote Wheel
+  // Listen for Z key to toggle Emote Wheel, X or E to interact
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === "z" && !["input", "textarea"].includes((e.target as HTMLElement)?.tagName?.toLowerCase())) {
+      if (["input", "textarea"].includes((e.target as HTMLElement)?.tagName?.toLowerCase())) return;
+      if (e.key.toLowerCase() === "z") {
         setShowEmoteWheel((prev) => !prev);
+      }
+      if ((e.key.toLowerCase() === "x" || e.key.toLowerCase() === "e") && nearbyAction) {
+        playChime();
+        openPanel(nearbyAction.kind);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [nearbyAction, openPanel]);
 
   const emotes = [
     { emoji: "🚀", label: "Ship it!" },
@@ -68,9 +80,57 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
 
   return (
     <>
-      {/* 1. Boardroom Presenter Toolbar (Appears when in Executive Boardroom) */}
+      {/* 1. Gather.town Top Audio Perimeter HUD (Private Space / Proximity Audio) */}
+      <div className="absolute top-[88px] left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-black/10 px-4 py-1.5 text-xs shadow-xl backdrop-blur-md transition-all duration-200 select-none bg-[#121c17]/95 text-white">
+        {isPrivateSpace ? (
+          <>
+            <span className="flex h-2 w-2 rounded-full bg-[#c8f560] animate-pulse" />
+            <span className="font-bold text-[#c8f560] flex items-center gap-1">
+              <Lock size={12} />
+              <span>Private Space</span>
+            </span>
+            <span className="text-white/30">·</span>
+            <span className="font-semibold text-white/95">{currentRoom?.name}</span>
+            <span className="text-white/30">·</span>
+            <span className="text-[11px] text-white/70">Audio is private to this room</span>
+          </>
+        ) : (
+          <>
+            <span className="flex h-2 w-2 rounded-full bg-emerald-400" />
+            <span className="font-bold text-[#c8f560] flex items-center gap-1">
+              <Globe size={12} />
+              <span>{currentRoom ? currentRoom.name : "Open Floor"}</span>
+            </span>
+            <span className="text-white/30">·</span>
+            <span className="text-[11px] text-white/70">Proximity audio active · 3m range</span>
+          </>
+        )}
+      </div>
+
+      {/* 2. Gather.town Signature [X] Interaction Prompt */}
+      {nearbyAction && (
+        <div className="absolute bottom-16 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2.5 rounded-2xl border border-black/10 bg-[#121c17]/95 px-4 py-2.5 text-white shadow-2xl backdrop-blur-md animate-in slide-in-from-bottom-2 duration-150">
+          <kbd className="grid h-6 w-6 place-items-center rounded-lg bg-[#c8f560] text-xs font-black text-[#17211b] shadow-xs">
+            X
+          </kbd>
+          <span className="text-xs font-medium text-white/90">
+            Press <strong className="text-[#c8f560] font-bold">[X]</strong> or <strong className="text-white font-bold">[E]</strong> to {nearbyAction.label.toLowerCase()}
+          </span>
+          <button
+            onClick={() => {
+              playChime();
+              openPanel(nearbyAction.kind);
+            }}
+            className="ml-2 rounded-xl bg-white/10 px-3 py-1 text-xs font-bold text-[#c8f560] hover:bg-white/20 transition cursor-pointer"
+          >
+            Interact
+          </button>
+        </div>
+      )}
+
+      {/* 3. Boardroom Presenter Toolbar (Appears when in Executive Boardroom) */}
       {inBoardroom && (
-        <div className="absolute top-20 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-white/50 bg-[#17211b]/95 p-2 shadow-2xl backdrop-blur-md text-white animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute top-[132px] left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-white/20 bg-[#17211b]/95 p-2 shadow-2xl backdrop-blur-md text-white animate-in fade-in duration-200">
           <div className="flex items-center gap-2 px-3 border-r border-white/15">
             <span className="h-2 w-2 rounded-full bg-[#c8f560] animate-pulse" />
             <span className="text-xs font-bold text-[#c8f560]">Boardroom 85&quot; Display</span>
@@ -127,33 +187,20 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
         </div>
       )}
 
-      {/* 2. Top-Right Startup Health Ticker & GitHub PRs Hub */}
-      <div className="absolute top-4 right-72 z-10 hidden xl:flex items-center gap-2 rounded-2xl border border-white/40 bg-[#fffdf7]/90 px-3 py-2 shadow-panel backdrop-blur-md text-[#17211b]">
-        {/* MRR */}
-        <div className="flex items-center gap-1 text-xs font-semibold px-2 border-r border-black/10">
-          <span className="text-[#327a56] font-bold">MRR</span>
-          <span>${startupMetrics.mrr.toLocaleString()}</span>
-          <span className="text-[10px] text-emerald-600 font-bold">+18%</span>
-        </div>
-        {/* Burn Rate */}
-        <div className="flex items-center gap-1 text-xs font-semibold px-2 border-r border-black/10">
-          <Flame size={13} className="text-orange-500" />
-          <span className="text-[#68736b]">Burn:</span>
-          <span>${startupMetrics.burnRate.toLocaleString()}/mo</span>
-        </div>
-        {/* Runway */}
-        <div className="flex items-center gap-1 text-xs font-semibold px-2 border-r border-black/10">
-          <Clock size={13} className="text-blue-500" />
-          <span className="text-[#68736b]">Runway:</span>
-          <span className="font-bold text-[#17211b]">{startupMetrics.runwayMonths} mos</span>
-        </div>
-        {/* Open PRs */}
+      {/* 4. Compact Startup Health & GitHub PRs Hub */}
+      <div className="absolute top-[88px] left-5 z-10 hidden xl:flex items-center gap-1.5 rounded-full border border-white/40 bg-[#fffdf7]/95 px-3 py-1 text-xs shadow-panel backdrop-blur-md text-[#17211b]">
+        <span className="font-bold text-[#327a56]">MRR</span>
+        <span className="font-semibold">${startupMetrics.mrr.toLocaleString()}</span>
+        <span className="text-[10px] text-emerald-600 font-bold">+18%</span>
+        <span className="text-black/20">·</span>
+        <span className="text-[#68736b]">{startupMetrics.runwayMonths}m runway</span>
+        <span className="text-black/20">·</span>
         <button
           onClick={() => setShowPRModal(true)}
-          className="flex items-center gap-1.5 rounded-lg bg-[#17211b] px-2.5 py-1 text-xs font-bold text-[#c8f560] shadow-2xs hover:bg-[#23583c] transition"
+          className="flex items-center gap-1 rounded-full bg-[#17211b] px-2.5 py-0.5 text-[11px] font-bold text-[#c8f560] hover:bg-[#23583c] transition"
         >
-          <GitPullRequest size={13} />
-          <span>{startupMetrics.activePRs - mergedPRs.length} Open PRs</span>
+          <GitPullRequest size={11} />
+          <span>{startupMetrics.activePRs - mergedPRs.length} PRs</span>
         </button>
       </div>
 

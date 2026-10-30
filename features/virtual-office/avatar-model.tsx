@@ -1,81 +1,254 @@
 "use client";
 
-import { useAnimations, useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { Component, Suspense, useEffect, useMemo, useRef, type MutableRefObject, type ReactNode } from "react";
+import { useRef, type MutableRefObject } from "react";
 import * as THREE from "three";
 
-type AvatarModelProps = {
+export type AvatarModelProps = {
   color: string;
   motion: MutableRefObject<number>;
   seated?: boolean;
   caffeinated?: boolean;
   modelUrl?: string;
   onAssetReady?: () => void;
+  hairColor?: string;
+  skinTone?: string;
+  showProximityRing?: boolean;
 };
 
-export function AvatarModel(props: AvatarModelProps) {
-  const fallback = <ProceduralAvatar {...props} />;
-  return <AvatarErrorBoundary fallback={fallback}><Suspense fallback={fallback}><LoadedAvatar {...props} /></Suspense></AvatarErrorBoundary>;
-}
-
-function LoadedAvatar({ color, motion, seated = false, caffeinated = false, modelUrl = "/models/orbit-avatar.gltf", onAssetReady }: AvatarModelProps) {
+export function AvatarModel({
+  color = "#ff8a4c",
+  motion,
+  seated = false,
+  caffeinated = false,
+  hairColor = "#2c221e",
+  skinTone = "#cda077",
+  showProximityRing = false,
+  onAssetReady,
+}: AvatarModelProps) {
   const root = useRef<THREE.Group>(null);
-  const gltf = useGLTF(modelUrl);
-  const model = useMemo(() => {
-    const clone = gltf.scene.clone(true);
-    clone.traverse((object) => {
-      if (!(object instanceof THREE.Mesh)) return;
-      object.castShadow = true; object.receiveShadow = true;
-      object.material = (object.material as THREE.Material).clone();
-      if (["Torso", "LeftArm", "RightArm"].includes(object.name) && object.material instanceof THREE.MeshStandardMaterial) object.material.color.set(color);
-    });
-    return clone;
-  }, [color, gltf.scene]);
-  const { actions } = useAnimations(gltf.animations, root);
-  const active = useRef<"Idle" | "Walk" | null>(null);
+  const leftLeg = useRef<THREE.Group>(null);
+  const rightLeg = useRef<THREE.Group>(null);
+  const leftArm = useRef<THREE.Group>(null);
+  const rightArm = useRef<THREE.Group>(null);
+  const headGroup = useRef<THREE.Group>(null);
+  const torsoGroup = useRef<THREE.Group>(null);
+  const walkPhase = useRef(0);
 
-  useEffect(() => { onAssetReady?.(); }, [onAssetReady]);
-  useEffect(() => () => { model.traverse((object) => { if (object instanceof THREE.Mesh) (object.material as THREE.Material).dispose(); }); }, [model]);
-  useFrame(() => {
-    const next = motion.current > 0.12 && !seated ? "Walk" : "Idle";
-    if (active.current === next) return;
-    if (active.current) actions[active.current]?.fadeOut(0.16);
-    actions[next]?.reset().fadeIn(0.16).play(); active.current = next;
-  });
-
-  return <group ref={root} position-y={seated ? -0.18 : 0} scale-y={seated ? 0.82 : 1}>
-    <primitive object={model} />
-    {caffeinated && <CoffeeCup />}
-  </group>;
-}
-
-function ProceduralAvatar({ color, motion, seated = false, caffeinated = false }: AvatarModelProps) {
-  const leftLeg = useRef<THREE.Mesh>(null); const rightLeg = useRef<THREE.Mesh>(null); const phase = useRef(0);
   useFrame((_, delta) => {
-    phase.current += delta * Math.max(2, motion.current * 2.5);
-    const swing = seated ? -Math.PI / 2.3 : Math.sin(phase.current) * Math.min(0.55, motion.current / 6);
-    if (leftLeg.current) leftLeg.current.rotation.x = swing;
-    if (rightLeg.current) rightLeg.current.rotation.x = seated ? swing : -swing;
+    const speed = motion.current;
+    if (speed > 0.08 && !seated) {
+      walkPhase.current += delta * Math.min(14, Math.max(6, speed * 2.8));
+    } else {
+      walkPhase.current = THREE.MathUtils.lerp(walkPhase.current, 0, 0.15);
+    }
+
+    const swing = Math.sin(walkPhase.current);
+    const bob = Math.abs(Math.sin(walkPhase.current)) * Math.min(speed / 35, 0.04);
+
+    if (torsoGroup.current) {
+      torsoGroup.current.position.y = seated ? -0.22 : bob;
+      torsoGroup.current.rotation.x = seated ? 0.08 : (speed > 0.5 ? 0.06 : 0);
+    }
+
+    if (seated) {
+      // Seated pose: knees bent 90 degrees forward
+      if (leftLeg.current) {
+        leftLeg.current.rotation.x = -Math.PI / 2.1;
+        leftLeg.current.position.set(-0.13, 0.38, 0.14);
+      }
+      if (rightLeg.current) {
+        rightLeg.current.rotation.x = -Math.PI / 2.1;
+        rightLeg.current.position.set(0.13, 0.38, 0.14);
+      }
+      if (leftArm.current) leftArm.current.rotation.x = -0.3;
+      if (rightArm.current) rightArm.current.rotation.x = -0.3;
+    } else {
+      // Natural humanoid walking stride
+      const legAngle = swing * Math.min(0.65, Math.max(0.1, speed / 3.8));
+      const armAngle = -swing * Math.min(0.55, Math.max(0.08, speed / 4.2));
+
+      if (leftLeg.current) {
+        leftLeg.current.rotation.x = legAngle;
+        leftLeg.current.position.set(-0.13, 0.52, 0);
+      }
+      if (rightLeg.current) {
+        rightLeg.current.rotation.x = -legAngle;
+        rightLeg.current.position.set(0.13, 0.52, 0);
+      }
+      if (leftArm.current) {
+        leftArm.current.rotation.x = armAngle;
+        leftArm.current.rotation.z = 0.08;
+      }
+      if (rightArm.current) {
+        rightArm.current.rotation.x = -armAngle;
+        rightArm.current.rotation.z = -0.08;
+      }
+    }
   });
-  return <group scale-y={seated ? 0.86 : 1}>
-    <mesh castShadow position={[0, 0.85, 0]}><boxGeometry args={[0.58, 0.76, 0.38]} /><meshStandardMaterial color={color} roughness={0.68} /></mesh>
-    <mesh castShadow position={[0, 1.5, 0]}><dodecahedronGeometry args={[0.31, 0]} /><meshStandardMaterial color="#6b3d2b" roughness={0.78} /></mesh>
-    <mesh position={[0, 1.52, 0.29]}><boxGeometry args={[0.24, 0.08, 0.11]} /><meshStandardMaterial color="#221510" metalness={0.4} roughness={0.3} /></mesh>
-    <mesh ref={leftLeg} castShadow position={[-0.17, 0.27, 0]}><boxGeometry args={[0.17, 0.55, 0.2]} /><meshStandardMaterial color="#1f2d26" roughness={0.75} /></mesh>
-    <mesh ref={rightLeg} castShadow position={[0.17, 0.27, 0]}><boxGeometry args={[0.17, 0.55, 0.2]} /><meshStandardMaterial color="#1f2d26" roughness={0.75} /></mesh>
-    {caffeinated && <CoffeeCup />}
-  </group>;
-}
 
-function CoffeeCup() {
-  return <group position={[0.43, 0.86, 0.22]}><mesh castShadow><cylinderGeometry args={[0.075, 0.055, 0.17, 16]} /><meshStandardMaterial color="#fffdf7" roughness={0.25} /></mesh><mesh position={[0, 0.1, 0]}><cylinderGeometry args={[0.077, 0.077, 0.025, 16]} /><meshStandardMaterial color="#173f2b" /></mesh></group>;
-}
+  return (
+    <group ref={root}>
+      {/* Gather.town Style Proximity Audio Radar Ring (Hearing range) */}
+      {showProximityRing && (
+        <group position={[0, 0.015, 0]}>
+          <mesh rotation-x={-Math.PI / 2}>
+            <ringGeometry args={[2.85, 2.95, 48]} />
+            <meshBasicMaterial color="#c8f560" transparent opacity={0.35} />
+          </mesh>
+          <mesh rotation-x={-Math.PI / 2}>
+            <circleGeometry args={[2.85, 48]} />
+            <meshBasicMaterial color="#c8f560" transparent opacity={0.04} />
+          </mesh>
+        </group>
+      )}
 
-class AvatarErrorBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-  static getDerivedStateFromError() { return { failed: true }; }
-  render() { return this.state.failed ? this.props.fallback : this.props.children; }
-}
+      {/* Realistic Soft Contact Shadow */}
+      <mesh position={[0, 0.02, 0]} rotation-x={-Math.PI / 2}>
+        <ringGeometry args={[0.18, 0.38, 24]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.28} />
+      </mesh>
 
-useGLTF.preload("/models/orbit-avatar.gltf");
+      {/* Main Human Body Group */}
+      <group ref={torsoGroup}>
+        {/* Torso: Tailored Hoodie / Sweater */}
+        <mesh castShadow position={[0, 0.88, 0]}>
+          <capsuleGeometry args={[0.22, 0.36, 10, 16]} />
+          <meshStandardMaterial color={color} roughness={0.62} metalness={0.05} />
+        </mesh>
+
+        {/* Hoodie Collar / Neckline Detailing */}
+        <mesh position={[0, 1.1, 0.04]} rotation-x={0.2}>
+          <torusGeometry args={[0.13, 0.035, 8, 16]} />
+          <meshStandardMaterial color={color} roughness={0.7} />
+        </mesh>
+
+        {/* Neck */}
+        <mesh position={[0, 1.15, 0]} castShadow>
+          <cylinderGeometry args={[0.075, 0.085, 0.12, 16]} />
+          <meshStandardMaterial color={skinTone} roughness={0.75} />
+        </mesh>
+
+        {/* Head & Hair Group */}
+        <group ref={headGroup} position={[0, 1.34, 0]}>
+          {/* Head Base */}
+          <mesh castShadow>
+            <sphereGeometry args={[0.18, 20, 20]} />
+            <meshStandardMaterial color={skinTone} roughness={0.72} />
+          </mesh>
+
+          {/* Styled Modern Hair Cut (Gather.town Clean Profile) */}
+          <mesh position={[0, 0.05, -0.02]} castShadow>
+            <sphereGeometry args={[0.19, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.6]} />
+            <meshStandardMaterial color={hairColor} roughness={0.88} />
+          </mesh>
+          {/* Front Hair Bangs */}
+          <mesh position={[0, 0.12, 0.12]} rotation-x={-0.35}>
+            <boxGeometry args={[0.24, 0.06, 0.1]} />
+            <meshStandardMaterial color={hairColor} roughness={0.88} />
+          </mesh>
+
+          {/* Subtle Eyes / Brow Line */}
+          <mesh position={[-0.055, -0.01, 0.165]}>
+            <sphereGeometry args={[0.022, 8, 8]} />
+            <meshBasicMaterial color="#1a1412" />
+          </mesh>
+          <mesh position={[0.055, -0.01, 0.165]}>
+            <sphereGeometry args={[0.022, 8, 8]} />
+            <meshBasicMaterial color="#1a1412" />
+          </mesh>
+
+          {/* Glasses Frame (Clean Minimalist Acetate) */}
+          <group position={[0, -0.005, 0.17]}>
+            <mesh position={[-0.055, 0, 0]}>
+              <ringGeometry args={[0.028, 0.038, 16]} />
+              <meshBasicMaterial color="#2d2218" />
+            </mesh>
+            <mesh position={[0.055, 0, 0]}>
+              <ringGeometry args={[0.028, 0.038, 16]} />
+              <meshBasicMaterial color="#2d2218" />
+            </mesh>
+            <mesh position={[0, 0.01, 0]}>
+              <boxGeometry args={[0.04, 0.01, 0.01]} />
+              <meshBasicMaterial color="#2d2218" />
+            </mesh>
+          </group>
+        </group>
+
+        {/* Left Arm & Hand */}
+        <group ref={leftArm} position={[-0.26, 1.0, 0]}>
+          <mesh castShadow position={[0, -0.16, 0]}>
+            <capsuleGeometry args={[0.065, 0.26, 8, 12]} />
+            <meshStandardMaterial color={color} roughness={0.65} />
+          </mesh>
+          {/* Hand */}
+          <mesh position={[0, -0.34, 0]} castShadow>
+            <sphereGeometry args={[0.048, 12, 12]} />
+            <meshStandardMaterial color={skinTone} roughness={0.75} />
+          </mesh>
+        </group>
+
+        {/* Right Arm & Hand */}
+        <group ref={rightArm} position={[0.26, 1.0, 0]}>
+          <mesh castShadow position={[0, -0.16, 0]}>
+            <capsuleGeometry args={[0.065, 0.26, 8, 12]} />
+            <meshStandardMaterial color={color} roughness={0.65} />
+          </mesh>
+          {/* Hand */}
+          <mesh position={[0, -0.34, 0]} castShadow>
+            <sphereGeometry args={[0.048, 12, 12]} />
+            <meshStandardMaterial color={skinTone} roughness={0.75} />
+          </mesh>
+
+          {/* Coffee Mug in Hand if Caffeinated */}
+          {caffeinated && (
+            <group position={[0, -0.38, 0.12]}>
+              <mesh castShadow>
+                <cylinderGeometry args={[0.055, 0.04, 0.12, 14]} />
+                <meshStandardMaterial color="#fffdf7" roughness={0.3} />
+              </mesh>
+              <mesh position={[0, 0.07, 0]}>
+                <cylinderGeometry args={[0.058, 0.058, 0.02, 14]} />
+                <meshStandardMaterial color="#173f2b" roughness={0.5} />
+              </mesh>
+            </group>
+          )}
+        </group>
+
+        {/* Left Leg & White Sneaker */}
+        <group ref={leftLeg} position={[-0.13, 0.52, 0]}>
+          {/* Trousers (Dark Charcoal/Navy Chinos) */}
+          <mesh castShadow position={[0, -0.22, 0]}>
+            <capsuleGeometry args={[0.07, 0.32, 8, 12]} />
+            <meshStandardMaterial color="#212926" roughness={0.78} />
+          </mesh>
+          {/* White Sneaker with Gum Sole */}
+          <mesh position={[0, -0.45, 0.03]} castShadow>
+            <boxGeometry args={[0.11, 0.08, 0.2]} />
+            <meshStandardMaterial color="#f5f5f5" roughness={0.35} />
+          </mesh>
+          <mesh position={[0, -0.485, 0.03]}>
+            <boxGeometry args={[0.115, 0.015, 0.205]} />
+            <meshStandardMaterial color="#c29668" roughness={0.8} />
+          </mesh>
+        </group>
+
+        {/* Right Leg & White Sneaker */}
+        <group ref={rightLeg} position={[0.13, 0.52, 0]}>
+          <mesh castShadow position={[0, -0.22, 0]}>
+            <capsuleGeometry args={[0.07, 0.32, 8, 12]} />
+            <meshStandardMaterial color="#212926" roughness={0.78} />
+          </mesh>
+          <mesh position={[0, -0.45, 0.03]} castShadow>
+            <boxGeometry args={[0.11, 0.08, 0.2]} />
+            <meshStandardMaterial color="#f5f5f5" roughness={0.35} />
+          </mesh>
+          <mesh position={[0, -0.485, 0.03]}>
+            <boxGeometry args={[0.115, 0.015, 0.205]} />
+            <meshStandardMaterial color="#c29668" roughness={0.8} />
+          </mesh>
+        </group>
+      </group>
+    </group>
+  );
+}

@@ -389,7 +389,7 @@ function LocalPlayer() {
     const down = (event: KeyboardEvent) => {
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(event.key)) event.preventDefault();
       keys.add(event.key.toLowerCase());
-      if ((event.key.toLowerCase() === "e" || event.key === "Enter") && nearbyAction) {
+      if ((event.key.toLowerCase() === "e" || event.key.toLowerCase() === "x" || event.key === "Enter") && nearbyAction) {
         playChime();
         openPanel(nearbyAction.kind);
       }
@@ -493,7 +493,14 @@ function LocalPlayer() {
         <meshBasicMaterial color="#000000" transparent opacity={0.25} />
       </mesh>
 
-      <AvatarModel color={isCaffeinated ? "#ff7030" : "#ff8a4c"} motion={motion} seated={isSitting} caffeinated={isCaffeinated} onAssetReady={() => setAvatarAssetReady(true)} />
+      <AvatarModel
+        color={isCaffeinated ? "#ff7030" : "#ff8a4c"}
+        motion={motion}
+        seated={isSitting}
+        caffeinated={isCaffeinated}
+        showProximityRing={true}
+        onAssetReady={() => setAvatarAssetReady(true)}
+      />
 
       <SpriteLabel
         text={`● You${isCaffeinated ? "  ☕" : ""}${isSitting ? "  Seated" : ""}`}
@@ -1443,25 +1450,80 @@ function ProjectTable() {
 }
 
 function Chair({ position }: { position: [number, number, number] }) {
+  const isSouthFacing = position[2] < 0;
   return (
     <group position={position}>
-      <RoundedBox castShadow position={[0, 0.42, 0]} args={[0.5, 0.1, 0.52]} radius={0.08}>
-        <meshStandardMaterial color="#202c26" roughness={0.7} />
+      {/* Herman Miller Aeron-Style 5-Star Spider Castor Base */}
+      <mesh position={[0, 0.05, 0]}>
+        <cylinderGeometry args={[0.04, 0.05, 0.08, 12]} />
+        <meshStandardMaterial color="#1a1e22" roughness={0.4} metalness={0.6} />
+      </mesh>
+      {[0, 1, 2, 3, 4].map((i) => {
+        const angle = (i * Math.PI * 2) / 5;
+        const x = Math.sin(angle) * 0.22;
+        const z = Math.cos(angle) * 0.22;
+        return (
+          <group key={i}>
+            <mesh position={[x / 2, 0.04, z / 2]} rotation-y={angle}>
+              <boxGeometry args={[0.035, 0.03, 0.22]} />
+              <meshStandardMaterial color="#22282e" roughness={0.3} metalness={0.7} />
+            </mesh>
+            <mesh position={[x, 0.025, z]}>
+              <sphereGeometry args={[0.025, 8, 8]} />
+              <meshStandardMaterial color="#0d1114" roughness={0.2} />
+            </mesh>
+          </group>
+        );
+      })}
+
+      {/* Chrome Pneumatic Gas-Lift Cylinder */}
+      <mesh position={[0, 0.22, 0]}>
+        <cylinderGeometry args={[0.022, 0.022, 0.26, 12]} />
+        <meshStandardMaterial color="#d4d8dc" metalness={0.9} roughness={0.15} />
+      </mesh>
+
+      {/* Under-Seat Mechanism Control Cradle */}
+      <mesh position={[0, 0.35, 0]}>
+        <boxGeometry args={[0.22, 0.06, 0.22]} />
+        <meshStandardMaterial color="#14181c" roughness={0.5} />
+      </mesh>
+
+      {/* Ergonomic Contoured Breathable Mesh Seat Pan */}
+      <RoundedBox castShadow position={[0, 0.42, 0]} args={[0.48, 0.06, 0.46]} radius={0.04}>
+        <meshStandardMaterial color="#1e252b" roughness={0.7} metalness={0.15} />
       </RoundedBox>
-      <RoundedBox castShadow position={[0, 0.72, position[2] < 0 ? -0.22 : 0.22]} args={[0.5, 0.6, 0.08]} radius={0.07}>
-        <meshStandardMaterial color="#202c26" roughness={0.68} />
-      </RoundedBox>
-      {[-0.18, 0.18].map((x) => (
-        <mesh key={x} position={[x, 0.18, 0]}>
-          <cylinderGeometry args={[0.025, 0.025, 0.36, 10]} />
-          <meshStandardMaterial color="#ae8958" metalness={0.7} />
+
+      {/* Aerated Mesh Curved Backrest with Lumbar Support */}
+      <group position={[0, 0.72, isSouthFacing ? -0.21 : 0.21]}>
+        <RoundedBox castShadow args={[0.44, 0.52, 0.04]} radius={0.03}>
+          <meshStandardMaterial color="#262f36" roughness={0.65} metalness={0.1} />
+        </RoundedBox>
+        {/* Lumbar Support Pad */}
+        <mesh position={[0, -0.08, isSouthFacing ? 0.03 : -0.03]}>
+          <boxGeometry args={[0.3, 0.08, 0.03]} />
+          <meshStandardMaterial color="#101417" roughness={0.4} />
         </mesh>
+      </group>
+
+      {/* Adjustable Cantilever Armrests with Soft PU Pads */}
+      {[-0.24, 0.24].map((armX) => (
+        <group key={armX} position={[armX, 0.54, 0]}>
+          {/* Arm Post */}
+          <mesh position={[0, -0.06, 0]}>
+            <cylinderGeometry args={[0.015, 0.015, 0.16, 8]} />
+            <meshStandardMaterial color="#2b333a" metalness={0.7} />
+          </mesh>
+          {/* Arm Cushion Pad */}
+          <RoundedBox args={[0.06, 0.025, 0.2]} radius={0.01}>
+            <meshStandardMaterial color="#121619" roughness={0.3} />
+          </RoundedBox>
+        </group>
       ))}
     </group>
   );
 }
 
-// Engineering Desks with Realistic Code Editor Monitor Display
+// Engineering Dual-Monitor Workstation with Realistic Code & Telemetry Displays
 function Desk({ position, deskIndex }: { position: readonly [number, number, number]; deskIndex: number }) {
   const setIsSitting = useOfficeStore((state) => state.setIsSitting);
 
@@ -1503,63 +1565,166 @@ function Desk({ position, deskIndex }: { position: readonly [number, number, num
     return tex;
   }, [deskIndex]);
 
+  const telemetryTexture = useMemo(() => {
+    if (typeof document === "undefined") return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 256;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.fillStyle = "#0c1219";
+      ctx.fillRect(0, 0, 512, 256);
+      ctx.fillStyle = "#151d27";
+      ctx.fillRect(0, 0, 512, 30);
+      ctx.fillStyle = "#5cd0ff";
+      ctx.font = "bold 12px sans-serif";
+      ctx.fillText("INFRASTRUCTURE TELEMETRY", 20, 20);
+
+      // Status pill
+      ctx.fillStyle = "rgba(200, 245, 96, 0.2)";
+      ctx.fillRect(380, 5, 110, 20);
+      ctx.fillStyle = "#c8f560";
+      ctx.font = "bold 10px monospace";
+      ctx.fillText("● 99.99% UP", 395, 19);
+
+      // Grid lines
+      ctx.strokeStyle = "rgba(92, 208, 255, 0.12)";
+      ctx.lineWidth = 1;
+      for (let y = 60; y < 240; y += 32) {
+        ctx.beginPath();
+        ctx.moveTo(20, y);
+        ctx.lineTo(492, y);
+        ctx.stroke();
+      }
+
+      // Sparkline graph
+      ctx.strokeStyle = "#5cd0ff";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      const points = [190, 165, 175, 140, 155, 110, 125, 85, 100, 75, 80, 55];
+      points.forEach((val, idx) => {
+        const px = 24 + idx * 42;
+        if (idx === 0) ctx.moveTo(px, val);
+        else ctx.lineTo(px, val);
+      });
+      ctx.stroke();
+    }
+    const tex = new THREE.CanvasTexture(canvas);
+    return tex;
+  }, []);
+
   return (
     <group position={position as [number, number, number]}>
-      {/* Desk Surface */}
-      <RoundedBox castShadow position={[0, 0.68, 0]} args={[1.65, 0.1, 0.8]} radius={0.06}>
-        <meshStandardMaterial color="#4a3225" roughness={0.42} />
+      {/* Matte Chamfered Tech Desktop */}
+      <RoundedBox castShadow position={[0, 0.68, 0]} args={[1.85, 0.08, 0.9]} radius={0.04}>
+        <meshStandardMaterial color="#2d3732" roughness={0.38} metalness={0.12} />
       </RoundedBox>
-      {/* Metal Legs */}
-      {[-0.66, 0.66].map((x) => (
+
+      {/* Dual Heavy-Duty Anodized Steel Legs with Crossbeam */}
+      {[-0.78, 0.78].map((x) => (
         <mesh key={x} castShadow position={[x, 0.34, 0]}>
-          <boxGeometry args={[0.045, 0.68, 0.64]} />
-          <meshStandardMaterial color="#a68050" metalness={0.68} roughness={0.25} />
+          <boxGeometry args={[0.05, 0.68, 0.72]} />
+          <meshStandardMaterial color="#232b26" metalness={0.7} roughness={0.25} />
         </mesh>
       ))}
-      {/* Curved Ultrawide Display */}
-      <mesh castShadow position={[0, 1.02, -0.1]}>
-        <boxGeometry args={[0.82, 0.46, 0.05]} />
-        <meshStandardMaterial color="#151d19" metalness={0.3} roughness={0.2} />
+      <mesh position={[0, 0.35, 0]}>
+        <boxGeometry args={[1.5, 0.04, 0.04]} />
+        <meshStandardMaterial color="#232b26" metalness={0.7} />
       </mesh>
-      {/* Screen Face with Live IDE Code Lines */}
-      {codeTexture && (
-        <mesh position={[0, 1.02, -0.07]}>
-          <planeGeometry args={[0.78, 0.42]} />
-          <meshBasicMaterial map={codeTexture} />
+
+      {/* Articulated Dual-Monitor Mount Pole & Arms */}
+      <mesh position={[0, 0.85, -0.22]}>
+        <cylinderGeometry args={[0.02, 0.02, 0.34, 12]} />
+        <meshStandardMaterial color="#1a201c" metalness={0.8} />
+      </mesh>
+
+      {/* Left Monitor: Primary Code Editor */}
+      <group position={[-0.42, 1.05, -0.16]} rotation-y={0.08}>
+        <mesh castShadow>
+          <boxGeometry args={[0.74, 0.44, 0.03]} />
+          <meshStandardMaterial color="#0e1310" metalness={0.5} roughness={0.2} />
         </mesh>
-      )}
-      {/* Display Stand */}
-      <mesh position={[0, 0.8, -0.1]}>
-        <boxGeometry args={[0.05, 0.3, 0.05]} />
-        <meshStandardMaterial color="#9b794b" metalness={0.7} />
+        {codeTexture && (
+          <mesh position={[0, 0, 0.018]}>
+            <planeGeometry args={[0.71, 0.41]} />
+            <meshBasicMaterial map={codeTexture} />
+          </mesh>
+        )}
+      </group>
+
+      {/* Right Monitor: Secondary Telemetry & Dashboards */}
+      <group position={[0.42, 1.05, -0.16]} rotation-y={-0.08}>
+        <mesh castShadow>
+          <boxGeometry args={[0.74, 0.44, 0.03]} />
+          <meshStandardMaterial color="#0e1310" metalness={0.5} roughness={0.2} />
+        </mesh>
+        {telemetryTexture && (
+          <mesh position={[0, 0, 0.018]}>
+            <planeGeometry args={[0.71, 0.41]} />
+            <meshBasicMaterial map={telemetryTexture} />
+          </mesh>
+        )}
+      </group>
+
+      {/* Premium Aluminum Laptop Stand with MacBook Pro */}
+      <group position={[0.68, 0.76, 0.16]} rotation-y={-0.22}>
+        {/* Stand Base & Arm */}
+        <mesh position={[0, 0.02, 0]}>
+          <boxGeometry args={[0.22, 0.01, 0.18]} />
+          <meshStandardMaterial color="#c0c4c8" metalness={0.85} roughness={0.2} />
+        </mesh>
+        <mesh position={[0, 0.06, -0.06]} rotation-x={0.25}>
+          <boxGeometry args={[0.04, 0.1, 0.02]} />
+          <meshStandardMaterial color="#c0c4c8" metalness={0.85} roughness={0.2} />
+        </mesh>
+        {/* Open MacBook Silver Laptop */}
+        <mesh position={[0, 0.09, 0]} rotation-x={-0.15}>
+          <boxGeometry args={[0.26, 0.008, 0.18]} />
+          <meshStandardMaterial color="#d4d8dc" metalness={0.9} roughness={0.15} />
+        </mesh>
+        <mesh position={[0, 0.18, -0.08]} rotation-x={0.25}>
+          <boxGeometry args={[0.26, 0.17, 0.006]} />
+          <meshStandardMaterial color="#1a1e22" roughness={0.2} />
+        </mesh>
+      </group>
+
+      {/* Full-Desk Felt Acoustic Desk Mat */}
+      <mesh position={[-0.15, 0.725, 0.08]}>
+        <boxGeometry args={[0.88, 0.01, 0.42]} />
+        <meshStandardMaterial color="#18201c" roughness={0.85} />
       </mesh>
-      {/* RGB Keyboard Mat */}
-      <mesh position={[0, 0.74, 0.1]}>
-        <boxGeometry args={[0.55, 0.015, 0.22]} />
-        <meshStandardMaterial color="#1a201d" roughness={0.4} />
+
+      {/* Tenkeyless Mechanical Keyboard with Backlit Keycaps */}
+      <mesh position={[-0.22, 0.74, 0.1]}>
+        <boxGeometry args={[0.34, 0.016, 0.14]} />
+        <meshStandardMaterial color="#0b0e0c" roughness={0.4} />
       </mesh>
-      {/* Coffee Mug */}
-      <mesh position={[0.48, 0.77, 0.1]}>
-        <cylinderGeometry args={[0.06, 0.05, 0.12, 16]} />
-        <meshStandardMaterial color="#eae4d6" />
+
+      {/* Precision Wireless Mouse & Charging Dock */}
+      <mesh position={[0.12, 0.738, 0.1]}>
+        <boxGeometry args={[0.065, 0.022, 0.1]} />
+        <meshStandardMaterial color="#0f1411" roughness={0.3} />
       </mesh>
-      {/* Mini Succulent Plant on Desk */}
-      <mesh position={[-0.48, 0.76, -0.1]}>
-        <cylinderGeometry args={[0.05, 0.04, 0.08, 12]} />
-        <meshStandardMaterial color="#d4a373" />
+
+      {/* Ceramic Coffee Mug */}
+      <mesh position={[0.36, 0.78, 0.12]}>
+        <cylinderGeometry args={[0.048, 0.042, 0.1, 16]} />
+        <meshStandardMaterial color="#f0ede6" roughness={0.3} />
       </mesh>
-      <mesh position={[-0.48, 0.82, -0.1]}>
-        <sphereGeometry args={[0.04, 8, 8]} />
-        <meshStandardMaterial color="#40916c" />
+
+      {/* Mini Desk Succulent in Terracotta Pot */}
+      <mesh position={[-0.72, 0.76, -0.2]}>
+        <cylinderGeometry args={[0.048, 0.038, 0.08, 14]} />
+        <meshStandardMaterial color="#b8744b" roughness={0.7} />
       </mesh>
-      {/* Clickable Ergonomic Chair */}
-      <group position={[0, 0, 0.55]} onClick={() => { setIsSitting(true); playChime(); }}>
-        <RoundedBox castShadow position={[0, 0.42, 0]} args={[0.48, 0.08, 0.48]} radius={0.06}>
-          <meshStandardMaterial color="#22302a" roughness={0.6} />
-        </RoundedBox>
-        <RoundedBox castShadow position={[0, 0.72, 0.2]} args={[0.48, 0.55, 0.08]} radius={0.06}>
-          <meshStandardMaterial color="#22302a" roughness={0.6} />
-        </RoundedBox>
+      <mesh position={[-0.72, 0.82, -0.2]}>
+        <sphereGeometry args={[0.042, 10, 10]} />
+        <meshStandardMaterial color="#2d6a4f" roughness={0.6} />
+      </mesh>
+
+      {/* Matching Ergonomic Task Chair */}
+      <group position={[0, 0, 0.6]} onClick={() => { setIsSitting(true); playChime(); }}>
+        <Chair position={[0, 0, 0]} />
       </group>
     </group>
   );

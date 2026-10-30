@@ -1,11 +1,12 @@
 "use client";
 
-import { Html, RoundedBox } from "@react-three/drei";
+import { Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useRef, useState } from "react";
 import * as THREE from "three";
 import { useOfficeStore } from "./store";
 import { playChime } from "./audio";
+import { AvatarModel } from "./avatar-model";
 
 export type AITeammateId = "dev" | "design" | "finance";
 
@@ -94,16 +95,13 @@ function AITeammateAvatar({ config }: { config: AITeammateConfig }) {
   const openAITeammate = useOfficeStore((state) => state.openAITeammate);
   const activeTeammate = useOfficeStore((state) => state.activeAITeammate);
   const [hovered, setHovered] = useState(false);
-  const headRef = useRef<THREE.Mesh>(null);
   const auraRef = useRef<THREE.Mesh>(null);
+  const motion = useRef(0);
 
   useFrame(() => {
     const time = performance.now();
-    if (headRef.current) {
-      headRef.current.position.y = 1.18 + Math.sin(time / 450) * 0.015;
-    }
-    if (auraRef.current && hovered) {
-      const scale = 1 + Math.sin(time / 200) * 0.1;
+    if (auraRef.current) {
+      const scale = 1 + (hovered ? Math.sin(time / 200) * 0.12 : Math.sin(time / 500) * 0.04);
       auraRef.current.scale.set(scale, scale, 1);
     }
   });
@@ -126,7 +124,7 @@ function AITeammateAvatar({ config }: { config: AITeammateConfig }) {
     >
       {/* Ground Aura Marker */}
       <mesh ref={auraRef} position={[0, 0.02, 0]} rotation-x={-Math.PI / 2}>
-        <ringGeometry args={[0.28, 0.48, 24]} />
+        <ringGeometry args={[0.3, 0.52, 24]} />
         <meshBasicMaterial
           color={config.accent}
           transparent
@@ -134,31 +132,16 @@ function AITeammateAvatar({ config }: { config: AITeammateConfig }) {
         />
       </mesh>
 
-      {/* Torso Capsule */}
-      <mesh castShadow position={[0, 0.58, 0]}>
-        <capsuleGeometry args={[0.3, 0.56, 8, 16]} />
-        <meshStandardMaterial color={config.color} roughness={0.6} metalness={0.15} />
-      </mesh>
-
-      {/* Head */}
-      <mesh ref={headRef} castShadow position={[0, 1.18, 0]}>
-        <sphereGeometry args={[0.26, 20, 20]} />
-        <meshStandardMaterial color="#4a3728" roughness={0.7} />
-      </mesh>
-
-      {/* Smart Glasses / Visor */}
-      <mesh position={[0, 1.2, 0.23]} rotation-x={-0.1}>
-        <boxGeometry args={[0.26, 0.07, 0.08]} />
-        <meshStandardMaterial
-          color={config.accent}
-          emissive={config.accent}
-          emissiveIntensity={0.6}
-          roughness={0.2}
-        />
-      </mesh>
+      {/* High-Fidelity Humanoid Avatar */}
+      <AvatarModel
+        color={config.color}
+        motion={motion}
+        hairColor={config.id === "dev" ? "#1a202c" : config.id === "design" ? "#4a3022" : "#2d3748"}
+        skinTone={config.id === "dev" ? "#e0b696" : config.id === "design" ? "#c89b7b" : "#b08560"}
+      />
 
       {/* AI Bot Hologram Overhead Halo */}
-      <mesh position={[0, 1.55, 0]} rotation-x={Math.PI / 2}>
+      <mesh position={[0, 1.62, 0]} rotation-x={Math.PI / 2}>
         <torusGeometry args={[0.2, 0.015, 12, 24]} />
         <meshStandardMaterial
           color={config.accent}
@@ -168,7 +151,7 @@ function AITeammateAvatar({ config }: { config: AITeammateConfig }) {
       </mesh>
 
       {/* Clean Interactive Overhead Tag */}
-      <Html center position={[0, 1.82, 0]}>
+      <Html center position={[0, 1.88, 0]}>
         <div
           className={`pointer-events-none select-none flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold shadow-md transition-all whitespace-nowrap ${
             hovered || isSelected
@@ -182,7 +165,7 @@ function AITeammateAvatar({ config }: { config: AITeammateConfig }) {
           />
           <span>{config.name} (AI {config.id === "dev" ? "Dev" : config.id === "design" ? "Design" : "Finance"})</span>
           {(hovered || isSelected) && (
-            <span className="text-[9px] text-[#c8f560] font-black uppercase">Chat</span>
+            <span className="text-[9px] text-[#c8f560] font-black uppercase">Chat (X)</span>
           )}
         </div>
       </Html>
