@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useRef, type MutableRefObject } from "react";
+import { useEffect, useRef, type MutableRefObject } from "react";
 import * as THREE from "three";
 
 export type AvatarModelProps = {
@@ -34,6 +34,10 @@ export function AvatarModel({
   const headGroup = useRef<THREE.Group>(null);
   const torsoGroup = useRef<THREE.Group>(null);
   const walkPhase = useRef(0);
+
+  useEffect(() => {
+    onAssetReady?.();
+  }, [onAssetReady]);
 
   useFrame((_, delta) => {
     const speed = motion.current;

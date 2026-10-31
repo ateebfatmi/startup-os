@@ -101,7 +101,7 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
   return (
     <>
       {/* 1. Gather.town Top Audio Perimeter HUD (Private Space / Proximity Audio) */}
-      <div className="absolute top-[88px] left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-black/10 px-4 py-1.5 text-xs shadow-xl backdrop-blur-md transition-all duration-200 select-none bg-[#121c17]/95 text-white">
+      <div className="absolute top-3.5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 px-4 py-1.5 text-xs shadow-xl backdrop-blur-md transition-all duration-200 select-none bg-[#121c17]/90 text-white">
         {inPhoneBooth ? (
           <>
             <span className="flex h-2 w-2 rounded-full bg-[#c8f560] animate-pulse" />
@@ -141,7 +141,7 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
 
       {/* 2. Gather.town Signature [X] Interaction Prompt */}
       {nearbyAction && (
-        <div className="absolute bottom-16 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2.5 rounded-2xl border border-black/10 bg-[#121c17]/95 px-4 py-2.5 text-white shadow-2xl backdrop-blur-md animate-in slide-in-from-bottom-2 duration-150">
+        <div className="absolute bottom-20 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2.5 rounded-2xl border border-black/10 bg-[#121c17]/95 px-4 py-2 text-white shadow-2xl backdrop-blur-md animate-in slide-in-from-bottom-2 duration-150">
           <kbd className="grid h-6 w-6 place-items-center rounded-lg bg-[#c8f560] text-xs font-black text-[#17211b] shadow-xs">
             X
           </kbd>
@@ -159,7 +159,7 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
 
       {/* 3. Boardroom Presenter Toolbar (Appears when in Executive Boardroom) */}
       {inBoardroom && (
-        <div className="absolute top-[132px] left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-white/20 bg-[#17211b]/95 p-2 shadow-2xl backdrop-blur-md text-white animate-in fade-in duration-200">
+        <div className="absolute top-14 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-white/20 bg-[#17211b]/95 p-2 shadow-2xl backdrop-blur-md text-white animate-in fade-in duration-200">
           <div className="flex items-center gap-2 px-3 border-r border-white/15">
             <span className="h-2 w-2 rounded-full bg-[#c8f560] animate-pulse" />
             <span className="text-xs font-bold text-[#c8f560]">Boardroom 85&quot; Display</span>
@@ -169,7 +169,7 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
           {isScreenSharing ? (
             <button
               onClick={stopScreenShare}
-              className="flex items-center gap-1.5 rounded-xl bg-red-600/90 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-red-500 transition"
+              className="flex items-center gap-1.5 rounded-xl bg-red-600/90 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-red-500 transition cursor-pointer"
             >
               <Square size={13} fill="currentColor" />
               <span>Stop Share ({presenterName || "Live"})</span>
@@ -177,7 +177,7 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
           ) : (
             <button
               onClick={() => startScreenShare(displayName)}
-              className="flex items-center gap-1.5 rounded-xl bg-[#c8f560] px-3 py-1.5 text-xs font-bold text-[#17211b] shadow-sm hover:bg-[#d8ff7a] transition"
+              className="flex items-center gap-1.5 rounded-xl bg-[#c8f560] px-3 py-1.5 text-xs font-bold text-[#17211b] shadow-sm hover:bg-[#d8ff7a] transition cursor-pointer"
             >
               <MonitorPlay size={14} />
               <span>Share Screen to TV</span>
@@ -188,7 +188,7 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
           <div className="flex items-center gap-1 px-1">
             <button
               onClick={() => { prevBoardroomSlide(); playSlideClick(); }}
-              className="rounded-lg p-1 hover:bg-white/10 text-white/80"
+              className="rounded-lg p-1 hover:bg-white/10 text-white/80 cursor-pointer"
               title="Previous Slide"
             >
               <ChevronLeft size={16} />
@@ -198,7 +198,7 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
             </span>
             <button
               onClick={() => { nextBoardroomSlide(); playSlideClick(); }}
-              className="rounded-lg p-1 hover:bg-white/10 text-white/80"
+              className="rounded-lg p-1 hover:bg-white/10 text-white/80 cursor-pointer"
               title="Next Slide"
             >
               <ChevronRight size={16} />
@@ -208,7 +208,7 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
           {/* Fullscreen Expand */}
           <button
             onClick={() => setShowFullscreenTV(true)}
-            className="rounded-lg p-1.5 hover:bg-white/10 text-white/80"
+            className="rounded-lg p-1.5 hover:bg-white/10 text-white/80 cursor-pointer"
             title="Expand Presentation Fullscreen"
           >
             <Maximize2 size={14} />
@@ -216,56 +216,27 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
         </div>
       )}
 
-      {/* 4. Compact Startup Health & GitHub PRs Hub */}
-      <div className="absolute top-[88px] left-5 z-10 hidden xl:flex items-center gap-1.5 rounded-full border border-white/40 bg-[#fffdf7]/95 px-3 py-1 text-xs shadow-panel backdrop-blur-md text-[#17211b]">
-        <span className="font-bold text-[#327a56]">MRR</span>
-        <span className="font-semibold">${startupMetrics.mrr.toLocaleString()}</span>
-        <span className="text-[10px] text-emerald-600 font-bold">+18%</span>
-        <span className="text-black/20">·</span>
-        <span className="text-[#68736b]">{startupMetrics.runwayMonths}m runway</span>
-        <span className="text-black/20">·</span>
-        <button
-          onClick={() => setShowPRModal(true)}
-          className="flex items-center gap-1 rounded-full bg-[#17211b] px-2.5 py-0.5 text-[11px] font-bold text-[#c8f560] hover:bg-[#23583c] transition"
-        >
-          <GitPullRequest size={11} />
-          <span>{startupMetrics.activePRs - mergedPRs.length} PRs</span>
-        </button>
-      </div>
-
-      {/* 3. Bottom Emote Trigger Button */}
-      <div className="absolute bottom-4 right-5 z-20">
-        <button
-          onClick={() => setShowEmoteWheel((prev) => !prev)}
-          className="flex items-center gap-1.5 rounded-2xl border border-white/40 bg-[#fffdf7]/95 px-3 py-2 text-xs font-bold text-[#17211b] shadow-panel backdrop-blur-md hover:bg-black/5 transition"
-          title="Send Reaction Emote (Shortcut: Z)"
-        >
-          <Smile size={16} className="text-[#ff8a4c]" />
-          <span>React (Z)</span>
-        </button>
-
-        {/* Emote Radial Popup */}
-        {showEmoteWheel && (
-          <div className="absolute bottom-12 right-0 mb-2 flex flex-col gap-1 rounded-2xl border border-black/10 bg-[#fffdf7] p-2 shadow-2xl backdrop-blur-md animate-in zoom-in-95 duration-150">
-            <div className="px-2 py-1 text-[10px] font-bold text-[#68736b] uppercase tracking-wider">
-              Quick Reactions
-            </div>
-            <div className="grid grid-cols-4 gap-1.5">
-              {emotes.map((item) => (
-                <button
-                  key={item.emoji}
-                  onClick={() => handleEmoteClick(item.emoji)}
-                  className="flex flex-col items-center justify-center h-12 w-12 rounded-xl hover:bg-black/5 text-xl transition active:scale-90"
-                  title={item.label}
-                >
-                  <span>{item.emoji}</span>
-                  <span className="text-[8px] font-semibold text-[#68736b]">{item.label}</span>
-                </button>
-              ))}
-            </div>
+      {/* Emote Radial Popup (Triggered by Z shortcut) */}
+      {showEmoteWheel && (
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-40 mb-2 flex flex-col gap-1 rounded-2xl border border-black/10 bg-[#fffdf7] p-2 shadow-2xl backdrop-blur-md animate-in zoom-in-95 duration-150">
+          <div className="px-2 py-1 text-[10px] font-bold text-[#68736b] uppercase tracking-wider text-center">
+            Quick Reactions (Z)
           </div>
-        )}
-      </div>
+          <div className="grid grid-cols-4 gap-1.5">
+            {emotes.map((item) => (
+              <button
+                key={item.emoji}
+                onClick={() => handleEmoteClick(item.emoji)}
+                className="flex flex-col items-center justify-center h-12 w-12 rounded-xl hover:bg-black/5 text-xl transition active:scale-90 cursor-pointer"
+                title={item.label}
+              >
+                <span>{item.emoji}</span>
+                <span className="text-[8px] font-semibold text-[#68736b]">{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 4. GitHub PR Review Modal */}
       {showPRModal && (

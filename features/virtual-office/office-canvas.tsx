@@ -281,38 +281,36 @@ function CameraRig() {
   }, [gl]);
 
   useFrame(({ camera }, delta) => {
-    // Gather.town authentic overhead perspective:
-    // Orthographic camera always looks down with up set to (0, 0, -1).
-    // This completely prevents wall occlusion, camera clipping, and orientation distortion.
-    camera.up.set(0, 0, -1);
+    // Gather.town authentic 2.5D perspective with Y-up:
+    // Characters, desks, monitors, plants, and rooms render with full 2.5D upright depth
+    camera.up.set(0, 1, 0);
 
     if (cameraMode === "top") {
-      // True full-office overview floor plan
-      const desiredPos = new THREE.Vector3(0, 38, 2.5);
-      const desiredLook = new THREE.Vector3(0, 0, 2.5);
+      // Gather.town 2.5D full-office overview floor plan
+      const desiredPos = new THREE.Vector3(0, 36, 28);
+      const desiredLook = new THREE.Vector3(0, 0, 2.0);
       camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 6));
       camera.lookAt(desiredLook);
 
-      // Office spans width 30 and depth ~24 (including terrace); snug margins maximize canvas area
-      const baseZoom = Math.min((size.width - 32) / 30.5, (size.height - 32) / 24.5);
+      const baseZoom = Math.min((size.width - 40) / 34, (size.height - 40) / 26);
       const targetZoom = baseZoom * zoomLevel;
       if ("zoom" in camera) {
         camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 6));
         camera.updateProjectionMatrix();
       }
     } else {
-      // Real-time smooth avatar follow mode: camera tracks player position across the entire office
+      // Gather.town authentic 2.5D follow camera: smoothly tracks avatar across the office
       const posX = localAvatarPosition.x || player.x;
       const posZ = localAvatarPosition.y || player.z;
       const targetX = THREE.MathUtils.clamp(posX, OFFICE_BOUNDS.minX, OFFICE_BOUNDS.maxX);
       const targetZ = THREE.MathUtils.clamp(posZ, OFFICE_BOUNDS.minZ, OFFICE_BOUNDS.maxZ);
-      const desiredPos = new THREE.Vector3(targetX, 36, targetZ + 0.1);
-      const desiredLook = new THREE.Vector3(targetX, 0, targetZ + 0.1);
+      const desiredPos = new THREE.Vector3(targetX, 17, targetZ + 12.8);
+      const desiredLook = new THREE.Vector3(targetX, 0.85, targetZ);
       camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 9));
       camera.lookAt(desiredLook);
 
-      // Room-level focus: shows ~15m x ~11.5m around avatar so rooms and characters appear large and detailed
-      const baseZoom = Math.min((size.width - 32) / 15, (size.height - 32) / 11.5);
+      // Room-level focus: shows ~14m x ~10.5m around avatar so rooms and characters appear large and detailed
+      const baseZoom = Math.min((size.width - 32) / 14, (size.height - 32) / 10.5);
       const targetZoom = baseZoom * zoomLevel;
       if ("zoom" in camera) {
         camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 6));
@@ -1532,8 +1530,8 @@ function BoardroomScreen() {
 
   return (
     <group
-      position={[-6.2, 1.35, -7.48]}
-      rotation-x={-0.34}
+      position={[-6.2, 1.45, -7.5]}
+      rotation-x={-0.12}
       onClick={(e) => {
         e.stopPropagation();
         playSlideClick();

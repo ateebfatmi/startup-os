@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Check,
   Filter,
+  GripVertical,
   Loader2,
   MessageSquare,
   Plus,
@@ -20,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { initialsFor } from "@/features/auth/auth-utils";
+import { playChime, playSlideClick } from "@/features/virtual-office/audio";
 import type { Project, TaskComment, TaskDbStatus, TaskItem, TaskPriority } from "./project-types";
 import {
   createTask,
@@ -67,6 +69,10 @@ export function KanbanView({
   const [selectedAssignee, setSelectedAssignee] = useState<string>("all");
   const [selectedPriority, setSelectedPriority] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // Drag and drop states
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [dragOverColumnId, setDragOverColumnId] = useState<TaskDbStatus | null>(null);
 
   // Create Task Modal
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -333,10 +339,44 @@ export function KanbanView({
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {COLUMN_CONFIG.map((col) => {
             const colTasks = filteredTasks.filter((t) => t.status === col.id);
+            const isColumnHovered = dragOverColumnId === col.id;
             return (
               <section
                 key={col.id}
-                className="flex min-h-[400px] flex-col rounded-[22px] bg-black/[.035] p-3"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  if (dragOverColumnId !== col.id) {
+                    setDragOverColumnId(col.id);
+                  }
+                }}
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  setDragOverColumnId(col.id);
+                }}
+                onDragLeave={(e) => {
+                  if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                    setDragOverColumnId((current) => (current === col.id ? null : current));
+                  }
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const taskId = e.dataTransfer.getData("text/plain") || draggedTaskId;
+                  if (taskId) {
+                    const task = tasks.find((item) => item.id === taskId);
+                    if (task && task.status !== col.id) {
+                      void handleMoveTask(taskId, col.id);
+                      playChime();
+                    }
+                  }
+                  setDraggedTaskId(null);
+                  setDragOverColumnId(null);
+                }}
+                className={`flex min-h-[440px] flex-col rounded-[22px] p-3 transition-all duration-150 ${
+                  isColumnHovered
+                    ? "bg-[#173f2b]/[0.08] ring-2 ring-[#173f2b] shadow-inner"
+                    : "bg-black/[.035]"
+                }`}
               >
                 <div className="mb-3 flex items-center justify-between px-2">
                   <h3 className="text-sm font-bold text-[#17211b]">{col.title}</h3>
@@ -346,7 +386,13 @@ export function KanbanView({
                 </div>
 
                 <div className="space-y-3 flex-1">
-                  {colTasks.length === 0 ? (
+                  {isColumnHovered && (
+                    <div className="rounded-2xl border-2 border-dashed border-[#173f2b]/40 bg-[#173f2b]/[0.06] p-3 text-center text-xs font-bold text-[#173f2b] animate-pulse">
+                      Drop here to move to {col.title}
+                    </div>
+                  )}
+
+                  {colTasks.length === 0 && !isColumnHovered ? (
                     <div className="rounded-xl border border-dashed border-black/10 bg-white/40 p-6 text-center text-xs text-[#68736b]">
                       No tasks
                     </div>
@@ -354,14 +400,35 @@ export function KanbanView({
                     colTasks.map((t) => (
                       <article
                         key={t.id}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("text/plain", t.id);
+                          e.dataTransfer.effectAllowed = "move";
+                          setDraggedTaskId(t.id);
+                          playSlideClick();
+                        }}
+                        onDragEnd={() => {
+                          setDraggedTaskId(null);
+                          setDragOverColumnId(null);
+                        }}
                         onClick={() => openTaskDetail(t)}
-                        className="group relative cursor-pointer rounded-2xl border border-black/[.08] bg-[#fffdf7] p-3.5 shadow-sm transition hover:shadow-md"
+                        className={`group relative cursor-grab active:cursor-grabbing rounded-2xl border border-black/[.08] bg-[#fffdf7] p-3.5 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md ${
+                          draggedTaskId === t.id
+                            ? "opacity-35 scale-[0.98] ring-2 ring-[#173f2b] shadow-inner"
+                            : ""
+                        }`}
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <Badge className="bg-black/5 text-[10px] text-[#68736b]">
-                            {t.projectName || "General"}
-                          </Badge>
-                          <Badge className={`text-[10px] ${PRIORITY_STYLES[t.priority]}`}>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <GripVertical
+                              size={14}
+                              className="text-[#68736b]/40 group-hover:text-[#173f2b] transition-colors shrink-0"
+                            />
+                            <Badge className="bg-black/5 text-[10px] text-[#68736b] truncate">
+                              {t.projectName || "General"}
+                            </Badge>
+                          </div>
+                          <Badge className={`text-[10px] shrink-0 ${PRIORITY_STYLES[t.priority]}`}>
                             {t.priority}
                           </Badge>
                         </div>

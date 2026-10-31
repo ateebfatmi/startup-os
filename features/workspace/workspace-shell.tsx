@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, AudioLines, BarChart3, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, CreditCard, DoorOpen, Files, FolderKanban, Gauge, Headphones, LayoutGrid, Loader2, LogOut, Map, MapPin, Maximize2, Menu, Mic, MicOff, Minimize2, MonitorUp, Moon, Music, Palette, PanelLeftClose, PanelLeftOpen, PenTool, PhoneOff, Plug, Plus, Radio, Search, Sparkles, Sun, Sunset, Target, User, Users, Video, VideoOff, VolumeX, Wifi, X } from "lucide-react";
+import { Activity, AudioLines, BarChart3, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, CreditCard, DoorOpen, Files, FolderKanban, Gauge, Headphones, LayoutGrid, Loader2, LogOut, Map, MapPin, Maximize2, Menu, Mic, MicOff, Minimize2, MonitorUp, Moon, Music, Palette, PanelLeftClose, PanelLeftOpen, PenTool, PhoneOff, Plug, Plus, Radio, Search, Smile, Sparkles, Sun, Sunset, Target, User, Users, Video, VideoOff, VolumeX, Wifi, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -12,6 +12,8 @@ import { Logo } from "@/components/logo";
 import { initialsFor } from "@/features/auth/auth-utils";
 import { OfficeCanvas } from "@/features/virtual-office/office-canvas";
 import { useOfficeStore } from "@/features/virtual-office/store";
+import { startScreenShare, stopScreenShare } from "@/features/virtual-office/screen-share";
+import { playChime } from "@/features/virtual-office/audio";
 import { useMultiplayer } from "@/features/multiplayer/use-multiplayer";
 import { useHuddle, type HuddleController } from "@/features/communication/use-huddle";
 import type { CallParticipant } from "@/features/communication/types";
@@ -125,7 +127,8 @@ export function WorkspaceShell() {
   const proximity = useProximityAudio(huddle);
   const [view, setView] = useState<View>("office");
   const [mobileNav, setMobileNav] = useState(false);
-  const [rightRail, setRightRail] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
+  const [rightRail, setRightRail] = useState(false);
+  const [showMinimap, setShowMinimap] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [fullOfficeView, setFullOfficeView] = useState(false);
@@ -194,16 +197,21 @@ export function WorkspaceShell() {
                 displayName={identity.displayName}
                 isFullOffice={fullOfficeView}
                 onToggleFullOffice={() => setFullOfficeView((v) => !v)}
+                showMinimap={showMinimap}
+                onToggleMinimap={() => setShowMinimap((v) => !v)}
               />
               <SpatialOverlays displayName={identity.displayName} />
               <AITeammateDialog />
-              <ProximityAudioControl controller={proximity} />
-              <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-white/35 bg-[#fffdf7]/90 p-2 shadow-panel backdrop-blur-md">
-                <Button variant={localParticipant?.microphoneEnabled ? "solid" : "outline"} size="icon" onClick={() => inCall ? huddle.toggleMicrophone() : openPanel("meeting")} aria-label={localParticipant?.microphoneEnabled ? "Mute microphone" : "Unmute microphone"}>{localParticipant?.microphoneEnabled ? <Mic size={18} /> : <MicOff size={18} />}</Button>
-                <Button variant={localParticipant?.cameraEnabled ? "solid" : "outline"} size="icon" onClick={() => inCall ? huddle.toggleCamera() : openPanel("meeting")} aria-label={localParticipant?.cameraEnabled ? "Turn camera off" : "Turn camera on"}>{localParticipant?.cameraEnabled ? <Video size={18} /> : <VideoOff size={18} />}</Button>
-                <div className="mx-1 h-6 w-px bg-black/10" />
-                <Button variant="outline" size="sm" onClick={() => openPanel("meeting")}><Headphones size={17} /> {inCall ? `${Object.keys(huddle.participants).length} in huddle` : "Start huddle"}</Button>
-              </div>
+              <GatherBottomDock
+                huddle={huddle}
+                proximity={proximity}
+                displayName={identity.displayName}
+                onOpenMeeting={() => openPanel("meeting")}
+                rightRail={rightRail}
+                onToggleRail={() => setRightRail((value) => !value)}
+                showMinimap={showMinimap}
+                onToggleMinimap={() => setShowMinimap((v) => !v)}
+              />
             </>
           ) : <DashboardView view={view} {...data} workspaceId={identity.workspaceId} workspaceRole={identity.workspaceRole} displayName={identity.displayName} workspaceName={identity.workspaceName} />}
         </div>
@@ -212,11 +220,6 @@ export function WorkspaceShell() {
       <QuickStartDialog open={helpOpen} onClose={() => setHelpOpen(false)} onNavigate={(destination) => { setView(destination); setHelpOpen(false); }} />
     </main>
   );
-}
-
-function ProximityAudioControl({ controller }: { controller: ProximityAudioController }) {
-  const busy = controller.status === "requesting_permission" || controller.status === "joining";
-  return <div className="absolute bottom-24 left-4 z-20 hidden max-w-64 rounded-2xl border border-white/45 bg-[#fffdf7]/90 p-3 shadow-xl backdrop-blur md:block"><div className="flex items-center gap-2"><span className={`grid h-9 w-9 place-items-center rounded-xl ${controller.active ? "bg-[#c8f560] text-[#173f2b]" : "bg-black/5 text-[#68736b]"}`}>{controller.active ? <AudioLines size={17} /> : <VolumeX size={17} />}</span><div className="min-w-0 flex-1"><div className="text-xs font-bold">{controller.active ? "Proximity audio active" : controller.enabled ? "Proximity audio ready" : "Proximity audio off"}</div><div className="truncate text-[10px] text-[#68736b]">{controller.group ? `${controller.group.names.join(", ")} nearby` : "Move near a teammate to connect"}</div></div></div><button aria-label={controller.enabled ? "Disable proximity audio" : "Enable proximity audio"} onClick={controller.toggle} className={`mt-2 w-full rounded-xl px-3 py-2 text-xs font-bold ${controller.enabled ? "bg-[#173f2b] text-white" : "bg-[#c8f560] text-[#173f2b]"}`}>{busy ? "Requesting microphone…" : controller.enabled ? "Disable" : "Enable with microphone"}</button></div>;
 }
 
 function Sidebar({ view, setView, mobileNav, onClose, taskCount, workspaceName, workspaceId, workspaces, onSelectWorkspace, onExit, isCollapsed, onToggleCollapse }: { view: View; setView: (view: View) => void; mobileNav: boolean; onClose: () => void; taskCount: number; workspaceName: string; workspaceId: string; workspaces: WorkspaceSummary[]; onSelectWorkspace: (workspace: WorkspaceSummary) => void; onExit: () => Promise<void>; isCollapsed: boolean; onToggleCollapse: () => void }) {
@@ -300,13 +303,28 @@ function NotificationMenu() {
   return <div className="relative"><Button variant="ghost" size="icon" aria-label="Notifications" aria-expanded={open} className="relative" onClick={() => void toggle()}><Bell size={19} />{unread > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#ff8a4c]" />}</Button>{open && <div className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-black/10 bg-[#fffdf7] shadow-2xl"><div className="border-b border-black/[.07] p-4"><h3 className="text-sm font-bold">Notifications</h3><p className="mt-0.5 text-xs text-[#68736b]">{unread} unread</p></div>{loading ? <div className="grid place-items-center p-8"><Loader2 className="animate-spin" size={18} /></div> : <div className="max-h-80 overflow-auto">{items.map((item) => <button key={item.id} onClick={() => void read(item)} className={`block w-full border-b border-black/[.05] p-4 text-left last:border-0 ${item.readAt ? "opacity-60" : "bg-[#f4f8ed]"}`}><div className="text-sm font-semibold">{item.title}</div><div className="mt-1 text-xs text-[#68736b]">{item.body}</div></button>)}{items.length === 0 && <div className="p-8 text-center text-sm text-[#68736b]">You’re all caught up.</div>}</div>}</div>}</div>;
 }
 
-function OfficeHud({ rightRail, onToggleRail, tasks, displayName, isFullOffice, onToggleFullOffice }: { rightRail: boolean; onToggleRail: () => void; tasks: { status: string }[]; displayName: string; isFullOffice?: boolean; onToggleFullOffice?: () => void }) {
+function OfficeHud({
+  rightRail,
+  onToggleRail,
+  tasks,
+  displayName,
+  isFullOffice,
+  onToggleFullOffice,
+  showMinimap,
+  onToggleMinimap,
+}: {
+  rightRail: boolean;
+  onToggleRail: () => void;
+  tasks: { status: string }[];
+  displayName: string;
+  isFullOffice?: boolean;
+  onToggleFullOffice?: () => void;
+  showMinimap: boolean;
+  onToggleMinimap: () => void;
+}) {
   const player = useOfficeStore((state) => state.player);
   const remotePlayers = useOfficeStore((state) => state.remotePlayers);
   const connectionState = useOfficeStore((state) => state.connectionState);
-  const transportLabel = useOfficeStore((state) => state.transportLabel);
-  const cameraMode = useOfficeStore((state) => state.cameraMode);
-  const toggleCameraMode = useOfficeStore((state) => state.toggleCameraMode);
   const lightingMode = useOfficeStore((state) => state.lightingMode);
   const cycleLightingMode = useOfficeStore((state) => state.cycleLightingMode);
   const lofiPlaying = useOfficeStore((state) => state.lofiPlaying);
@@ -314,163 +332,404 @@ function OfficeHud({ rightRail, onToggleRail, tasks, displayName, isFullOffice, 
   const isCaffeinated = useOfficeStore((state) => state.isCaffeinated);
   const isSitting = useOfficeStore((state) => state.isSitting);
   const setIsSitting = useOfficeStore((state) => state.setIsSitting);
-  const zoomLevel = useOfficeStore((state) => state.zoomLevel);
-  const zoomIn = useOfficeStore((state) => state.zoomIn);
-  const zoomOut = useOfficeStore((state) => state.zoomOut);
   const qualityMode = useOfficeStore((state) => state.qualityMode);
   const setQualityMode = useOfficeStore((state) => state.setQualityMode);
   const measuredFps = useOfficeStore((state) => state.measuredFps);
   const onlineCount = Object.keys(remotePlayers).length + 1;
 
-  return <>
-    <div className="absolute left-3 top-3 z-10 max-w-[calc(100%-4.5rem)] rounded-2xl border border-white/50 bg-[#fffdf7]/[.94] p-2.5 shadow-panel backdrop-blur-md sm:left-5 sm:top-5 sm:max-w-[calc(100%-6rem)] lg:max-w-[min(760px,calc(100%-20rem))]">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-2 text-sm font-bold">
+  return (
+    <>
+      {/* Discreet Top-Left HUD */}
+      <div className="absolute left-4 top-4 z-20 flex items-center gap-2 select-none">
+        <div className="flex items-center gap-2 rounded-xl border border-white/50 bg-[#fffdf7]/95 px-3 py-1.5 shadow-sm backdrop-blur-md text-xs font-bold text-[#173f2b]">
           <span className={`h-2.5 w-2.5 rounded-full ${connectionState === "connected" ? "bg-[#52aa72]" : connectionState === "offline" ? "bg-[#d46b52]" : "animate-pulse bg-[#e5a13e]"}`} />
-          <span className="whitespace-nowrap">{connectionState === "connected" ? `${onlineCount} online` : connectionState === "offline" ? "Offline workspace" : "Connecting…"}</span>
+          <span>{connectionState === "connected" ? `${onlineCount} online` : "Connecting…"}</span>
+          {Object.values(remotePlayers).map((remote) => (
+            <span key={remote.id} className="flex items-center gap-1 font-normal text-[#68736b] text-[11px]">
+              <span className="text-black/30">·</span>
+              <span className="font-semibold text-[#173f2b]">{remote.name}:</span>
+              <span className="text-blue-600 font-medium">{remote.status || "available"}</span>
+            </span>
+          ))}
           {isCaffeinated && (
-            <span className="flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 text-amber-800 px-2 py-0.5 text-[10px] font-bold">
-              <Coffee size={11} /> +30% Speed
+            <span className="flex items-center gap-1 rounded-md bg-amber-100 border border-amber-300 text-amber-800 px-1.5 py-0.5 text-[10px] font-bold">
+              <Coffee size={10} /> +30%
             </span>
           )}
           {isSitting && (
             <button
               onClick={() => setIsSitting(false)}
-              className="rounded-full bg-blue-100 border border-blue-300 text-blue-800 px-2 py-0.5 text-[10px] font-bold hover:bg-blue-200 transition"
+              className="rounded-md bg-blue-100 border border-blue-300 text-blue-800 px-1.5 py-0.5 text-[10px] font-bold hover:bg-blue-200 transition cursor-pointer"
               title="Click or press F / WASD to stand up"
             >
-              🪑 Seated (Stand up)
+              🪑 Seated
             </button>
           )}
         </div>
 
-        {/* Quick Office Controls Toolbar */}
-        <div className="flex flex-wrap items-center gap-1.5 sm:ml-auto">
-          {/* Full Office Area Screen Toggle */}
+        {/* Quick icon actions: Fullscreen, Lighting, Lofi, Quality */}
+        <div className="flex items-center gap-1 rounded-xl border border-white/50 bg-[#fffdf7]/95 p-1 shadow-sm backdrop-blur-md">
           {onToggleFullOffice && (
             <button
               onClick={onToggleFullOffice}
-              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
-                isFullOffice
-                  ? "bg-[#173f2b] text-[#c8f560] border-[#173f2b] shadow-xs"
-                  : "bg-white/90 text-[#3a443e] border-black/10 hover:bg-black/5"
+              className={`grid h-7 w-7 place-items-center rounded-lg text-xs transition cursor-pointer ${
+                isFullOffice ? "bg-[#173f2b] text-[#c8f560]" : "text-[#3a443e] hover:bg-black/5"
               }`}
-              title={isFullOffice ? "Exit full screen office (restore sidebar & topbar)" : "Maximize office area (Full Screen)"}
+              title={isFullOffice ? "Exit full office screen (ESC)" : "Maximize office area (Full Screen)"}
             >
-              {isFullOffice ? <Minimize2 size={13} className="text-[#c8f560]" /> : <Maximize2 size={13} />}
-              <span className="hidden sm:inline">{isFullOffice ? "Exit Full" : "Full Office"}</span>
+              {isFullOffice ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
             </button>
           )}
-
-          {/* Lofi Radio Button */}
-          <button
-            onClick={toggleLofi}
-            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
-              lofiPlaying
-                ? "bg-[#173f2b] text-[#c8f560] border-[#173f2b] shadow-xs"
-                : "bg-white/90 text-[#3a443e] border-black/10 hover:bg-black/5"
-            }`}
-            title="Toggle Procedural Lofi Chill Chords"
-          >
-            <Radio size={13} className={lofiPlaying ? "text-[#c8f560] animate-pulse" : "text-[#68736b]"} />
-            <span className="hidden sm:inline">{lofiPlaying ? "Lofi: On ♫" : "Lofi"}</span>
-          </button>
-
-          {/* Atmosphere Lighting Toggle */}
           <button
             onClick={cycleLightingMode}
-            className="flex items-center gap-1.5 rounded-lg border border-black/10 bg-white/90 px-2.5 py-1 text-xs font-semibold text-[#173f2b] shadow-xs transition hover:bg-black/5"
-            title="Cycle Lighting Atmosphere: Day, Golden Sunset, Cyberpunk Night"
+            className="grid h-7 w-7 place-items-center rounded-lg text-[#3a443e] hover:bg-black/5 transition cursor-pointer"
+            title={`Atmosphere Lighting: ${lightingMode.toUpperCase()}`}
           >
-            {lightingMode === "day" ? (
-              <>
-                <Sun size={13} className="text-amber-500" />
-                <span className="hidden sm:inline">Day</span>
-              </>
-            ) : lightingMode === "sunset" ? (
-              <>
-                <Sunset size={13} className="text-orange-500" />
-                <span className="hidden sm:inline">Sunset</span>
-              </>
-            ) : (
-              <>
-                <Moon size={13} className="text-blue-500" />
-                <span className="hidden sm:inline">Night</span>
-              </>
-            )}
+            {lightingMode === "day" ? <Sun size={14} className="text-amber-500" /> : lightingMode === "sunset" ? <Sunset size={14} className="text-orange-500" /> : <Moon size={14} className="text-blue-500" />}
           </button>
-
-          <button onClick={() => setQualityMode(qualityMode === "high" ? "reduced" : "high")} aria-label="Toggle rendering quality" className="flex items-center gap-1.5 rounded-lg border border-black/10 bg-white/90 px-2.5 py-1 text-xs font-semibold text-[#173f2b] shadow-xs transition hover:bg-black/5" title="Toggle high and reduced rendering modes"><Gauge size={13} className={measuredFps && measuredFps < 45 ? "text-amber-600" : "text-emerald-600"} /><span className="hidden sm:inline">{qualityMode === "high" ? "High" : "Reduced"} · </span><span>{measuredFps ? Math.round(measuredFps) : "—"} FPS</span></button>
-
-          {/* Camera View Mode Segmented Control */}
-          <div className="flex items-center rounded-lg border border-black/10 bg-white/90 p-0.5 shadow-xs">
-            <button
-              onClick={() => useOfficeStore.getState().setCameraMode("top")}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold transition ${
-                cameraMode === "top"
-                  ? "bg-[#173f2b] text-[#c8f560] shadow-xs"
-                  : "text-[#68736b] hover:text-[#173f2b] hover:bg-black/5"
-              }`}
-              title="Full Office Overview (Shortcut: V)"
-            >
-              <Maximize2 size={12} />
-              <span className="hidden sm:inline">Overview</span>
-            </button>
-            <button
-              onClick={() => useOfficeStore.getState().setCameraMode("follow")}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold transition ${
-                cameraMode === "follow"
-                  ? "bg-[#173f2b] text-[#c8f560] shadow-xs"
-                  : "text-[#68736b] hover:text-[#173f2b] hover:bg-black/5"
-              }`}
-              title="Follow My Avatar (Shortcut: V)"
-            >
-              <User size={12} />
-              <span className="hidden sm:inline">Follow Avatar</span>
-            </button>
-          </div>
-
-          {/* Broad View Zoom Controls */}
-          <div className="flex items-center rounded-lg border border-black/10 bg-white/90 shadow-xs">
-            <button
-              onClick={zoomOut}
-              className="px-2 py-1 text-xs font-bold text-[#173f2b] hover:bg-black/5 transition rounded-l-lg"
-              title="Broader View (Zoom Out)"
-            >
-              −
-            </button>
-            <span className="px-1 text-[10px] font-semibold text-[#68736b] select-none">
-              {Math.round(zoomLevel * 100)}%
-            </span>
-            <button
-              onClick={zoomIn}
-              className="px-2 py-1 text-xs font-bold text-[#173f2b] hover:bg-black/5 transition rounded-r-lg"
-              title="Closer View (Zoom In)"
-            >
-              +
-            </button>
-          </div>
+          <button
+            onClick={toggleLofi}
+            className={`grid h-7 w-7 place-items-center rounded-lg transition cursor-pointer ${
+              lofiPlaying ? "bg-[#173f2b] text-[#c8f560]" : "text-[#3a443e] hover:bg-black/5"
+            }`}
+            title={lofiPlaying ? "Lofi Radio: Playing ♫" : "Toggle Lofi Ambient Radio"}
+          >
+            <Radio size={14} className={lofiPlaying ? "animate-pulse text-[#c8f560]" : ""} />
+          </button>
+          <button
+            onClick={() => setQualityMode(qualityMode === "high" ? "reduced" : "high")}
+            aria-label="Toggle rendering quality"
+            className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#173f2b] hover:bg-black/5 transition cursor-pointer"
+            title="Toggle high and reduced rendering modes"
+          >
+            <Gauge size={12} className={measuredFps && measuredFps < 45 ? "text-amber-600" : "text-emerald-600"} />
+            <span className="hidden sm:inline">{qualityMode === "high" ? "High" : "Reduced"} · </span>
+            <span>{measuredFps ? Math.round(measuredFps) : "—"} FPS</span>
+          </button>
         </div>
+
+        <p className="hidden text-xs text-[#68736b]/80 xl:block ml-2">Move with WASD or arrow keys · Click floor to walk · Press E to interact</p>
       </div>
-      <p className="mt-1.5 hidden text-xs text-[#68736b] sm:block">Move with WASD or arrow keys · Click floor to walk · Press E to interact · F to sit/stand · V view · {transportLabel}</p>
-    </div>
-    <OfficeMinimap />
-    {!rightRail && <button aria-label="Open people panel" onClick={onToggleRail} className="absolute right-3 top-3 z-20 grid h-10 w-10 place-items-center rounded-xl border border-white/50 bg-[#fffdf7]/[.94] shadow-lg backdrop-blur-md sm:right-5 sm:top-5"><Users size={18} /></button>}
-    {rightRail && <aside className="absolute right-3 top-16 z-30 w-[min(18rem,calc(100%-1.5rem))] rounded-[24px] border border-white/55 bg-[#fffdf7]/[.96] p-4 shadow-2xl backdrop-blur-md sm:right-5 lg:top-5 lg:z-10 lg:w-64 lg:shadow-panel">
-      <div className="flex items-center justify-between gap-2"><div><h2 className="text-sm font-bold">In the office</h2><p className="mt-0.5 text-[10px] text-[#68736b]">See who is available now</p></div><div className="flex items-center gap-1"><Badge className="bg-[#e5f3e7] text-[#276141]">{onlineCount} online</Badge><button aria-label="Close people panel" onClick={onToggleRail} className="grid h-8 w-8 place-items-center rounded-lg text-[#68736b] hover:bg-black/5"><X size={15} /></button></div></div>
-      <div className="mt-4 flex items-center gap-3"><div className="relative grid h-10 w-10 place-items-center rounded-full bg-[#efad73] text-xs font-bold">{initialsFor(displayName)}<span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#55ac74]" /></div><div><div className="text-sm font-semibold">{displayName}</div><div className="text-xs text-[#68736b]">{OFFICE_ROOMS.find((room) => room.id === player.roomId)?.shortName ?? "Open workspace"}</div></div></div>
-      {Object.values(remotePlayers).map((remote) => <button key={remote.id} onClick={() => { useOfficeStore.getState().setClickTarget({ x: remote.x, z: remote.z }); useOfficeStore.getState().setCameraMode("top"); }} className="mt-2 flex w-full items-center gap-3 rounded-xl p-1.5 text-left transition hover:bg-black/[.04]" title={`Walk to ${remote.name}`}><div className="relative grid h-10 w-10 place-items-center rounded-full text-xs font-bold text-white" style={{ background: remote.color }}>{remote.name.slice(0, 2).toUpperCase()}<span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${remote.status === "focus" ? "bg-blue-500" : remote.status === "do_not_disturb" ? "bg-red-500" : remote.status === "away" ? "bg-amber-500" : "bg-[#55ac74]"}`} /></div><div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold">{remote.name}</div><div className="flex min-w-0 items-center gap-1 truncate text-xs text-[#68736b]"><span className="truncate">{OFFICE_ROOMS.find((room) => room.id === remote.roomId)?.shortName ?? "Open workspace"}</span><span aria-hidden="true">·</span><span className="shrink-0 capitalize">{(remote.status || "available").replaceAll("_", " ")}</span></div></div><MapPin size={14} className="text-[#4b7a5e]" /></button>)}
-      <div className="my-4 h-px bg-black/[.07]" />
-      <div className="flex items-center justify-between"><span className="text-xs font-semibold uppercase tracking-wider text-[#68736b]">Today</span><span className="text-xs text-[#68736b]">{tasks.filter((task) => task.status !== "Done").length} open tasks</span></div>
-      <div className="mt-3 rounded-2xl bg-[#173f2b] p-3 text-[#f5f0e4]"><div className="text-xs text-white/55">Next meeting · 3:30 PM</div><div className="mt-1 text-sm font-semibold">Weekly product pulse</div><button onClick={() => useOfficeStore.getState().openPanel("meeting")} className="mt-3 w-full rounded-xl bg-[#c8f560] py-2 text-xs font-bold text-[#173f2b]">View meeting</button></div>
-    </aside>}
-  </>;
+
+      {/* Office Minimap Popover */}
+      <OfficeMinimap open={showMinimap} onToggle={onToggleMinimap} />
+
+      {/* In the office People Rail */}
+      {rightRail && (
+        <aside className="absolute right-4 top-4 z-30 w-72 rounded-[24px] border border-white/55 bg-[#fffdf7]/[.96] p-4 shadow-2xl backdrop-blur-md animate-in slide-in-from-right-4 duration-200">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-bold">In the office</h2>
+              <p className="mt-0.5 text-[10px] text-[#68736b]">See who is available now</p>
+            </div>
+            <div className="flex items-center gap-1">
+              <Badge className="bg-[#e5f3e7] text-[#276141]">{onlineCount} online</Badge>
+              <button aria-label="Close people panel" onClick={onToggleRail} className="grid h-8 w-8 place-items-center rounded-lg text-[#68736b] hover:bg-black/5 cursor-pointer">
+                <X size={15} />
+              </button>
+            </div>
+          </div>
+          <div className="mt-4 flex items-center gap-3">
+            <div className="relative grid h-10 w-10 place-items-center rounded-full bg-[#efad73] text-xs font-bold">
+              {initialsFor(displayName)}
+              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#55ac74]" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold">{displayName}</div>
+              <div className="text-xs text-[#68736b]">{OFFICE_ROOMS.find((room) => room.id === player.roomId)?.shortName ?? "Open workspace"}</div>
+            </div>
+          </div>
+          {Object.values(remotePlayers).map((remote) => (
+            <button
+              key={remote.id}
+              onClick={() => {
+                useOfficeStore.getState().setClickTarget({ x: remote.x, z: remote.z });
+                useOfficeStore.getState().setCameraMode("top");
+              }}
+              className="mt-2 flex w-full items-center gap-3 rounded-xl p-1.5 text-left transition hover:bg-black/[.04] cursor-pointer"
+              title={`Walk to ${remote.name}`}
+            >
+              <div className="relative grid h-10 w-10 place-items-center rounded-full text-xs font-bold text-white" style={{ background: remote.color }}>
+                {remote.name.slice(0, 2).toUpperCase()}
+                <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${remote.status === "focus" ? "bg-blue-500" : remote.status === "do_not_disturb" ? "bg-red-500" : remote.status === "away" ? "bg-amber-500" : "bg-[#55ac74]"}`} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-semibold">{remote.name}</div>
+                <div className="flex min-w-0 items-center gap-1 truncate text-xs text-[#68736b]">
+                  <span className="truncate">{OFFICE_ROOMS.find((room) => room.id === remote.roomId)?.shortName ?? "Open workspace"}</span>
+                  <span aria-hidden="true">·</span>
+                  <span className="shrink-0 capitalize">{(remote.status || "available").replaceAll("_", " ")}</span>
+                </div>
+              </div>
+              <MapPin size={14} className="text-[#4b7a5e]" />
+            </button>
+          ))}
+          <div className="my-4 h-px bg-black/[.07]" />
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#68736b]">Today</span>
+            <span className="text-xs text-[#68736b]">{tasks.filter((task) => task.status !== "Done").length} open tasks</span>
+          </div>
+          <div className="mt-3 rounded-2xl bg-[#173f2b] p-3 text-[#f5f0e4]">
+            <div className="text-xs text-white/55">Next meeting · 3:30 PM</div>
+            <div className="mt-1 text-sm font-semibold">Weekly product pulse</div>
+            <button onClick={() => useOfficeStore.getState().openPanel("meeting")} className="mt-3 w-full rounded-xl bg-[#c8f560] py-2 text-xs font-bold text-[#173f2b] cursor-pointer">
+              View meeting
+            </button>
+          </div>
+        </aside>
+      )}
+    </>
+  );
 }
 
-function OfficeMinimap() {
+function GatherBottomDock({
+  huddle,
+  proximity,
+  displayName,
+  onOpenMeeting,
+  rightRail,
+  onToggleRail,
+  showMinimap,
+  onToggleMinimap,
+}: {
+  huddle: HuddleController;
+  proximity: ProximityAudioController;
+  displayName: string;
+  onOpenMeeting: () => void;
+  rightRail: boolean;
+  onToggleRail: () => void;
+  showMinimap: boolean;
+  onToggleMinimap: () => void;
+}) {
+  const isScreenSharing = useOfficeStore((state) => state.isScreenSharing);
+  const cameraMode = useOfficeStore((state) => state.cameraMode);
+  const zoomLevel = useOfficeStore((state) => state.zoomLevel);
+  const zoomIn = useOfficeStore((state) => state.zoomIn);
+  const zoomOut = useOfficeStore((state) => state.zoomOut);
+  const triggerEmote = useOfficeStore((state) => state.triggerEmote);
+  const remotePlayers = useOfficeStore((state) => state.remotePlayers);
+  const onlineCount = Object.keys(remotePlayers).length + 1;
+
+  const [showEmotePicker, setShowEmotePicker] = useState(false);
+
+  const localParticipant = Object.values(huddle.participants).find((p) => p.isLocal);
+  const inCall = huddle.status === "connected";
+
+  const emotes = [
+    { emoji: "🚀", label: "Ship it!" },
+    { emoji: "🔥", label: "Fire" },
+    { emoji: "💡", label: "Idea" },
+    { emoji: "👏", label: "Applause" },
+    { emoji: "☕", label: "Coffee" },
+    { emoji: "🎉", label: "Celebrate" },
+    { emoji: "❤️", label: "Love" },
+    { emoji: "👀", label: "Looking" },
+  ];
+
+  return (
+    <div className="absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-2xl border border-white/40 bg-[#fffdf7]/95 p-1.5 shadow-2xl backdrop-blur-md select-none">
+      {/* Microphone Toggle */}
+      <button
+        onClick={() => (inCall ? huddle.toggleMicrophone() : onOpenMeeting())}
+        className={`flex h-10 items-center gap-2 rounded-xl px-3 text-xs font-bold transition shadow-xs cursor-pointer ${
+          localParticipant?.microphoneEnabled
+            ? "bg-emerald-600 text-white hover:bg-emerald-700"
+            : "bg-red-500/10 text-red-600 border border-red-200 hover:bg-red-500/20"
+        }`}
+        title={localParticipant?.microphoneEnabled ? "Mute Microphone" : "Unmute Microphone"}
+      >
+        {localParticipant?.microphoneEnabled ? <Mic size={16} /> : <MicOff size={16} />}
+        <span className="hidden sm:inline">{localParticipant?.microphoneEnabled ? "Mic On" : "Muted"}</span>
+      </button>
+
+      {/* Camera Toggle */}
+      <button
+        onClick={() => (inCall ? huddle.toggleCamera() : onOpenMeeting())}
+        className={`grid h-10 w-10 place-items-center rounded-xl text-xs font-bold transition shadow-xs cursor-pointer ${
+          localParticipant?.cameraEnabled
+            ? "bg-emerald-600 text-white hover:bg-emerald-700"
+            : "border border-black/10 bg-white/80 text-[#68736b] hover:bg-black/5"
+        }`}
+        title={localParticipant?.cameraEnabled ? "Turn Off Camera" : "Turn On Camera"}
+      >
+        {localParticipant?.cameraEnabled ? <Video size={16} /> : <VideoOff size={16} />}
+      </button>
+
+      {/* Screen Share */}
+      <button
+        onClick={isScreenSharing ? stopScreenShare : () => startScreenShare(displayName)}
+        className={`grid h-10 w-10 place-items-center rounded-xl text-xs font-bold transition shadow-xs cursor-pointer ${
+          isScreenSharing
+            ? "bg-amber-500 text-white hover:bg-amber-600 animate-pulse"
+            : "border border-black/10 bg-white/80 text-[#68736b] hover:bg-black/5 hover:text-[#173f2b]"
+        }`}
+        title={isScreenSharing ? "Stop Screen Share" : "Share Screen to TV / Room"}
+      >
+        <MonitorUp size={16} />
+      </button>
+
+      {/* Proximity Audio Control */}
+      <button
+        onClick={proximity.toggle}
+        aria-label={proximity.enabled ? "Disable proximity audio" : "Enable proximity audio"}
+        className={`flex h-10 items-center gap-1.5 rounded-xl px-2.5 text-xs font-bold transition shadow-xs cursor-pointer ${
+          proximity.active
+            ? "bg-[#173f2b] text-[#c8f560]"
+            : proximity.enabled
+            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+            : "border border-black/10 bg-white/80 text-[#68736b] hover:bg-black/5"
+        }`}
+        title={
+          proximity.active
+            ? `Proximity audio connected (${proximity.group?.names.join(", ")})`
+            : proximity.enabled
+            ? "Proximity audio ready · Walk near someone to connect"
+            : "Click to enable proximity audio"
+        }
+      >
+        {proximity.active ? <AudioLines size={16} className="text-[#c8f560] animate-pulse" /> : <VolumeX size={16} />}
+        <span className="hidden md:inline">
+          {proximity.active ? "Proximity audio active" : proximity.enabled ? "Proximity audio ready" : "Proximity audio off"}
+        </span>
+        {proximity.group && (
+          <span className="sr-only sm:not-sr-only text-[10px] text-white/80">
+            {proximity.group.names.join(", ")} nearby
+          </span>
+        )}
+      </button>
+
+      {/* Huddle / Call */}
+      <button
+        onClick={onOpenMeeting}
+        aria-label={inCall ? `${Object.keys(huddle.participants).length} in call` : "Start huddle"}
+        className={`flex h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-bold transition shadow-xs cursor-pointer ${
+          inCall ? "bg-[#173f2b] text-[#c8f560]" : "border border-black/10 bg-white/80 text-[#173f2b] hover:bg-black/5"
+        }`}
+        title={inCall ? "Active Huddle" : "Start Huddle"}
+      >
+        <Headphones size={16} />
+        <span className="hidden lg:inline">{inCall ? `${Object.keys(huddle.participants).length} in call` : "Start huddle"}</span>
+      </button>
+
+      <div className="mx-1 h-6 w-px bg-black/10" />
+
+      {/* React / Emote Picker */}
+      <div className="relative">
+        <button
+          onClick={() => setShowEmotePicker((v) => !v)}
+          className={`grid h-10 w-10 place-items-center rounded-xl border border-black/10 text-xs font-bold transition shadow-xs cursor-pointer ${
+            showEmotePicker ? "bg-amber-100 text-amber-900 border-amber-300" : "bg-white/80 text-[#ff8a4c] hover:bg-black/5"
+          }`}
+          title="Quick Reactions (Shortcut: Z)"
+        >
+          <Smile size={18} />
+        </button>
+        {showEmotePicker && (
+          <div className="absolute bottom-13 left-1/2 -translate-x-1/2 mb-1 flex flex-col gap-1 rounded-2xl border border-black/10 bg-[#fffdf7] p-2 shadow-2xl backdrop-blur-md animate-in zoom-in-95 duration-150 z-40">
+            <div className="px-2 py-0.5 text-[10px] font-bold text-[#68736b] uppercase tracking-wider text-center">
+              Reactions (Z)
+            </div>
+            <div className="grid grid-cols-4 gap-1.5">
+              {emotes.map((item) => (
+                <button
+                  key={item.emoji}
+                  onClick={() => {
+                    triggerEmote(item.emoji);
+                    playChime();
+                    setShowEmotePicker(false);
+                  }}
+                  className="flex flex-col items-center justify-center h-10 w-10 rounded-xl hover:bg-black/5 text-xl transition active:scale-90 cursor-pointer"
+                  title={item.label}
+                >
+                  <span>{item.emoji}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Minimap Toggle */}
+      <button
+        onClick={onToggleMinimap}
+        aria-label={showMinimap ? "Collapse office map" : "Expand office map"}
+        className={`grid h-10 w-10 place-items-center rounded-xl border border-black/10 text-xs font-bold transition shadow-xs cursor-pointer ${
+          showMinimap ? "bg-[#173f2b] text-[#c8f560]" : "bg-white/80 text-[#173f2b] hover:bg-black/5"
+        }`}
+        title={showMinimap ? "Collapse office map" : "Expand office map"}
+      >
+        <Map size={16} />
+      </button>
+
+      {/* People Toggle */}
+      <button
+        onClick={onToggleRail}
+        className={`flex h-10 items-center gap-1.5 rounded-xl border border-black/10 px-2.5 text-xs font-bold transition shadow-xs cursor-pointer ${
+          rightRail ? "bg-[#173f2b] text-[#c8f560]" : "bg-white/80 text-[#173f2b] hover:bg-black/5"
+        }`}
+        title={rightRail ? "Hide Teammates" : "View Teammates & Tasks"}
+      >
+        <Users size={16} />
+        <span className="rounded-full bg-black/5 px-1.5 py-0.2 text-[10px]">{onlineCount}</span>
+      </button>
+
+      <div className="mx-1 h-6 w-px bg-black/10" />
+
+      {/* Camera View Mode */}
+      <div className="flex items-center rounded-xl border border-black/10 bg-white/60 p-0.5 shadow-xs">
+        <button
+          onClick={() => useOfficeStore.getState().setCameraMode("follow")}
+          className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition cursor-pointer ${
+            cameraMode === "follow"
+              ? "bg-[#173f2b] text-[#c8f560] shadow-xs"
+              : "text-[#68736b] hover:text-[#173f2b] hover:bg-black/5"
+          }`}
+          title="Follow Avatar (Press V)"
+        >
+          <User size={13} />
+          <span className="hidden sm:inline">Follow</span>
+        </button>
+        <button
+          onClick={() => useOfficeStore.getState().setCameraMode("top")}
+          className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition cursor-pointer ${
+            cameraMode === "top"
+              ? "bg-[#173f2b] text-[#c8f560] shadow-xs"
+              : "text-[#68736b] hover:text-[#173f2b] hover:bg-black/5"
+          }`}
+          title="Overview Mode (Press V)"
+        >
+          <Maximize2 size={13} />
+          <span className="hidden sm:inline">Overview</span>
+        </button>
+      </div>
+
+      {/* Zoom Controls */}
+      <div className="hidden sm:flex items-center rounded-xl border border-black/10 bg-white/60 shadow-xs">
+        <button
+          onClick={zoomOut}
+          className="px-2 py-1.5 text-xs font-bold text-[#173f2b] hover:bg-black/5 transition rounded-l-xl cursor-pointer"
+          title="Zoom Out"
+        >
+          −
+        </button>
+        <span className="px-1 text-[10px] font-semibold text-[#68736b] select-none">
+          {Math.round(zoomLevel * 100)}%
+        </span>
+        <button
+          onClick={zoomIn}
+          className="px-2 py-1.5 text-xs font-bold text-[#173f2b] hover:bg-black/5 transition rounded-r-xl cursor-pointer"
+          title="Zoom In"
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function OfficeMinimap({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   const player = useOfficeStore((state) => state.player);
   const remotePlayers = useOfficeStore((state) => state.remotePlayers);
-  const [expanded, setExpanded] = useState(false);
   const totalW = OFFICE_BOUNDS.maxX - OFFICE_BOUNDS.minX;
   const totalH = OFFICE_BOUNDS.maxZ - OFFICE_BOUNDS.minZ;
   const mapX = (x: number) => `${((x - OFFICE_BOUNDS.minX) / totalW) * 100}%`;
@@ -479,21 +738,62 @@ function OfficeMinimap() {
     useOfficeStore.getState().setClickTarget(room.destination);
     useOfficeStore.getState().setCameraMode("top");
   };
-  return <section className={`absolute bottom-24 right-3 z-20 overflow-hidden rounded-2xl border border-white/55 bg-[#fffdf7]/95 shadow-xl backdrop-blur-md transition-all sm:right-5 ${expanded ? "w-64 p-3" : "w-12 p-1.5"}`} aria-label="Office map">
-    <button onClick={() => setExpanded((value) => !value)} className={`flex h-9 items-center rounded-xl text-[#173f2b] hover:bg-black/5 ${expanded ? "w-full gap-2 px-2" : "w-9 justify-center"}`} aria-label={expanded ? "Collapse office map" : "Expand office map"} aria-expanded={expanded}><Map size={17} /><span className={`${expanded ? "block" : "hidden"} text-xs font-bold`}>Office map</span><span className={`${expanded ? "ml-auto block" : "hidden"} text-[10px] text-[#68736b]`}>{OFFICE_ROOMS.find((room) => room.id === player.roomId)?.shortName ?? "Explore"}</span></button>
-    {expanded && <><div className="relative mt-2 aspect-[1.2] overflow-hidden rounded-xl border border-black/10 bg-[#e8e2d6]">
-      {OFFICE_ROOMS.map((room) => {
-        const left = ((room.bounds.minX - OFFICE_BOUNDS.minX) / totalW) * 100;
-        const top = ((room.bounds.minZ - OFFICE_BOUNDS.minZ) / totalH) * 100;
-        const width = ((room.bounds.maxX - room.bounds.minX) / totalW) * 100;
-        const height = ((room.bounds.maxZ - room.bounds.minZ) / totalH) * 100;
-        const count = Object.values(remotePlayers).filter((remote) => remote.roomId === room.id).length + (player.roomId === room.id ? 1 : 0);
-        return <button key={room.id} onClick={() => jump(room)} aria-label={`Walk to ${room.name}`} aria-current={player.roomId === room.id ? "location" : undefined} className="absolute overflow-hidden border border-white/45 text-left transition hover:brightness-110 focus:z-20 focus:outline focus:outline-2 focus:outline-white" style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, background: room.color }} title={`${room.name}: ${room.description}`}><span className="absolute left-1 top-1 max-w-[calc(100%-6px)] truncate text-[7px] font-bold uppercase tracking-wide text-white/85">{room.shortName}</span>{count > 0 && <span className="absolute bottom-1 right-1 rounded-full bg-white/90 px-1 text-[7px] font-extrabold text-[#173f2b]">{count}</span>}</button>;
-      })}
-      <span className="pointer-events-none absolute z-10 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[#ff8a4c] shadow" style={{ left: mapX(player.x), top: mapY(player.z) }} />
-      {Object.values(remotePlayers).map((remote) => <span key={remote.id} className="pointer-events-none absolute z-10 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white shadow" style={{ left: mapX(remote.x), top: mapY(remote.z), background: remote.color }} />)}
-    </div><p className="mt-2 text-[10px] leading-4 text-[#68736b]">Choose a room to walk there. Dots show teammates live.</p></>}
-  </section>;
+
+  if (!open) return null;
+
+  return (
+    <section className="absolute bottom-20 right-4 z-30 w-72 overflow-hidden rounded-2xl border border-white/55 bg-[#fffdf7]/95 p-3 shadow-2xl backdrop-blur-md animate-in zoom-in-95 duration-150" aria-label="Office map">
+      <div className="flex items-center justify-between pb-2 border-b border-black/10">
+        <div className="flex items-center gap-2">
+          <Map size={16} className="text-[#173f2b]" />
+          <span className="text-xs font-bold text-[#173f2b]">Office Map</span>
+        </div>
+        <button onClick={onToggle} className="rounded-lg p-1 text-[#68736b] hover:bg-black/5 cursor-pointer" aria-label="Close map">
+          <X size={14} />
+        </button>
+      </div>
+      <div className="relative mt-2 aspect-[1.2] overflow-hidden rounded-xl border border-black/10 bg-[#e8e2d6]">
+        {OFFICE_ROOMS.map((room) => {
+          const left = ((room.bounds.minX - OFFICE_BOUNDS.minX) / totalW) * 100;
+          const top = ((room.bounds.minZ - OFFICE_BOUNDS.minZ) / totalH) * 100;
+          const width = ((room.bounds.maxX - room.bounds.minX) / totalW) * 100;
+          const height = ((room.bounds.maxZ - room.bounds.minZ) / totalH) * 100;
+          const count = Object.values(remotePlayers).filter((remote) => remote.roomId === room.id).length + (player.roomId === room.id ? 1 : 0);
+          return (
+            <button
+              key={room.id}
+              onClick={() => jump(room)}
+              aria-label={`Walk to ${room.name}`}
+              className="absolute overflow-hidden border border-white/45 text-left transition hover:brightness-110 cursor-pointer"
+              style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, background: room.color }}
+              title={`${room.name}: ${room.description}`}
+            >
+              <span className="absolute left-1 top-1 max-w-[calc(100%-6px)] truncate text-[7px] font-bold uppercase tracking-wide text-white/85">
+                {room.shortName}
+              </span>
+              {count > 0 && (
+                <span className="absolute bottom-1 right-1 rounded-full bg-white/90 px-1 text-[7px] font-extrabold text-[#173f2b]">
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+        <span
+          className="pointer-events-none absolute z-10 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[#ff8a4c] shadow"
+          style={{ left: mapX(player.x), top: mapY(player.z) }}
+        />
+        {Object.values(remotePlayers).map((remote) => (
+          <span
+            key={remote.id}
+            className="pointer-events-none absolute z-10 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white shadow"
+            style={{ left: mapX(remote.x), top: mapY(remote.z), background: remote.color }}
+          />
+        ))}
+      </div>
+      <p className="mt-2 text-[10px] leading-4 text-[#68736b]">Click a room to navigate there automatically.</p>
+    </section>
+  );
 }
 
 function DashboardView({ view, tasks, moveTask, addTask, workspaceId, workspaceRole, displayName, workspaceName }: { view: Exclude<View, "office">; tasks: ReturnType<typeof useWorkspaceData>["tasks"]; moveTask: ReturnType<typeof useWorkspaceData>["moveTask"]; addTask: ReturnType<typeof useWorkspaceData>["addTask"]; workspaceId: string; workspaceRole: WorkspaceSummary["role"]; displayName: string; workspaceName: string }) {
