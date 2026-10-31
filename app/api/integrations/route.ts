@@ -15,7 +15,7 @@ export async function GET(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const input = z.object({ workspaceId: z.string().uuid(), provider: z.enum(["google_calendar", "slack", "github", "linear"]) }).parse(await request.json());
+  const input = z.object({ workspaceId: z.string().uuid(), provider: z.enum(["google_calendar", "slack", "github", "linear", "spotify"]) }).parse(await request.json());
   const supabase = await createSupabaseServerClient(); const { data: { user } } = await supabase.auth.getUser(); if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { data: membership } = await supabase.from("workspace_members").select("role").eq("workspace_id", input.workspaceId).eq("user_id", user.id).single(); if (!membership || !["owner", "admin"].includes(membership.role)) return NextResponse.json({ error: "Owner or admin access required" }, { status: 403 });
   const { error } = await createSupabaseAdminClient().from("integration_connections").delete().eq("workspace_id", input.workspaceId).eq("provider", input.provider); if (error) return NextResponse.json({ error: "Could not disconnect integration" }, { status: 400 });

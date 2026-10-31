@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, AudioLines, BarChart3, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, CreditCard, DoorOpen, Files, FolderKanban, Gauge, Headphones, LayoutGrid, Loader2, LogOut, Map, MapPin, Maximize2, Menu, Mic, MicOff, MonitorUp, Moon, Music, Palette, PenTool, PhoneOff, Plug, Plus, Radio, Search, Sparkles, Sun, Sunset, Target, User, Users, Video, VideoOff, VolumeX, Wifi, X } from "lucide-react";
+import { Activity, AudioLines, BarChart3, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, CreditCard, DoorOpen, Files, FolderKanban, Gauge, Headphones, LayoutGrid, Loader2, LogOut, Map, MapPin, Maximize2, Menu, Mic, MicOff, Minimize2, MonitorUp, Moon, Music, Palette, PanelLeftClose, PanelLeftOpen, PenTool, PhoneOff, Plug, Plus, Radio, Search, Sparkles, Sun, Sunset, Target, User, Users, Video, VideoOff, VolumeX, Wifi, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -40,6 +40,7 @@ import { IntegrationsView } from "./integrations-view";
 import { loadOfficeObjects } from "./office-object-service";
 import { useProximityAudio, type ProximityAudioController } from "@/features/communication/use-proximity-audio";
 import { OFFICE_ROOMS } from "@/features/virtual-office/office-data";
+import { OFFICE_BOUNDS } from "@/features/virtual-office/collision";
 
 const nav = [
   { id: "office", label: "Office", icon: DoorOpen, group: "Workspace" },
@@ -126,6 +127,19 @@ export function WorkspaceShell() {
   const [mobileNav, setMobileNav] = useState(false);
   const [rightRail, setRightRail] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [fullOfficeView, setFullOfficeView] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && fullOfficeView) {
+        setFullOfficeView(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [fullOfficeView]);
+
   const nearbyAction = useOfficeStore((state) => state.nearbyAction);
   const activePanel = useOfficeStore((state) => state.activePanel);
   const openPanel = useOfficeStore((state) => state.openPanel);
@@ -136,14 +150,51 @@ export function WorkspaceShell() {
 
   return (
     <main className="app-surface flex h-[100dvh] overflow-hidden">
-      <Sidebar view={view} setView={setView} mobileNav={mobileNav} onClose={() => setMobileNav(false)} taskCount={data.tasks.filter((task) => task.status !== "Done").length} workspaceName={identity.workspaceName} workspaceId={identity.workspaceId} workspaces={workspaces} onSelectWorkspace={selectWorkspace} onExit={async () => { if (hasSupabaseConfig) await createSupabaseBrowserClient().auth.signOut(); ["orbit-display-name", "orbit-workspace-name", "orbit-workspace-id", "orbit-workspace-type", "orbit-office-template"].forEach((key) => window.localStorage.removeItem(key)); router.push("/login"); router.refresh(); }} />
+      {!fullOfficeView && (
+        <Sidebar
+          view={view}
+          setView={setView}
+          mobileNav={mobileNav}
+          onClose={() => setMobileNav(false)}
+          taskCount={data.tasks.filter((task) => task.status !== "Done").length}
+          workspaceName={identity.workspaceName}
+          workspaceId={identity.workspaceId}
+          workspaces={workspaces}
+          onSelectWorkspace={selectWorkspace}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
+          onExit={async () => {
+            if (hasSupabaseConfig) await createSupabaseBrowserClient().auth.signOut();
+            ["orbit-display-name", "orbit-workspace-name", "orbit-workspace-id", "orbit-workspace-type", "orbit-office-template"].forEach((key) => window.localStorage.removeItem(key));
+            router.push("/login");
+            router.refresh();
+          }}
+        />
+      )}
       <div className="relative flex min-w-0 flex-1 flex-col">
-        <Topbar view={view} onMenu={() => setMobileNav(true)} onHelp={() => setHelpOpen(true)} displayName={identity.displayName} onNavigate={setView} />
+        {!fullOfficeView && (
+          <Topbar
+            view={view}
+            onMenu={() => setMobileNav(true)}
+            onHelp={() => setHelpOpen(true)}
+            displayName={identity.displayName}
+            onNavigate={setView}
+            isSidebarCollapsed={sidebarCollapsed}
+            onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
+          />
+        )}
         <div className="relative isolate min-h-0 flex-1">
           {view === "office" ? (
             <>
               <div className="absolute inset-0 z-0"><OfficeCanvas /></div>
-              <OfficeHud rightRail={rightRail} onToggleRail={() => setRightRail((value) => !value)} tasks={data.tasks} displayName={identity.displayName} />
+              <OfficeHud
+                rightRail={rightRail}
+                onToggleRail={() => setRightRail((value) => !value)}
+                tasks={data.tasks}
+                displayName={identity.displayName}
+                isFullOffice={fullOfficeView}
+                onToggleFullOffice={() => setFullOfficeView((v) => !v)}
+              />
               <SpatialOverlays displayName={identity.displayName} />
               <AITeammateDialog />
               <ProximityAudioControl controller={proximity} />
@@ -168,33 +219,52 @@ function ProximityAudioControl({ controller }: { controller: ProximityAudioContr
   return <div className="absolute bottom-24 left-4 z-20 hidden max-w-64 rounded-2xl border border-white/45 bg-[#fffdf7]/90 p-3 shadow-xl backdrop-blur md:block"><div className="flex items-center gap-2"><span className={`grid h-9 w-9 place-items-center rounded-xl ${controller.active ? "bg-[#c8f560] text-[#173f2b]" : "bg-black/5 text-[#68736b]"}`}>{controller.active ? <AudioLines size={17} /> : <VolumeX size={17} />}</span><div className="min-w-0 flex-1"><div className="text-xs font-bold">{controller.active ? "Proximity audio active" : controller.enabled ? "Proximity audio ready" : "Proximity audio off"}</div><div className="truncate text-[10px] text-[#68736b]">{controller.group ? `${controller.group.names.join(", ")} nearby` : "Move near a teammate to connect"}</div></div></div><button aria-label={controller.enabled ? "Disable proximity audio" : "Enable proximity audio"} onClick={controller.toggle} className={`mt-2 w-full rounded-xl px-3 py-2 text-xs font-bold ${controller.enabled ? "bg-[#173f2b] text-white" : "bg-[#c8f560] text-[#173f2b]"}`}>{busy ? "Requesting microphone…" : controller.enabled ? "Disable" : "Enable with microphone"}</button></div>;
 }
 
-function Sidebar({ view, setView, mobileNav, onClose, taskCount, workspaceName, workspaceId, workspaces, onSelectWorkspace, onExit }: { view: View; setView: (view: View) => void; mobileNav: boolean; onClose: () => void; taskCount: number; workspaceName: string; workspaceId: string; workspaces: WorkspaceSummary[]; onSelectWorkspace: (workspace: WorkspaceSummary) => void; onExit: () => Promise<void> }) {
+function Sidebar({ view, setView, mobileNav, onClose, taskCount, workspaceName, workspaceId, workspaces, onSelectWorkspace, onExit, isCollapsed, onToggleCollapse }: { view: View; setView: (view: View) => void; mobileNav: boolean; onClose: () => void; taskCount: number; workspaceName: string; workspaceId: string; workspaces: WorkspaceSummary[]; onSelectWorkspace: (workspace: WorkspaceSummary) => void; onExit: () => Promise<void>; isCollapsed: boolean; onToggleCollapse: () => void }) {
   const [workspaceMenu, setWorkspaceMenu] = useState(false);
   return <>
     {mobileNav && <button className="fixed inset-0 z-30 bg-black/35 lg:hidden" aria-label="Close navigation" onClick={onClose} />}
-    <aside className={`fixed inset-y-0 left-0 z-40 flex w-[17rem] flex-col border-r border-white/[.06] bg-[linear-gradient(180deg,#173f2b_0%,#102f21_100%)] p-3 text-[#f5f0e4] shadow-2xl transition-transform lg:static lg:translate-x-0 lg:shadow-none ${mobileNav ? "translate-x-0" : "-translate-x-full"}`}>
-      <div className="flex h-14 items-center justify-between px-3">
-        <div className="flex items-center gap-2.5"><div className="grid h-9 w-9 place-items-center rounded-[13px] bg-[#c8f560] text-[#173f2b] shadow-[0_8px_24px_rgba(200,245,96,.18)]"><Command size={19} strokeWidth={2.7} /></div><div><div className="text-[15px] font-extrabold leading-none tracking-[-.02em]">PZ Orbit</div><div className="mt-1 text-[9px] font-bold uppercase tracking-[.18em] text-white/35">Workspace OS</div></div></div>
+    <aside className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-white/[.06] bg-[linear-gradient(180deg,#173f2b_0%,#102f21_100%)] p-2.5 text-[#f5f0e4] shadow-2xl transition-all lg:static lg:translate-x-0 lg:shadow-none ${mobileNav ? "translate-x-0 w-[17rem]" : "-translate-x-full lg:translate-x-0"} ${isCollapsed ? "lg:w-[4.5rem]" : "lg:w-[17rem]"}`}>
+      <div className={`flex h-14 items-center ${isCollapsed ? "justify-center px-0" : "justify-between px-2"}`}>
+        <button onClick={onToggleCollapse} title={isCollapsed ? "Expand sidebar (shortcut)" : "Orbit Workspace OS"} className="flex items-center gap-2.5 rounded-xl hover:bg-white/10 p-1.5 transition">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[13px] bg-[#c8f560] text-[#173f2b] shadow-[0_8px_24px_rgba(200,245,96,.18)]">
+            <Command size={19} strokeWidth={2.7} />
+          </div>
+          {!isCollapsed && <div><div className="text-[15px] font-extrabold leading-none tracking-[-.02em]">PZ Orbit</div><div className="mt-1 text-[9px] font-bold uppercase tracking-[.18em] text-white/35">Workspace OS</div></div>}
+        </button>
+        {!isCollapsed && (
+          <button className="hidden lg:grid h-8 w-8 place-items-center rounded-lg text-white/50 hover:bg-white/10 hover:text-white" onClick={onToggleCollapse} title="Collapse sidebar (more office area)">
+            <PanelLeftClose size={16} />
+          </button>
+        )}
         <button className="lg:hidden" onClick={onClose}><X size={20} /></button>
       </div>
-      <button onClick={() => setWorkspaceMenu((value) => !value)} aria-expanded={workspaceMenu} className="mt-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.07] p-3 text-left shadow-sm transition hover:border-white/15 hover:bg-white/[.1]">
-        <div className="grid h-9 w-9 place-items-center rounded-xl bg-[#ff8a4c] text-sm font-bold text-[#311b13]">{initialsFor(workspaceName)}</div>
-        <div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold">{workspaceName}</div><div className="text-xs text-white/55">{hasSupabaseConfig ? "Private workspace" : "Local demo"}</div></div><ChevronDown size={16} className="text-white/50" />
+
+      <button onClick={() => setWorkspaceMenu((value) => !value)} aria-expanded={workspaceMenu} title={workspaceName} className={`mt-3 flex items-center rounded-2xl border border-white/10 bg-white/[.07] text-left shadow-sm transition hover:border-white/15 hover:bg-white/[.1] ${isCollapsed ? "justify-center p-2" : "gap-3 p-3"}`}>
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#ff8a4c] text-sm font-bold text-[#311b13]">{initialsFor(workspaceName)}</div>
+        {!isCollapsed && <div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold">{workspaceName}</div><div className="text-xs text-white/55">{hasSupabaseConfig ? "Private workspace" : "Local demo"}</div></div>}
+        {!isCollapsed && <ChevronDown size={16} className="text-white/50" />}
       </button>
       {workspaceMenu && <div className="mb-3 mt-1 rounded-2xl border border-white/10 bg-[#214d38] p-1.5 shadow-xl">{workspaces.map((workspace) => <button key={workspace.id} onClick={() => { onSelectWorkspace(workspace); setWorkspaceMenu(false); }} className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm ${workspace.id === workspaceId ? "bg-[#c8f560] text-[#173f2b]" : "text-white/75 hover:bg-white/10"}`}><span className="min-w-0 flex-1 truncate font-semibold">{workspace.name}</span><span className="text-[10px] uppercase opacity-60">{workspace.role}</span></button>)}</div>}
-      <nav className="scrollbar-none mt-3 min-h-0 flex-1 overflow-y-auto pr-1" aria-label="Workspace">
-        {navGroups.map((group) => <div key={group} className="mb-4"><div className="mb-1 px-3 text-[9px] font-extrabold uppercase tracking-[.19em] text-white/30">{group}</div>{nav.filter((item) => item.group === group).map((item) => <button key={item.id} aria-current={view === item.id ? "page" : undefined} onClick={() => { setView(item.id); onClose(); }} className={`group flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-semibold transition-all ${view === item.id ? "bg-[#c8f560] text-[#173f2b] shadow-[0_8px_22px_rgba(0,0,0,.12)]" : "text-white/62 hover:bg-white/[.07] hover:text-white"}`}><item.icon size={17} strokeWidth={view === item.id ? 2.4 : 2} /><span>{item.label}</span>{item.id === "tasks" && taskCount > 0 && <span className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold ${view === item.id ? "bg-[#173f2b]/10" : "bg-white/10"}`}>{taskCount}</span>}</button>)}</div>)}
+
+      <nav className="scrollbar-none mt-3 min-h-0 flex-1 overflow-y-auto pr-0.5" aria-label="Workspace">
+        {navGroups.map((group) => <div key={group} className="mb-3">
+          {!isCollapsed && <div className="mb-1 px-3 text-[9px] font-extrabold uppercase tracking-[.19em] text-white/30">{group}</div>}
+          {nav.filter((item) => item.group === group).map((item) => <button key={item.id} aria-current={view === item.id ? "page" : undefined} title={item.label} onClick={() => { setView(item.id); onClose(); }} className={`group relative flex h-10 w-full items-center rounded-xl text-sm font-semibold transition-all ${isCollapsed ? "justify-center px-0" : "gap-3 px-3"} ${view === item.id ? "bg-[#c8f560] text-[#173f2b] shadow-[0_8px_22px_rgba(0,0,0,.12)]" : "text-white/62 hover:bg-white/[.07] hover:text-white"}`}><item.icon size={17} strokeWidth={view === item.id ? 2.4 : 2} className="shrink-0" />{!isCollapsed && <span>{item.label}</span>}{!isCollapsed && item.id === "tasks" && taskCount > 0 && <span className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold ${view === item.id ? "bg-[#173f2b]/10" : "bg-white/10"}`}>{taskCount}</span>}{isCollapsed && item.id === "tasks" && taskCount > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#c8f560]" />}</button>)}
+        </div>)}
       </nav>
-      <div className="mt-auto rounded-2xl border border-white/[.07] bg-white/[.055] p-3">
-        <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><Sparkles size={16} className="text-[#c8f560]" /> {hasSupabaseConfig ? "Private workspace" : "Demo workspace"}</div>
-        <p className="text-xs leading-5 text-white/60">{hasSupabaseConfig ? "Your session and membership are protected by Supabase Auth and RLS." : "Connect Supabase to replace local sample data with your team workspace."}</p>
-      </div>
-      <button onClick={() => void onExit()} className="mt-2 flex h-11 items-center gap-3 rounded-xl px-3 text-sm text-white/65 hover:bg-white/[.07]"><LogOut size={18} /> {hasSupabaseConfig ? "Sign out" : "Exit demo"}</button>
+
+      {!isCollapsed && (
+        <div className="mt-auto rounded-2xl border border-white/[.07] bg-white/[.055] p-3">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><Sparkles size={16} className="text-[#c8f560]" /> {hasSupabaseConfig ? "Private workspace" : "Demo workspace"}</div>
+          <p className="text-xs leading-5 text-white/60">{hasSupabaseConfig ? "Your session and membership are protected by Supabase Auth and RLS." : "Connect Supabase to replace local sample data with your team workspace."}</p>
+        </div>
+      )}
+      <button onClick={() => void onExit()} title={hasSupabaseConfig ? "Sign out" : "Exit demo"} className={`mt-2 flex h-11 items-center rounded-xl text-sm text-white/65 hover:bg-white/[.07] ${isCollapsed ? "justify-center px-0" : "gap-3 px-3"}`}><LogOut size={18} />{!isCollapsed && <span>{hasSupabaseConfig ? "Sign out" : "Exit demo"}</span>}</button>
     </aside>
   </>;
 }
 
-function Topbar({ view, onMenu, onHelp, displayName, onNavigate }: { view: View; onMenu: () => void; onHelp: () => void; displayName: string; onNavigate: (view: View) => void }) {
+function Topbar({ view, onMenu, onHelp, displayName, onNavigate, isSidebarCollapsed, onToggleSidebar }: { view: View; onMenu: () => void; onHelp: () => void; displayName: string; onNavigate: (view: View) => void; isSidebarCollapsed: boolean; onToggleSidebar: () => void }) {
   const title = nav.find((item) => item.id === view)?.label ?? "Office";
   const teammateCount = useOfficeStore((state) => Object.keys(state.remotePlayers).length);
   const availability = useOfficeStore((state) => state.avatarStatus);
@@ -205,6 +275,7 @@ function Topbar({ view, onMenu, onHelp, displayName, onNavigate }: { view: View;
   const today = new Intl.DateTimeFormat("en", { weekday: "long", month: "long", day: "numeric" }).format(new Date());
   return <header className="relative z-20 flex h-[4.5rem] shrink-0 items-center gap-3 border-b border-black/[.07] bg-[#fffdf7]/90 px-4 shadow-[0_1px_0_rgba(255,255,255,.75)] backdrop-blur-xl md:px-6">
     <button aria-label="Open navigation" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl hover:bg-black/5 lg:hidden" onClick={onMenu}><Menu size={20} /></button>
+    <Button variant="ghost" size="icon" className="hidden lg:grid h-9 w-9 place-items-center rounded-xl text-[#4d5a52] hover:bg-black/5" onClick={onToggleSidebar} title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar (more office area)"}>{isSidebarCollapsed ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}</Button>
     <div className="min-w-0"><h1 className="truncate text-base font-extrabold tracking-[-.025em]">{title}</h1><p className="hidden truncate text-[11px] font-medium text-[#7a857d] sm:block">{today} <span className="px-1 text-black/20">•</span> {teammateCount ? `${teammateCount} teammate${teammateCount === 1 ? "" : "s"} nearby` : "Ready when your team is"}</p></div>
     <button onClick={() => setSearchOpen(true)} aria-label="Search workspace" className="ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-black/[.08] bg-white/80 text-[#68736b] shadow-sm transition hover:border-black/15 hover:bg-white md:w-full md:max-w-xs md:justify-start md:gap-2 md:px-3"><Search size={16} /><span className="hidden flex-1 text-left text-sm font-medium md:block">Search or jump to…</span><kbd className="hidden rounded-md border border-black/[.06] bg-black/[.035] px-1.5 py-0.5 text-[10px] font-semibold md:block">⌘ K</kbd></button>
     <Button size="sm" onClick={() => useOfficeStore.getState().openPanel("ai_assistant")} className="hidden sm:flex items-center gap-1.5 bg-[#173f2b] text-[#c8f560] hover:bg-[#20573c] border-none shadow-sm"><Bot size={16} /> AI Copilot</Button>
@@ -229,7 +300,7 @@ function NotificationMenu() {
   return <div className="relative"><Button variant="ghost" size="icon" aria-label="Notifications" aria-expanded={open} className="relative" onClick={() => void toggle()}><Bell size={19} />{unread > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#ff8a4c]" />}</Button>{open && <div className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-black/10 bg-[#fffdf7] shadow-2xl"><div className="border-b border-black/[.07] p-4"><h3 className="text-sm font-bold">Notifications</h3><p className="mt-0.5 text-xs text-[#68736b]">{unread} unread</p></div>{loading ? <div className="grid place-items-center p-8"><Loader2 className="animate-spin" size={18} /></div> : <div className="max-h-80 overflow-auto">{items.map((item) => <button key={item.id} onClick={() => void read(item)} className={`block w-full border-b border-black/[.05] p-4 text-left last:border-0 ${item.readAt ? "opacity-60" : "bg-[#f4f8ed]"}`}><div className="text-sm font-semibold">{item.title}</div><div className="mt-1 text-xs text-[#68736b]">{item.body}</div></button>)}{items.length === 0 && <div className="p-8 text-center text-sm text-[#68736b]">You’re all caught up.</div>}</div>}</div>}</div>;
 }
 
-function OfficeHud({ rightRail, onToggleRail, tasks, displayName }: { rightRail: boolean; onToggleRail: () => void; tasks: { status: string }[]; displayName: string }) {
+function OfficeHud({ rightRail, onToggleRail, tasks, displayName, isFullOffice, onToggleFullOffice }: { rightRail: boolean; onToggleRail: () => void; tasks: { status: string }[]; displayName: string; isFullOffice?: boolean; onToggleFullOffice?: () => void }) {
   const player = useOfficeStore((state) => state.player);
   const remotePlayers = useOfficeStore((state) => state.remotePlayers);
   const connectionState = useOfficeStore((state) => state.connectionState);
@@ -252,7 +323,7 @@ function OfficeHud({ rightRail, onToggleRail, tasks, displayName }: { rightRail:
   const onlineCount = Object.keys(remotePlayers).length + 1;
 
   return <>
-    <div className="absolute left-3 top-3 z-10 max-w-[calc(100%-4.5rem)] rounded-2xl border border-white/50 bg-[#fffdf7]/[.94] p-2.5 shadow-panel backdrop-blur-md sm:left-5 sm:top-5 sm:max-w-[calc(100%-6rem)] lg:max-w-[min(720px,calc(100%-20rem))]">
+    <div className="absolute left-3 top-3 z-10 max-w-[calc(100%-4.5rem)] rounded-2xl border border-white/50 bg-[#fffdf7]/[.94] p-2.5 shadow-panel backdrop-blur-md sm:left-5 sm:top-5 sm:max-w-[calc(100%-6rem)] lg:max-w-[min(760px,calc(100%-20rem))]">
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-2 text-sm font-bold">
           <span className={`h-2.5 w-2.5 rounded-full ${connectionState === "connected" ? "bg-[#52aa72]" : connectionState === "offline" ? "bg-[#d46b52]" : "animate-pulse bg-[#e5a13e]"}`} />
@@ -275,6 +346,22 @@ function OfficeHud({ rightRail, onToggleRail, tasks, displayName }: { rightRail:
 
         {/* Quick Office Controls Toolbar */}
         <div className="flex flex-wrap items-center gap-1.5 sm:ml-auto">
+          {/* Full Office Area Screen Toggle */}
+          {onToggleFullOffice && (
+            <button
+              onClick={onToggleFullOffice}
+              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
+                isFullOffice
+                  ? "bg-[#173f2b] text-[#c8f560] border-[#173f2b] shadow-xs"
+                  : "bg-white/90 text-[#3a443e] border-black/10 hover:bg-black/5"
+              }`}
+              title={isFullOffice ? "Exit full screen office (restore sidebar & topbar)" : "Maximize office area (Full Screen)"}
+            >
+              {isFullOffice ? <Minimize2 size={13} className="text-[#c8f560]" /> : <Maximize2 size={13} />}
+              <span className="hidden sm:inline">{isFullOffice ? "Exit Full" : "Full Office"}</span>
+            </button>
+          )}
+
           {/* Lofi Radio Button */}
           <button
             onClick={toggleLofi}
@@ -384,8 +471,10 @@ function OfficeMinimap() {
   const player = useOfficeStore((state) => state.player);
   const remotePlayers = useOfficeStore((state) => state.remotePlayers);
   const [expanded, setExpanded] = useState(false);
-  const mapX = (x: number) => `${((x + 11.2) / 22.4) * 100}%`;
-  const mapY = (z: number) => `${((z + 7.1) / 18.7) * 100}%`;
+  const totalW = OFFICE_BOUNDS.maxX - OFFICE_BOUNDS.minX;
+  const totalH = OFFICE_BOUNDS.maxZ - OFFICE_BOUNDS.minZ;
+  const mapX = (x: number) => `${((x - OFFICE_BOUNDS.minX) / totalW) * 100}%`;
+  const mapY = (z: number) => `${((z - OFFICE_BOUNDS.minZ) / totalH) * 100}%`;
   const jump = (room: (typeof OFFICE_ROOMS)[number]) => {
     useOfficeStore.getState().setClickTarget(room.destination);
     useOfficeStore.getState().setCameraMode("top");
@@ -394,10 +483,10 @@ function OfficeMinimap() {
     <button onClick={() => setExpanded((value) => !value)} className={`flex h-9 items-center rounded-xl text-[#173f2b] hover:bg-black/5 ${expanded ? "w-full gap-2 px-2" : "w-9 justify-center"}`} aria-label={expanded ? "Collapse office map" : "Expand office map"} aria-expanded={expanded}><Map size={17} /><span className={`${expanded ? "block" : "hidden"} text-xs font-bold`}>Office map</span><span className={`${expanded ? "ml-auto block" : "hidden"} text-[10px] text-[#68736b]`}>{OFFICE_ROOMS.find((room) => room.id === player.roomId)?.shortName ?? "Explore"}</span></button>
     {expanded && <><div className="relative mt-2 aspect-[1.2] overflow-hidden rounded-xl border border-black/10 bg-[#e8e2d6]">
       {OFFICE_ROOMS.map((room) => {
-        const left = ((room.bounds.minX + 11.2) / 22.4) * 100;
-        const top = ((room.bounds.minZ + 7.1) / 18.7) * 100;
-        const width = ((room.bounds.maxX - room.bounds.minX) / 22.4) * 100;
-        const height = ((room.bounds.maxZ - room.bounds.minZ) / 18.7) * 100;
+        const left = ((room.bounds.minX - OFFICE_BOUNDS.minX) / totalW) * 100;
+        const top = ((room.bounds.minZ - OFFICE_BOUNDS.minZ) / totalH) * 100;
+        const width = ((room.bounds.maxX - room.bounds.minX) / totalW) * 100;
+        const height = ((room.bounds.maxZ - room.bounds.minZ) / totalH) * 100;
         const count = Object.values(remotePlayers).filter((remote) => remote.roomId === room.id).length + (player.roomId === room.id ? 1 : 0);
         return <button key={room.id} onClick={() => jump(room)} aria-label={`Walk to ${room.name}`} aria-current={player.roomId === room.id ? "location" : undefined} className="absolute overflow-hidden border border-white/45 text-left transition hover:brightness-110 focus:z-20 focus:outline focus:outline-2 focus:outline-white" style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, background: room.color }} title={`${room.name}: ${room.description}`}><span className="absolute left-1 top-1 max-w-[calc(100%-6px)] truncate text-[7px] font-bold uppercase tracking-wide text-white/85">{room.shortName}</span>{count > 0 && <span className="absolute bottom-1 right-1 rounded-full bg-white/90 px-1 text-[7px] font-extrabold text-[#173f2b]">{count}</span>}</button>;
       })}

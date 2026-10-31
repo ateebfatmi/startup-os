@@ -77,5 +77,6 @@ test("shows secure integration setup without exposing connect actions in demo mo
   await expect(page.getByText("Slack", { exact: true })).toBeVisible();
   await expect(page.getByText("GitHub", { exact: true })).toBeVisible();
   await expect(page.getByText("Linear", { exact: true })).toBeVisible();
+  await expect(page.getByText("Spotify", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Configure credentials first" }).first()).toBeDisabled();
 });

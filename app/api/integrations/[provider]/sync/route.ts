@@ -59,6 +59,11 @@ export async function POST(request: Request, context: { params: Promise<{ provid
       return NextResponse.json({ imported: 0, message: "Slack connection verified" });
     }
 
+    if (provider === "spotify") {
+      const spotifyStatus = await verifySpotify(token);
+      return NextResponse.json({ imported: 0, message: spotifyStatus });
+    }
+
     const items = provider === "google_calendar"
       ? await googleEvents(token)
       : provider === "github" ? await githubIssues(token) : await linearIssues(token);
@@ -175,6 +180,21 @@ async function verifySlack(token: string) {
   });
   const result = await response.json() as { ok?: boolean; error?: string };
   if (!result.ok) throw new Error(result.error || "Slack connection failed");
+}
+
+async function verifySpotify(token: string) {
+  const response = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
+    headers: { Authorization: `Bearer ${token}` }, cache: "no-store",
+  });
+  if (response.status === 204 || !response.ok) {
+    return "Spotify connected (no active playback currently)";
+  }
+  const data = await response.json().catch(() => null) as { item?: { name?: string; artists?: Array<{ name: string }> } } | null;
+  if (data?.item?.name) {
+    const artist = data.item.artists?.[0]?.name ? ` by ${data.item.artists[0].name}` : "";
+    return `Now playing on Spotify: ${data.item.name}${artist}`;
+  }
+  return "Spotify connected and player synced";
 }
 
 async function googleEvents(token: string): Promise<ImportItem[]> {

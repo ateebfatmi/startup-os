@@ -1,6 +1,6 @@
 import type { Collider, Vec2 } from "./types";
 
-export const OFFICE_BOUNDS = { minX: -11.2, maxX: 11.2, minZ: -7.1, maxZ: 11.6 };
+export const OFFICE_BOUNDS = { minX: -14.2, maxX: 14.2, minZ: -8.6, maxZ: 14.0 };
 export const PLAYER_RADIUS = 0.38;
 
 export const COLLIDERS: Collider[] = [
@@ -16,10 +16,10 @@ export const COLLIDERS: Collider[] = [
   { id: "left-glass-south", x: -2.65, z: -1.85, width: 0.12, depth: 2.3 },
   { id: "right-glass-north", x: 2.65, z: -5.55, width: 0.12, depth: 3.1 },
   { id: "right-glass-south", x: 2.65, z: -1.85, width: 0.12, depth: 2.3 },
-  // Outdoor terrace perimeter railings
-  { id: "terrace-south-rail", x: 0, z: 12.0, width: 24, depth: 0.2 },
-  { id: "terrace-west-rail", x: -11.8, z: 9.8, width: 0.2, depth: 4.4 },
-  { id: "terrace-east-rail", x: 11.8, z: 9.8, width: 0.2, depth: 4.4 },
+  // Outdoor terrace perimeter railings (expanded)
+  { id: "terrace-south-rail", x: 0, z: 14.45, width: 30, depth: 0.2 },
+  { id: "terrace-west-rail", x: -14.9, z: 12.0, width: 0.2, depth: 4.9 },
+  { id: "terrace-east-rail", x: 14.9, z: 12.0, width: 0.2, depth: 4.9 },
 ];
 
 function collides(point: Vec2, collider: Collider) {

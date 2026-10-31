@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
-export type IntegrationProvider = "google_calendar" | "slack" | "github" | "linear";
+export type IntegrationProvider = "google_calendar" | "slack" | "github" | "linear" | "spotify";
 type ProviderConfig = { clientId?: string; clientSecret?: string; authorizeUrl: string; tokenUrl: string; scopes: string[]; scopeSeparator: string; extraAuthorize?: Record<string, string> };
 
 export function providerConfig(provider: IntegrationProvider): ProviderConfig {
@@ -9,6 +9,7 @@ export function providerConfig(provider: IntegrationProvider): ProviderConfig {
     slack: { clientId: process.env.SLACK_CLIENT_ID, clientSecret: process.env.SLACK_CLIENT_SECRET, authorizeUrl: "https://slack.com/oauth/v2/authorize", tokenUrl: "https://slack.com/api/oauth.v2.access", scopes: ["channels:read", "chat:write"], scopeSeparator: "," },
     github: { clientId: process.env.GITHUB_OAUTH_CLIENT_ID, clientSecret: process.env.GITHUB_OAUTH_CLIENT_SECRET, authorizeUrl: "https://github.com/login/oauth/authorize", tokenUrl: "https://github.com/login/oauth/access_token", scopes: ["read:user", "repo"], scopeSeparator: " " },
     linear: { clientId: process.env.LINEAR_CLIENT_ID, clientSecret: process.env.LINEAR_CLIENT_SECRET, authorizeUrl: "https://linear.app/oauth/authorize", tokenUrl: "https://api.linear.app/oauth/token", scopes: ["read", "write"], scopeSeparator: "," },
+    spotify: { clientId: process.env.SPOTIFY_CLIENT_ID, clientSecret: process.env.SPOTIFY_CLIENT_SECRET, authorizeUrl: "https://accounts.spotify.com/authorize", tokenUrl: "https://accounts.spotify.com/api/token", scopes: ["user-read-playback-state", "user-modify-playback-state", "user-read-currently-playing", "playlist-read-private", "streaming"], scopeSeparator: " " },
   };
   return configs[provider];
 }
@@ -37,4 +38,4 @@ export function verifyOAuthState(value: string): OAuthState {
   const [payload, signature] = value.split("."); const secret = process.env.INTEGRATION_STATE_SECRET; if (!payload || !signature || !secret) throw new Error("Invalid OAuth state"); const expected = createHmac("sha256", secret).update(payload).digest(); const actual = Buffer.from(signature, "base64url"); if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) throw new Error("Invalid OAuth state"); const state = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as OAuthState; if (state.expiresAt < Date.now()) throw new Error("OAuth state expired"); return state;
 }
 
-export const integrationProviders: IntegrationProvider[] = ["google_calendar", "slack", "github", "linear"];
+export const integrationProviders: IntegrationProvider[] = ["google_calendar", "slack", "github", "linear", "spotify"];

@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Hand } from "lucide-react";
 import * as THREE from "three";
-import { COLLIDERS, resolveMovement } from "./collision";
+import { COLLIDERS, OFFICE_BOUNDS, resolveMovement } from "./collision";
 import { INTERACTION_ZONES, OFFICE_ROOMS } from "./office-data";
 import { useOfficeStore } from "./store";
 import { playChime, playCoffeeSound, playLofiMusic, playSlideClick, stopLofiMusic } from "./audio";
@@ -15,6 +15,7 @@ import { OFFICE_OBJECT_CATALOG, officeObjectCollider, type OfficeObject } from "
 import { AvatarModel } from "./avatar-model";
 
 const keys = new Set<string>();
+export const localAvatarPosition = new THREE.Vector2(0, 1.6);
 
 export function OfficeCanvas() {
   const lightingMode = useOfficeStore((state) => state.lightingMode);
@@ -287,29 +288,31 @@ function CameraRig() {
 
     if (cameraMode === "top") {
       // True full-office overview floor plan
-      const desiredPos = new THREE.Vector3(0, 36, 1.8);
-      const desiredLook = new THREE.Vector3(0, 0, 1.8);
+      const desiredPos = new THREE.Vector3(0, 38, 2.5);
+      const desiredLook = new THREE.Vector3(0, 0, 2.5);
       camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 6));
       camera.lookAt(desiredLook);
 
-      const baseZoom = Math.min((size.width - 120) / 30, (size.height - 80) / 24);
+      // Office spans width 30 and depth ~24 (including terrace); snug margins maximize canvas area
+      const baseZoom = Math.min((size.width - 32) / 30.5, (size.height - 32) / 24.5);
       const targetZoom = baseZoom * zoomLevel;
       if ("zoom" in camera) {
         camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 6));
         camera.updateProjectionMatrix();
       }
     } else {
-      // Gather.town Avatar Focus mode: smoothly centers overhead on player
-      // Safely bounded within the office envelope
-      const targetX = Math.max(-7.5, Math.min(7.5, player.x));
-      const targetZ = Math.max(-4.5, Math.min(8.5, player.z));
+      // Real-time smooth avatar follow mode: camera tracks player position across the entire office
+      const posX = localAvatarPosition.x || player.x;
+      const posZ = localAvatarPosition.y || player.z;
+      const targetX = THREE.MathUtils.clamp(posX, OFFICE_BOUNDS.minX, OFFICE_BOUNDS.maxX);
+      const targetZ = THREE.MathUtils.clamp(posZ, OFFICE_BOUNDS.minZ, OFFICE_BOUNDS.maxZ);
       const desiredPos = new THREE.Vector3(targetX, 36, targetZ + 0.1);
       const desiredLook = new THREE.Vector3(targetX, 0, targetZ + 0.1);
-      camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 6));
+      camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 9));
       camera.lookAt(desiredLook);
 
-      // Generous Gather.town room-level focus: shows ~19m x ~14.5m around avatar
-      const baseZoom = Math.min((size.width - 60) / 19, (size.height - 60) / 14.5);
+      // Room-level focus: shows ~15m x ~11.5m around avatar so rooms and characters appear large and detailed
+      const baseZoom = Math.min((size.width - 32) / 15, (size.height - 32) / 11.5);
       const targetZoom = baseZoom * zoomLevel;
       if ("zoom" in camera) {
         camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 6));
@@ -327,7 +330,7 @@ function FloorClickSurface() {
 
   return (
     <mesh
-      position={[0, 0.02, 2.0]}
+      position={[0, 0.02, 2.5]}
       rotation-x={-Math.PI / 2}
       onPointerDown={(e) => {
         e.stopPropagation();
@@ -336,7 +339,7 @@ function FloorClickSurface() {
       }}
       visible={false}
     >
-      <planeGeometry args={[28, 24]} />
+      <planeGeometry args={[36, 32]} />
       <meshBasicMaterial transparent opacity={0} />
     </mesh>
   );
@@ -443,8 +446,14 @@ function LocalPlayer() {
     let input = wasd;
     if (wasd.lengthSq() > 0) {
       if (clickTarget) setClickTarget(null);
+      if (useOfficeStore.getState().cameraMode !== "follow") {
+        useOfficeStore.getState().setCameraMode("follow");
+      }
       input.normalize();
     } else if (clickTarget && !isSitting) {
+      if (useOfficeStore.getState().cameraMode !== "follow") {
+        useOfficeStore.getState().setCameraMode("follow");
+      }
       const toTarget = new THREE.Vector2(clickTarget.x - position.current.x, clickTarget.z - position.current.y);
       if (toTarget.length() < 0.28) {
         setClickTarget(null);
@@ -482,6 +491,7 @@ function LocalPlayer() {
     }
 
     position.current.set(next.x, next.z);
+    localAvatarPosition.set(next.x, next.z);
     if (velocity.current.lengthSq() > 0.08) rotation.current = Math.atan2(velocity.current.x, velocity.current.y);
 
     if (group.current) {
@@ -816,10 +826,10 @@ function OfficeEnvironment() {
       <EmoteParticleManager />
 
       {/* Zone Carpets & Inlays */}
-      <RoomRug position={[-5.8, 0.045, -3.7]} color={palette.rug} trim={design.accentColor} size={[6.4, 4.8]} />
-      <RoomRug position={[-5.8, 0.045, 3.45]} color={palette.rug} trim={design.accentColor} size={[6.4, 4.6]} />
-      <RoomRug position={[5.8, 0.045, 3.55]} color={design.theme === "midnight" ? "#352735" : "#56382b"} trim={design.accentColor} size={[6.3, 4.7]} />
-      <RoomRug position={[5.8, 0.045, -3.45]} color={design.theme === "biophilic" ? "#294b3b" : "#222b30"} trim={design.accentColor} size={[6.3, 4.8]} />
+      <RoomRug position={[-6.8, 0.045, -4.1]} color={palette.rug} trim={design.accentColor} size={[8.2, 5.8]} />
+      <RoomRug position={[-6.8, 0.045, 3.8]} color={palette.rug} trim={design.accentColor} size={[8.2, 5.6]} />
+      <RoomRug position={[6.8, 0.045, 3.8]} color={design.theme === "midnight" ? "#352735" : "#56382b"} trim={design.accentColor} size={[8.2, 5.6]} />
+      <RoomRug position={[6.8, 0.045, -4.1]} color={design.theme === "biophilic" ? "#294b3b" : "#222b30"} trim={design.accentColor} size={[8.2, 5.8]} />
 
       <Walls />
       <GlassPartitions />
@@ -901,49 +911,49 @@ function Floor() {
   return (
     <group>
       {/* Foundation Grand Plinth Slab (Encompassing Interior + Terrace) */}
-      <mesh receiveShadow position={[0, -0.22, 1.8]}>
-        <boxGeometry args={[24.8, 0.4, 21.6]} />
+      <mesh receiveShadow position={[0, -0.22, 2.4]}>
+        <boxGeometry args={[30.8, 0.4, 25.4]} />
         <meshStandardMaterial color={palette.foundation} roughness={0.7} />
       </mesh>
 
       {/* Primary Warm Scandinavian Hardwood Floor */}
       <mesh receiveShadow position={[0, 0.01, 0]} rotation-x={-Math.PI / 2}>
-        <planeGeometry args={[24, 16]} />
+        <planeGeometry args={[30, 19]} />
         <meshStandardMaterial color={palette.floor} roughness={0.55} metalness={0.04} />
       </mesh>
 
       {/* Central Polished Terrazzo Promenade Highway */}
       <mesh receiveShadow position={[0, 0.025, 0.35]} rotation-x={-Math.PI / 2}>
-        <planeGeometry args={[3.8, 14.8]} />
+        <planeGeometry args={[4.2, 17.8]} />
         <meshStandardMaterial color={palette.promenade} roughness={0.42} />
       </mesh>
       {/* Central Brushed Brass Inlay Inset Lines */}
-      <mesh position={[-1.9, 0.032, 0.35]} rotation-x={-Math.PI / 2}>
-        <planeGeometry args={[0.04, 14.8]} />
+      <mesh position={[-2.1, 0.032, 0.35]} rotation-x={-Math.PI / 2}>
+        <planeGeometry args={[0.04, 17.8]} />
         <meshBasicMaterial color={design.accentColor} />
       </mesh>
-      <mesh position={[1.9, 0.032, 0.35]} rotation-x={-Math.PI / 2}>
-        <planeGeometry args={[0.04, 14.8]} />
+      <mesh position={[2.1, 0.032, 0.35]} rotation-x={-Math.PI / 2}>
+        <planeGeometry args={[0.04, 17.8]} />
         <meshBasicMaterial color={design.accentColor} />
       </mesh>
 
       {/* Architectural Floor Grid Tile Seams */}
-      {[-8, -4, 4, 8].map((x) => (
+      {[-10, -5, 5, 10].map((x) => (
         <mesh key={`grid-x-${x}`} position={[x, 0.02, 0]} rotation-x={-Math.PI / 2}>
-          <planeGeometry args={[0.02, 15.6]} />
+          <planeGeometry args={[0.02, 18.6]} />
           <meshBasicMaterial color={palette.seam} />
         </mesh>
       ))}
-      {[-4, 0, 4].map((z) => (
+      {[-5, 0, 5].map((z) => (
         <mesh key={`grid-z-${z}`} position={[0, 0.021, z]} rotation-x={-Math.PI / 2}>
-          <planeGeometry args={[23.6, 0.02]} />
+          <planeGeometry args={[29.6, 0.02]} />
           <meshBasicMaterial color={palette.seam} />
         </mesh>
       ))}
 
       {/* North Wall Baseboard Ambient Warm Cove Light Strip */}
-      <mesh position={[0, 0.035, -7.68]} rotation-x={-Math.PI / 2}>
-        <planeGeometry args={[23.6, 0.06]} />
+      <mesh position={[0, 0.035, -9.18]} rotation-x={-Math.PI / 2}>
+        <planeGeometry args={[29.6, 0.06]} />
         <meshBasicMaterial color="#ffe8be" transparent opacity={0.65} />
       </mesh>
     </group>
@@ -955,54 +965,54 @@ function PenthouseTerrace() {
   const setIsSitting = useOfficeStore((state) => state.setIsSitting);
 
   return (
-    <group position={[0, 0, 9.9]}>
+    <group position={[0, 0, 11.95]}>
       {/* Warm Teak Deck Flooring */}
       <mesh receiveShadow position={[0, 0.02, 0]} rotation-x={-Math.PI / 2}>
-        <planeGeometry args={[24, 4.4]} />
+        <planeGeometry args={[30, 4.9]} />
         <meshStandardMaterial color="#885e40" roughness={0.65} />
       </mesh>
 
       {/* Teak Deck Plank Inlay Seams */}
-      {[-9, -6, -3, 0, 3, 6, 9].map((x) => (
+      {[-12, -9, -6, -3, 0, 3, 6, 9, 12].map((x) => (
         <mesh key={`deck-${x}`} position={[x, 0.025, 0]} rotation-x={-Math.PI / 2}>
-          <planeGeometry args={[0.02, 4.3]} />
+          <planeGeometry args={[0.02, 4.8]} />
           <meshBasicMaterial color="#6a4730" />
         </mesh>
       ))}
 
       {/* Frameless Glass Balustrade Perimeter Railings */}
       {/* South (Front) Glass Railing */}
-      <mesh position={[0, 0.52, 2.15]}>
-        <boxGeometry args={[24, 0.95, 0.04]} />
+      <mesh position={[0, 0.52, 2.45]}>
+        <boxGeometry args={[30, 0.95, 0.04]} />
         <meshPhysicalMaterial color="#c5e2db" transparent opacity={0.35} roughness={0.1} transmission={0.75} depthWrite={false} />
       </mesh>
-      <mesh position={[0, 1.0, 2.15]}>
-        <boxGeometry args={[24.2, 0.04, 0.06]} />
+      <mesh position={[0, 1.0, 2.45]}>
+        <boxGeometry args={[30.2, 0.04, 0.06]} />
         <meshStandardMaterial color="#dcd0be" metalness={0.8} roughness={0.2} />
       </mesh>
 
       {/* West Glass Railing */}
-      <mesh position={[-11.95, 0.52, 0]}>
-        <boxGeometry args={[0.04, 0.95, 4.3]} />
+      <mesh position={[-14.95, 0.52, 0]}>
+        <boxGeometry args={[0.04, 0.95, 4.8]} />
         <meshPhysicalMaterial color="#c5e2db" transparent opacity={0.35} roughness={0.1} transmission={0.75} depthWrite={false} />
       </mesh>
-      <mesh position={[-11.95, 1.0, 0]}>
-        <boxGeometry args={[0.06, 0.04, 4.4]} />
+      <mesh position={[-14.95, 1.0, 0]}>
+        <boxGeometry args={[0.06, 0.04, 4.9]} />
         <meshStandardMaterial color="#dcd0be" metalness={0.8} roughness={0.2} />
       </mesh>
 
       {/* East Glass Railing */}
-      <mesh position={[11.95, 0.52, 0]}>
-        <boxGeometry args={[0.04, 0.95, 4.3]} />
+      <mesh position={[14.95, 0.52, 0]}>
+        <boxGeometry args={[0.04, 0.95, 4.8]} />
         <meshPhysicalMaterial color="#c5e2db" transparent opacity={0.35} roughness={0.1} transmission={0.75} depthWrite={false} />
       </mesh>
-      <mesh position={[11.95, 1.0, 0]}>
-        <boxGeometry args={[0.06, 0.04, 4.4]} />
+      <mesh position={[14.95, 1.0, 0]}>
+        <boxGeometry args={[0.06, 0.04, 4.9]} />
         <meshStandardMaterial color="#dcd0be" metalness={0.8} roughness={0.2} />
       </mesh>
 
       {/* Outdoor Patio Chaise Loungers */}
-      {[-6.2, -4.2].map((x) => (
+      {[-7.2, -4.8, -2.4].map((x) => (
         <group key={`lounger-${x}`} position={[x, 0, 0.2]} onClick={() => { setIsSitting(true); playChime(); }}>
           <mesh castShadow position={[0, 0.18, 0]}>
             <boxGeometry args={[0.72, 0.12, 1.7]} />
@@ -1132,36 +1142,36 @@ function Walls() {
   return (
     <group>
       {/* North Wall: Modern Floor-to-Ceiling Panoramic Glass Curtain Wall & Walnut Mullions */}
-      <Wall position={[0, 1.25, -7.85]} size={[24, 2.5, 0.25]} />
-      <mesh position={[0, 0.65, -7.68]}>
-        <boxGeometry args={[23.6, 1.3, 0.06]} />
+      <Wall position={[0, 1.25, -9.55]} size={[30, 2.5, 0.25]} />
+      <mesh position={[0, 0.65, -9.38]}>
+        <boxGeometry args={[29.6, 1.3, 0.06]} />
         <meshStandardMaterial color="#2d3f37" roughness={0.7} />
       </mesh>
-      <mesh position={[0, 1.32, -7.64]}>
-        <boxGeometry args={[23.6, 0.06, 0.07]} />
+      <mesh position={[0, 1.32, -9.34]}>
+        <boxGeometry args={[29.6, 0.06, 0.07]} />
         <meshStandardMaterial color="#c9a562" metalness={0.75} roughness={0.25} />
       </mesh>
 
       {/* South Wall Interior Divider with Center Terrace Entrance Portal */}
-      <Wall position={[-6.8, 0.28, 7.85]} size={[10.4, 0.56, 0.3]} />
-      <Wall position={[6.8, 0.28, 7.85]} size={[10.4, 0.56, 0.3]} />
+      <Wall position={[-8.6, 0.28, 9.55]} size={[12.8, 0.56, 0.3]} />
+      <Wall position={[8.6, 0.28, 9.55]} size={[12.8, 0.56, 0.3]} />
       {/* Center Open Threshold to Terrace */}
-      <mesh position={[0, 0.015, 7.85]}>
-        <boxGeometry args={[3.8, 0.03, 0.3]} />
+      <mesh position={[0, 0.015, 9.55]}>
+        <boxGeometry args={[4.4, 0.03, 0.3]} />
         <meshBasicMaterial color="#c9a562" />
       </mesh>
 
       {/* West Wall (Left) */}
-      <Wall position={[-11.85, 0.65, 0]} size={[0.3, 1.3, 16]} />
-      <mesh position={[-11.68, 0.25, 0]}>
-        <boxGeometry args={[0.06, 0.5, 15.6]} />
+      <Wall position={[-14.95, 0.65, 0]} size={[0.3, 1.3, 19.2]} />
+      <mesh position={[-14.78, 0.25, 0]}>
+        <boxGeometry args={[0.06, 0.5, 18.8]} />
         <meshStandardMaterial color="#2d3f37" roughness={0.7} />
       </mesh>
 
       {/* East Wall (Right) */}
-      <Wall position={[11.85, 0.65, 0]} size={[0.3, 1.3, 16]} />
-      <mesh position={[11.68, 0.25, 0]}>
-        <boxGeometry args={[0.06, 0.5, 15.6]} />
+      <Wall position={[14.95, 0.65, 0]} size={[0.3, 1.3, 19.2]} />
+      <mesh position={[14.78, 0.25, 0]}>
+        <boxGeometry args={[0.06, 0.5, 18.8]} />
         <meshStandardMaterial color="#2d3f37" roughness={0.7} />
       </mesh>
     </group>

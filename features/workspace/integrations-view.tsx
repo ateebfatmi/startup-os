@@ -1,16 +1,17 @@
 "use client";
 
-import { CalendarDays, Github, Loader2, Plug, RefreshCw, Unplug } from "lucide-react";
+import { CalendarDays, Github, Loader2, Music, Plug, RefreshCw, Unplug } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 
-type Provider = "google_calendar" | "slack" | "github" | "linear";
+type Provider = "google_calendar" | "slack" | "github" | "linear" | "spotify";
 type ProviderStatus = { provider: Provider; configured: boolean; connection: null | { external_account_name: string | null; scopes: string[]; updated_at: string } };
 const catalog: Record<Provider, { name: string; description: string; icon: typeof Plug }> = {
   google_calendar: { name: "Google Calendar", description: "Bring upcoming events and availability into Orbit meetings.", icon: CalendarDays },
   slack: { name: "Slack", description: "Publish workspace updates and meeting reminders to team channels.", icon: Plug },
   github: { name: "GitHub", description: "Connect repositories, issues, and engineering delivery context.", icon: Github },
   linear: { name: "Linear", description: "Sync product issues and project execution with Orbit tasks.", icon: RefreshCw },
+  spotify: { name: "Spotify", description: "Stream shared team focus playlists and lo-fi office background music.", icon: Music },
 };
 
 export function IntegrationsView({ workspaceId, canManage }: { workspaceId: string; canManage: boolean }) {
