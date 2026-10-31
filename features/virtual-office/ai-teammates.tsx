@@ -1,12 +1,12 @@
 "use client";
 
-import { Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useRef, useState } from "react";
 import * as THREE from "three";
 import { useOfficeStore } from "./store";
 import { playChime } from "./audio";
 import { AvatarModel } from "./avatar-model";
+import { SpriteLabel } from "./office-canvas";
 
 export type AITeammateId = "dev" | "design" | "finance";
 
@@ -151,24 +151,13 @@ function AITeammateAvatar({ config }: { config: AITeammateConfig }) {
       </mesh>
 
       {/* Clean Interactive Overhead Tag */}
-      <Html center position={[0, 1.88, 0]}>
-        <div
-          className={`pointer-events-none select-none flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold shadow-md transition-all whitespace-nowrap ${
-            hovered || isSelected
-              ? "bg-[#17211b] text-white ring-2 ring-[#c8f560] scale-105"
-              : "bg-white/95 text-[#17211b] ring-1 ring-black/10"
-          }`}
-        >
-          <span
-            className="h-2 w-2 rounded-full animate-pulse"
-            style={{ backgroundColor: config.accent }}
-          />
-          <span>{config.name} (AI {config.id === "dev" ? "Dev" : config.id === "design" ? "Design" : "Finance"})</span>
-          {(hovered || isSelected) && (
-            <span className="text-[9px] text-[#c8f560] font-black uppercase">Chat (X)</span>
-          )}
-        </div>
-      </Html>
+      <SpriteLabel
+        text={`${config.name} (AI ${config.id === "dev" ? "Dev" : config.id === "design" ? "Design" : "Finance"})${hovered || isSelected ? " · Chat (X)" : ""}`}
+        position={[0, 1.88, 0]}
+        background={hovered || isSelected ? "rgba(23, 33, 27, 0.96)" : "rgba(255, 255, 255, 0.94)"}
+        color={hovered || isSelected ? "#c8f560" : "#17211b"}
+        width={hovered || isSelected ? 3.0 : 2.4}
+      />
     </group>
   );
 }

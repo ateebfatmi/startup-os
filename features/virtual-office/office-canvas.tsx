@@ -1,6 +1,6 @@
 "use client";
 
-import { ContactShadows, Html, OrthographicCamera, RoundedBox } from "@react-three/drei";
+import { ContactShadows, OrthographicCamera, RoundedBox } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Hand } from "lucide-react";
@@ -208,7 +208,7 @@ function TouchButton({ label, icon: Icon, ...events }: { label: string; icon: ty
   return <button aria-label={label} className="grid h-11 w-11 touch-none place-items-center rounded-xl bg-white text-[#173f2b] shadow-sm active:bg-[#c8f560]" {...events}><Icon size={19} /></button>;
 }
 
-function SpriteLabel({
+export function SpriteLabel({
   text,
   position = [0, 0, 0],
   background = "rgba(23, 33, 27, 0.94)",
@@ -650,6 +650,43 @@ function CustomOfficeObject({ object }: { object: OfficeObject }) {
   </group>;
 }
 
+function EmoteSpriteItem({
+  emoji,
+  position,
+  opacity,
+  scale,
+}: {
+  emoji: string;
+  position: [number, number, number];
+  opacity: number;
+  scale: number;
+}) {
+  const texture = useMemo(() => {
+    if (typeof document === "undefined") return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.font = "80px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(emoji, 64, 68);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    return tex;
+  }, [emoji]);
+
+  useEffect(() => () => texture?.dispose(), [texture]);
+  if (!texture) return null;
+
+  return (
+    <sprite position={position} scale={[0.85 * scale, 0.85 * scale, 1]} renderOrder={1001}>
+      <spriteMaterial map={texture} transparent opacity={opacity} depthTest={false} depthWrite={false} toneMapped={false} />
+    </sprite>
+  );
+}
+
 function EmoteParticleManager() {
   const recentEmotes = useOfficeStore((state) => state.recentEmotes);
   const [now, setNow] = useState(Date.now());
@@ -669,22 +706,13 @@ function EmoteParticleManager() {
         const scale = Math.min(1.3, 0.6 + elapsed * 0.7);
 
         return (
-          <Html
+          <EmoteSpriteItem
             key={e.id}
-            center
+            emoji={e.emoji}
             position={[e.x, e.y + yOffset, e.z]}
-            style={{
-              opacity,
-              transform: `scale(${scale})`,
-              transition: "transform 0.05s linear",
-              pointerEvents: "none",
-              userSelect: "none",
-            }}
-          >
-            <div className="text-2xl filter drop-shadow-md animate-bounce">
-              {e.emoji}
-            </div>
-          </Html>
+            opacity={opacity}
+            scale={scale}
+          />
         );
       })}
     </group>
@@ -1521,12 +1549,13 @@ function BoardroomScreen() {
       </mesh>
       {/* Live Presenter Pill when Screen Sharing */}
       {isScreenSharing && (
-        <Html center position={[0, 0.85, 0.06]}>
-          <div className="pointer-events-none select-none flex items-center gap-1.5 rounded-full bg-red-600/90 px-2.5 py-0.5 text-[9px] font-bold text-white shadow-lg animate-pulse whitespace-nowrap">
-            <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" />
-            <span>LIVE SCREEN SHARE · {presenterName || "Presenter"}</span>
-          </div>
-        </Html>
+        <SpriteLabel
+          text={`● LIVE SHARE · ${presenterName || "Presenter"}`}
+          position={[0, 0.85, 0.06]}
+          background="rgba(220, 38, 38, 0.95)"
+          color="#ffffff"
+          width={2.2}
+        />
       )}
       {/* Power LED Indicator */}
       <mesh position={[1.12, -0.58, 0.045]}>
