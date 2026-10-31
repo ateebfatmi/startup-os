@@ -23,7 +23,7 @@ export const OFFICE_THEME_PALETTES: Record<OfficeTheme, {
   seam: string;
   rug: string;
 }> = {
-  atelier: { label: "Founder Atelier", description: "Warm limestone, walnut, brass, and tailored hospitality.", foundation: "#1b231f", floor: "#f0ebe0", promenade: "#e5dfd2", seam: "#ded6c5", rug: "#233d30" },
-  biophilic: { label: "Biophilic Studio", description: "Soft sage surfaces and a calm, nature-led working atmosphere.", foundation: "#18251d", floor: "#dfe7d7", promenade: "#cbd9c4", seam: "#b8c8ae", rug: "#315742" },
-  midnight: { label: "Midnight Lab", description: "Graphite floors, cool glass, and high-contrast startup energy.", foundation: "#0d1317", floor: "#20282c", promenade: "#2b353a", seam: "#3b474c", rug: "#172d3d" },
+  atelier: { label: "Founder Atelier", description: "Warm limestone, walnut, brass, and tailored hospitality.", foundation: "#222a25", floor: "#f6f1e7", promenade: "#ede6d7", seam: "#ded4c3", rug: "#334c41" },
+  biophilic: { label: "Biophilic Studio", description: "Soft sage surfaces and a calm, nature-led working atmosphere.", foundation: "#1c2820", floor: "#eff4ea", promenade: "#dde8d6", seam: "#c9d8c2", rug: "#385e4a" },
+  midnight: { label: "Midnight Lab", description: "Graphite floors, cool glass, and high-contrast startup energy.", foundation: "#0e151a", floor: "#1b2328", promenade: "#253138", seam: "#33424a", rug: "#223d50" },
 };

@@ -280,33 +280,39 @@ function CameraRig() {
   }, [gl]);
 
   useFrame(({ camera }, delta) => {
-    const isTop = cameraMode === "top";
-    if (isTop) {
-      // True overhead floor-plan view that keeps the full office in frame.
-      const desiredPos = new THREE.Vector3(0, 34, 1.5);
-      const desiredLook = new THREE.Vector3(0, 0, 1.5);
-      camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 5));
-      camera.up.set(0, 0, -1);
+    // Gather.town authentic overhead perspective:
+    // Orthographic camera always looks down with up set to (0, 0, -1).
+    // This completely prevents wall occlusion, camera clipping, and orientation distortion.
+    camera.up.set(0, 0, -1);
+
+    if (cameraMode === "top") {
+      // True full-office overview floor plan
+      const desiredPos = new THREE.Vector3(0, 36, 1.8);
+      const desiredLook = new THREE.Vector3(0, 0, 1.8);
+      camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 6));
       camera.lookAt(desiredLook);
 
-      // Comfortable margins keep the terrace and HUD from crowding the floor plan.
-      const baseZoom = Math.min((size.width - 120) / 31, (size.height - 80) / 25);
+      const baseZoom = Math.min((size.width - 120) / 30, (size.height - 80) / 24);
       const targetZoom = baseZoom * zoomLevel;
       if ("zoom" in camera) {
-        camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 5));
+        camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 6));
         camera.updateProjectionMatrix();
       }
     } else {
-      // Follow mode: smoothly follow player from isometric 3rd person angle
-      const desiredPos = new THREE.Vector3(player.x, 15, player.z + 14);
-      camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 4));
-      camera.up.set(0, 1, 0);
-      camera.lookAt(player.x, 0.6, player.z);
+      // Gather.town Avatar Focus mode: smoothly centers overhead on player
+      // Safely bounded within the office envelope
+      const targetX = Math.max(-7.5, Math.min(7.5, player.x));
+      const targetZ = Math.max(-4.5, Math.min(8.5, player.z));
+      const desiredPos = new THREE.Vector3(targetX, 36, targetZ + 0.1);
+      const desiredLook = new THREE.Vector3(targetX, 0, targetZ + 0.1);
+      camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 6));
+      camera.lookAt(desiredLook);
 
-      const baseZoom = Math.min(size.width / 16, size.height / 11);
+      // Generous Gather.town room-level focus: shows ~19m x ~14.5m around avatar
+      const baseZoom = Math.min((size.width - 60) / 19, (size.height - 60) / 14.5);
       const targetZoom = baseZoom * zoomLevel;
       if ("zoom" in camera) {
-        camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 4));
+        camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 6));
         camera.updateProjectionMatrix();
       }
     }
@@ -1488,7 +1494,8 @@ function BoardroomScreen() {
 
   return (
     <group
-      position={[-6.2, 1.6, -7.6]}
+      position={[-6.2, 1.35, -7.48]}
+      rotation-x={-0.34}
       onClick={(e) => {
         e.stopPropagation();
         playSlideClick();
@@ -1498,12 +1505,12 @@ function BoardroomScreen() {
       onPointerOut={() => setHovered(false)}
     >
       {/* 85" TV Display Sleek Aluminum Frame */}
-      <RoundedBox castShadow args={[3.3, 1.7, 0.08]} radius={0.04}>
+      <RoundedBox castShadow args={[2.5, 1.3, 0.08]} radius={0.03}>
         <meshStandardMaterial color="#0c100e" roughness={0.2} metalness={0.8} />
       </RoundedBox>
       {/* Display Screen with Native 3D Texture or Live Video Stream */}
       <mesh position={[0, 0, 0.045]}>
-        <planeGeometry args={[3.15, 1.55]} />
+        <planeGeometry args={[2.4, 1.2]} />
         {videoTexture ? (
           <meshBasicMaterial map={videoTexture} />
         ) : screenTexture ? (
@@ -1514,7 +1521,7 @@ function BoardroomScreen() {
       </mesh>
       {/* Live Presenter Pill when Screen Sharing */}
       {isScreenSharing && (
-        <Html center position={[0, 1.05, 0.06]}>
+        <Html center position={[0, 0.85, 0.06]}>
           <div className="pointer-events-none select-none flex items-center gap-1.5 rounded-full bg-red-600/90 px-2.5 py-0.5 text-[9px] font-bold text-white shadow-lg animate-pulse whitespace-nowrap">
             <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" />
             <span>LIVE SCREEN SHARE · {presenterName || "Presenter"}</span>
@@ -1522,14 +1529,14 @@ function BoardroomScreen() {
         </Html>
       )}
       {/* Power LED Indicator */}
-      <mesh position={[1.5, -0.78, 0.045]}>
+      <mesh position={[1.12, -0.58, 0.045]}>
         <circleGeometry args={[0.015, 16]} />
         <meshBasicMaterial color={isScreenSharing ? "#ff4444" : "#c8f560"} />
       </mesh>
       {/* Subtle hover ring */}
       {hovered && (
         <mesh position={[0, 0, 0.05]}>
-          <planeGeometry args={[3.2, 1.6]} />
+          <planeGeometry args={[2.44, 1.24]} />
           <meshBasicMaterial color="#c8f560" transparent opacity={0.08} />
         </mesh>
       )}

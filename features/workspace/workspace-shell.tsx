@@ -315,24 +315,33 @@ function OfficeHud({ rightRail, onToggleRail, tasks, displayName }: { rightRail:
 
           <button onClick={() => setQualityMode(qualityMode === "high" ? "reduced" : "high")} aria-label="Toggle rendering quality" className="flex items-center gap-1.5 rounded-lg border border-black/10 bg-white/90 px-2.5 py-1 text-xs font-semibold text-[#173f2b] shadow-xs transition hover:bg-black/5" title="Toggle high and reduced rendering modes"><Gauge size={13} className={measuredFps && measuredFps < 45 ? "text-amber-600" : "text-emerald-600"} /><span className="hidden sm:inline">{qualityMode === "high" ? "High" : "Reduced"} · </span><span>{measuredFps ? Math.round(measuredFps) : "—"} FPS</span></button>
 
-          {/* Camera View Toggle */}
-          <button
-            onClick={toggleCameraMode}
-            className="flex items-center gap-1.5 rounded-lg border border-black/10 bg-white/90 px-2.5 py-1 text-xs font-semibold text-[#173f2b] shadow-xs transition hover:bg-black/5"
-            title="Toggle between Full Office Top View and Follow View (Shortcut: V)"
-          >
-            {cameraMode === "top" ? (
-              <>
-                <Maximize2 size={13} className="text-[#327a56]" />
-                <span className="hidden sm:inline">Top View</span>
-              </>
-            ) : (
-              <>
-                <User size={13} className="text-[#327a56]" />
-                <span className="hidden sm:inline">Follow</span>
-              </>
-            )}
-          </button>
+          {/* Camera View Mode Segmented Control */}
+          <div className="flex items-center rounded-lg border border-black/10 bg-white/90 p-0.5 shadow-xs">
+            <button
+              onClick={() => useOfficeStore.getState().setCameraMode("top")}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold transition ${
+                cameraMode === "top"
+                  ? "bg-[#173f2b] text-[#c8f560] shadow-xs"
+                  : "text-[#68736b] hover:text-[#173f2b] hover:bg-black/5"
+              }`}
+              title="Full Office Overview (Shortcut: V)"
+            >
+              <Maximize2 size={12} />
+              <span className="hidden sm:inline">Overview</span>
+            </button>
+            <button
+              onClick={() => useOfficeStore.getState().setCameraMode("follow")}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold transition ${
+                cameraMode === "follow"
+                  ? "bg-[#173f2b] text-[#c8f560] shadow-xs"
+                  : "text-[#68736b] hover:text-[#173f2b] hover:bg-black/5"
+              }`}
+              title="Follow My Avatar (Shortcut: V)"
+            >
+              <User size={12} />
+              <span className="hidden sm:inline">Follow Avatar</span>
+            </button>
+          </div>
 
           {/* Broad View Zoom Controls */}
           <div className="flex items-center rounded-lg border border-black/10 bg-white/90 shadow-xs">
