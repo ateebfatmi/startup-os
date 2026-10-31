@@ -23,6 +23,7 @@ export function OfficeCanvas() {
   const qualityMode = useOfficeStore((state) => state.qualityMode);
   const measuredFps = useOfficeStore((state) => state.measuredFps);
   const rendererClass = useOfficeStore((state) => state.rendererClass);
+  const activePanel = useOfficeStore((state) => state.activePanel);
 
   // Dynamic Lighting Themes
   const lighting = useMemo(() => {
@@ -103,10 +104,11 @@ export function OfficeCanvas() {
       {avatarAssetReady && <span className="sr-only">Animated GLTF avatar ready</span>}
       <output aria-label="3D frame rate" data-fps={measuredFps.toFixed(1)} data-renderer-class={rendererClass} className="sr-only">{measuredFps.toFixed(1)} FPS</output>
       <Canvas
-      dpr={qualityMode === "reduced" ? 1 : [1, 2]}
+      frameloop={activePanel ? "demand" : "always"}
+      dpr={qualityMode === "reduced" ? 0.85 : [1, 2]}
       shadows={qualityMode === "high"}
       style={{ width: "100%", height: "100%" }}
-      gl={{ antialias: true, powerPreference: "high-performance" }}
+      gl={{ antialias: qualityMode === "high", powerPreference: "high-performance" }}
     >
       <color attach="background" args={[lighting.canvasBg]} />
       <OrthographicCamera
@@ -124,7 +126,7 @@ export function OfficeCanvas() {
       <hemisphereLight args={[lighting.hemiSky, lighting.hemiGround, lighting.hemiIntensity]} />
       <ambientLight intensity={lighting.ambient} />
       <directionalLight
-        castShadow
+        castShadow={qualityMode === "high"}
         position={lighting.sunPos}
         color={lighting.sunColor}
         intensity={lighting.sunIntensity}
@@ -139,15 +141,19 @@ export function OfficeCanvas() {
       />
 
       {/* Atmospheric Zone Accent Lights */}
-      <pointLight position={[-5.8, 3.2, -3.7]} color={lighting.roomLights.boardroom} intensity={lightingMode === "night" ? 18 : 10} distance={8} decay={2} />
-      <pointLight position={[-5.8, 3.2, 3.4]} color="#ffecd1" intensity={lightingMode === "night" ? 14 : 8} distance={7} decay={2} />
-      <pointLight position={[8.5, 2.2, -3.4]} color={lighting.roomLights.aiPod} intensity={lightingMode === "night" ? 24 : 16} distance={8} decay={2} />
-      <pointLight position={[5.8, 3.2, 3.6]} color={lighting.roomLights.lounge} intensity={lightingMode === "night" ? 16 : 9} distance={7} decay={2} />
-      <pointLight position={[0, 2.8, 5.9]} color="#ffe9be" intensity={lightingMode === "night" ? 12 : 7} distance={6} decay={2} />
-      <pointLight position={[2.4, 2.2, -6.4]} color={lighting.roomLights.phoneBooth} intensity={lightingMode === "night" ? 8 : 4} distance={4} />
+      {qualityMode === "high" && (
+        <>
+          <pointLight position={[-5.8, 3.2, -3.7]} color={lighting.roomLights.boardroom} intensity={lightingMode === "night" ? 18 : 10} distance={8} decay={2} />
+          <pointLight position={[-5.8, 3.2, 3.4]} color="#ffecd1" intensity={lightingMode === "night" ? 14 : 8} distance={7} decay={2} />
+          <pointLight position={[8.5, 2.2, -3.4]} color={lighting.roomLights.aiPod} intensity={lightingMode === "night" ? 24 : 16} distance={8} decay={2} />
+          <pointLight position={[5.8, 3.2, 3.6]} color={lighting.roomLights.lounge} intensity={lightingMode === "night" ? 16 : 9} distance={7} decay={2} />
+          <pointLight position={[0, 2.8, 5.9]} color="#ffe9be" intensity={lightingMode === "night" ? 12 : 7} distance={6} decay={2} />
+          <pointLight position={[2.4, 2.2, -6.4]} color={lighting.roomLights.phoneBooth} intensity={lightingMode === "night" ? 8 : 4} distance={4} />
+        </>
+      )}
 
       {/* City Skyline Silhouette Backdrop */}
-      <CitySkyline skylineConfig={lighting.skyline} />
+      {qualityMode === "high" && <CitySkyline skylineConfig={lighting.skyline} />}
 
       <OfficeEnvironment />
       <CustomOfficeObjects />

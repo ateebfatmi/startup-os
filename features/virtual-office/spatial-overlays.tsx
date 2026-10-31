@@ -134,7 +134,7 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
               <span>{currentRoom ? currentRoom.name : "Open Floor"}</span>
             </span>
             <span className="text-white/30">·</span>
-            <span className="text-[11px] text-white/70">Proximity audio active · 3m range</span>
+            <span className="text-[11px] text-white/70">Spatial audio zone · 3m range</span>
           </>
         )}
       </div>
