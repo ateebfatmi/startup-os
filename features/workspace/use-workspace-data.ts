@@ -1,33 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { INITIAL_TASKS, type Task, type TaskStatus } from "./sample-data";
-
-const KEY = "orbit-demo-tasks";
+import { useWorkspaceRecords } from "./workspace-data-provider";
+import { persistSuggestedTask, presentTask, taskStatuses } from "./workspace-task-adapter";
+import { updateTask } from "./project-service";
+import type { Task, TaskStatus } from "./sample-data";
+import type { TaskDbStatus } from "./project-types";
 
 export function useWorkspaceData() {
-  const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const stored = window.localStorage.getItem(KEY);
-    if (stored) {
-      try { setTasks(JSON.parse(stored) as Task[]); } catch { window.localStorage.removeItem(KEY); }
-    }
-    setReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (ready) window.localStorage.setItem(KEY, JSON.stringify(tasks));
-  }, [ready, tasks]);
-
-  const moveTask = (id: string, status: TaskStatus) => setTasks((current) => current.map((task) => task.id === id ? { ...task, status } : task));
-  const addTask = (input: string | (Partial<Task> & { title: string })) => setTasks((current) => {
-    const taskObj: Task = typeof input === "string"
-      ? { id: crypto.randomUUID(), title: input, status: "Todo", priority: "Medium", project: "Product", due: "No date" }
-      : { id: crypto.randomUUID(), title: input.title, status: input.status || "Todo", priority: input.priority || "Medium", project: input.project || "Product", due: input.due || "No date" };
-    return [...current, taskObj];
-  });
-
-  return { tasks, moveTask, addTask };
+  const records = useWorkspaceRecords();
+  return {
+    tasks: records.tasks.map(presentTask),
+    loading: records.loading,
+    error: records.error,
+    moveTask: async (id: string, status: TaskStatus) => {
+      const dbStatus = (Object.keys(taskStatuses) as TaskDbStatus[]).find((key) => taskStatuses[key] === status)!;
+      await updateTask({ workspaceId: records.workspaceId, taskId: id, status: dbStatus });
+      await records.reload();
+    },
+    addTask: async (input: string | (Partial<Task> & { title: string; rationale?: string })) => {
+      await persistSuggestedTask(records.workspaceId, records.projects, typeof input === "string" ? { title: input } : input);
+      await records.reload();
+    },
+  };
 }

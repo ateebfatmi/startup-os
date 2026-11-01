@@ -1,5 +1,7 @@
 "use client";
 
+import { createLocalWorkspace } from "@/features/workspace/workspace-service";
+
 import { Building2, Check, Command, Loader2, UserRound, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -45,6 +47,8 @@ export default function OnboardingPage() {
     setMessage(null);
 
     if (!hasSupabaseConfig) {
+      const workspace = await createLocalWorkspace(workspaceName);
+      window.localStorage.setItem("orbit-workspace-id", workspace.id);
       window.localStorage.setItem("orbit-display-name", profileName);
       window.localStorage.setItem("orbit-workspace-name", workspaceName);
       window.localStorage.setItem("orbit-workspace-type", workspaceType);

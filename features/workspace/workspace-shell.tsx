@@ -18,6 +18,7 @@ import { useMultiplayer } from "@/features/multiplayer/use-multiplayer";
 import { useHuddle, type HuddleController } from "@/features/communication/use-huddle";
 import type { CallParticipant } from "@/features/communication/types";
 import { createSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase/client";
+import { WorkspaceDataProvider, useWorkspaceRecords } from "./workspace-data-provider";
 import { useWorkspaceData } from "./use-workspace-data";
 import { TeamView } from "./team-view";
 import { ProjectsView } from "./projects-view";
@@ -26,7 +27,6 @@ import { AIAssistantPanel } from "./ai-assistant-panel";
 import { WhiteboardPanel } from "./whiteboard-panel";
 import { SpatialOverlays } from "@/features/virtual-office/spatial-overlays";
 import { AITeammateDialog } from "@/features/virtual-office/ai-teammate-dialog";
-import type { TaskStatus } from "./sample-data";
 import type { Availability } from "@/features/virtual-office/types";
 import { ActivityView } from "./activity-view";
 import { DocumentsView } from "./documents-view";
@@ -41,6 +41,7 @@ import { AnalyticsView } from "./analytics-view";
 import { IntegrationsView } from "./integrations-view";
 import { loadOfficeObjects } from "./office-object-service";
 import { useProximityAudio, type ProximityAudioController } from "@/features/communication/use-proximity-audio";
+import { DEFAULT_OFFICE_DESIGN } from "@/features/virtual-office/office-design";
 import { OFFICE_ROOMS } from "@/features/virtual-office/office-data";
 import { OFFICE_BOUNDS } from "@/features/virtual-office/collision";
 
@@ -65,29 +66,43 @@ const navGroups = ["Workspace", "Plan & ship", "Collaborate", "Manage"] as const
 
 type View = (typeof nav)[number]["id"];
 
+type WorkspaceIdentity = { displayName: string; workspaceName: string; workspaceId: string; workspaceRole: WorkspaceSummary["role"] };
+
 export function WorkspaceShell() {
   const router = useRouter();
-  const [identity, setIdentity] = useState<{ displayName: string; workspaceName: string; workspaceId: string; workspaceRole: WorkspaceSummary["role"] }>({ displayName: "Ateeb Fatmi", workspaceName: "Northstar Labs", workspaceId: "northstar-demo", workspaceRole: "owner" });
+  const [identityReady, setIdentityReady] = useState(false);
+  const [identityError, setIdentityError] = useState<string | null>(null);
+  const [identity, setIdentity] = useState<WorkspaceIdentity>({ displayName: "", workspaceName: "", workspaceId: "", workspaceRole: "guest" });
   const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([DEMO_WORKSPACE]);
   useEffect(() => {
     const localIdentity = {
       displayName: window.localStorage.getItem("orbit-display-name") || "Ateeb Fatmi",
       workspaceName: window.localStorage.getItem("orbit-workspace-name") || "Northstar Labs",
-      workspaceId: window.localStorage.getItem("orbit-workspace-id") || "northstar-demo",
+      workspaceId: window.localStorage.getItem("orbit-workspace-id") || DEMO_WORKSPACE.id,
       workspaceRole: "owner" as WorkspaceSummary["role"],
     };
-    setIdentity(localIdentity);
-    if (!hasSupabaseConfig) return;
+    if (!hasSupabaseConfig) {
+      let active = true;
+      void fetchMyWorkspaces().then((available) => {
+        if (!active) return;
+        const selected = available.find((workspace) => workspace.id === localIdentity.workspaceId) || DEMO_WORKSPACE;
+        setWorkspaces(available);
+        setIdentity({ ...localIdentity, workspaceId: selected.id, workspaceName: selected.id === DEMO_WORKSPACE.id ? localIdentity.workspaceName : selected.name });
+        setIdentityReady(true);
+      });
+      return () => { active = false; };
+    }
     let active = true;
     void (async () => {
       const supabase = createSupabaseBrowserClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { router.replace("/login"); return; }
       const [{ data: profile }, availableWorkspaces] = await Promise.all([
         supabase.from("profiles").select("display_name, avatar_config").eq("id", user.id).maybeSingle(),
         fetchMyWorkspaces(),
       ]);
       const selectedWorkspace = availableWorkspaces.find((workspace) => workspace.id === localIdentity.workspaceId) || availableWorkspaces[0];
+      if (!selectedWorkspace) { router.replace("/onboarding"); return; }
       const nextIdentity = {
         displayName: profile?.display_name || localIdentity.displayName,
         workspaceName: selectedWorkspace?.name || localIdentity.workspaceName,
@@ -97,6 +112,7 @@ export function WorkspaceShell() {
       if (!active) return;
       setWorkspaces(availableWorkspaces);
       setIdentity(nextIdentity);
+      setIdentityReady(true);
       window.localStorage.setItem("orbit-display-name", nextIdentity.displayName);
       window.localStorage.setItem("orbit-workspace-name", nextIdentity.workspaceName);
       window.localStorage.setItem("orbit-workspace-id", nextIdentity.workspaceId);
@@ -106,9 +122,30 @@ export function WorkspaceShell() {
         const player = useOfficeStore.getState().player;
         useOfficeStore.getState().setPlayerIdentity({ id: player.id, name: nextIdentity.displayName, color: avatarConfig.color });
       }
-    })();
+    })().catch((error) => { if (active) setIdentityError(error instanceof Error ? error.message : "Could not load workspace"); });
     return () => { active = false; };
-  }, []);
+  }, [router]);
+  const selectWorkspace = (workspace: WorkspaceSummary) => {
+    closeWorkspacePanels();
+    setIdentity((current) => ({ ...current, workspaceId: workspace.id, workspaceName: workspace.name, workspaceRole: workspace.role }));
+    window.localStorage.setItem("orbit-workspace-id", workspace.id);
+    window.localStorage.setItem("orbit-workspace-name", workspace.name);
+    useOfficeStore.getState().clearRemotePlayers();
+  };
+  if (identityError) return <div role="alert" className="p-8">{identityError}</div>;
+  if (!identityReady) return <div role="status" className="grid h-screen place-items-center">Loading workspace…</div>;
+  return <WorkspaceDataProvider key={identity.workspaceId} workspaceId={identity.workspaceId}><WorkspaceContent identity={identity} workspaces={workspaces} selectWorkspace={selectWorkspace} /></WorkspaceDataProvider>;
+}
+
+function closeWorkspacePanels() {
+  useOfficeStore.getState().closePanel();
+  useOfficeStore.getState().clearRemotePlayers();
+  useOfficeStore.getState().setOfficeObjects([]);
+  useOfficeStore.getState().setOfficeDesign(DEFAULT_OFFICE_DESIGN);
+}
+
+function WorkspaceContent({ identity, workspaces, selectWorkspace }: { identity: WorkspaceIdentity; workspaces: WorkspaceSummary[]; selectWorkspace: (workspace: WorkspaceSummary) => void }) {
+  const router = useRouter();
   useEffect(() => {
     let active = true;
     void Promise.all([loadOfficeDesign(identity.workspaceId), loadOfficeObjects(identity.workspaceId)]).then(([design, objects]) => {
@@ -116,12 +153,10 @@ export function WorkspaceShell() {
     }).catch((error) => console.error("Could not load office design", error));
     return () => { active = false; };
   }, [identity.workspaceId]);
-  const selectWorkspace = (workspace: WorkspaceSummary) => {
-    setIdentity((current) => ({ ...current, workspaceId: workspace.id, workspaceName: workspace.name, workspaceRole: workspace.role }));
-    window.localStorage.setItem("orbit-workspace-id", workspace.id);
-    window.localStorage.setItem("orbit-workspace-name", workspace.name);
-    useOfficeStore.getState().clearRemotePlayers();
-  };
+  useEffect(() => {
+    closeWorkspacePanels();
+    return closeWorkspacePanels;
+  }, []);
   useMultiplayer(identity.workspaceId);
   const huddle = useHuddle(identity.workspaceId, "weekly-product-pulse");
   const proximity = useProximityAudio(huddle);
@@ -187,6 +222,7 @@ export function WorkspaceShell() {
           />
         )}
         <div className="relative isolate min-h-0 flex-1">
+          {data.error && <div role="alert" className="absolute left-4 top-2 z-30 rounded-xl bg-red-50 p-3 text-sm text-red-800">{data.error}</div>}
           {view === "office" ? (
             <>
               <div className="absolute inset-0 z-0"><OfficeCanvas /></div>
@@ -216,7 +252,7 @@ export function WorkspaceShell() {
           ) : <DashboardView view={view} {...data} workspaceId={identity.workspaceId} workspaceRole={identity.workspaceRole} displayName={identity.displayName} workspaceName={identity.workspaceName} />}
         </div>
       </div>
-      <FeatureDialog kind={activePanel} onClose={closePanel} tasks={data.tasks} moveTask={data.moveTask} addTask={data.addTask} huddle={huddle} workspaceId={identity.workspaceId} workspaceName={identity.workspaceName} />
+      <FeatureDialog key={identity.workspaceId} kind={activePanel} onClose={closePanel} tasks={data.tasks} moveTask={data.moveTask} addTask={data.addTask} huddle={huddle} workspaceId={identity.workspaceId} workspaceName={identity.workspaceName} />
       <QuickStartDialog open={helpOpen} onClose={() => setHelpOpen(false)} onNavigate={(destination) => { setView(destination); setHelpOpen(false); }} />
     </main>
   );
@@ -467,7 +503,7 @@ function OfficeHud({
           <div className="my-4 h-px bg-black/[.07]" />
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-[#68736b]">Today</span>
-            <span className="text-xs text-[#68736b]">{tasks.filter((task) => task.status !== "Done").length} open tasks</span>
+            <button aria-label="Open office task board" onClick={() => useOfficeStore.getState().openPanel("projects")} className="text-xs text-[#397455] underline underline-offset-2">{tasks.filter((task) => task.status !== "Done").length} open tasks</button>
           </div>
           <div className="mt-3 rounded-2xl bg-[#173f2b] p-3 text-[#f5f0e4]">
             <div className="text-xs text-white/55">Next meeting · 3:30 PM</div>
@@ -797,8 +833,8 @@ function OfficeMinimap({ open, onToggle }: { open: boolean; onToggle: () => void
 }
 
 function DashboardView({ view, tasks, moveTask, addTask, workspaceId, workspaceRole, displayName, workspaceName }: { view: Exclude<View, "office">; tasks: ReturnType<typeof useWorkspaceData>["tasks"]; moveTask: ReturnType<typeof useWorkspaceData>["moveTask"]; addTask: ReturnType<typeof useWorkspaceData>["addTask"]; workspaceId: string; workspaceRole: WorkspaceSummary["role"]; displayName: string; workspaceName: string }) {
-  if (view === "projects") return <div className="h-full overflow-auto"><ProjectsView workspaceId={workspaceId} /></div>;
-  if (view === "tasks") return <div className="h-full overflow-auto"><KanbanView workspaceId={workspaceId} /></div>;
+  if (view === "projects") return <div className="h-full overflow-auto"><ProjectsView /></div>;
+  if (view === "tasks") return <div className="h-full overflow-auto"><KanbanView /></div>;
   if (view === "goals") return <div className="h-full overflow-auto"><GoalsView workspaceId={workspaceId} /></div>;
   if (view === "analytics") return <div className="h-full overflow-auto"><AnalyticsView workspaceId={workspaceId} /></div>;
   if (view === "meetings") return <div className="h-full overflow-auto"><MeetingsView workspaceId={workspaceId} /></div>;
@@ -809,16 +845,22 @@ function DashboardView({ view, tasks, moveTask, addTask, workspaceId, workspaceR
   if (view === "billing") return <div className="h-full overflow-auto"><BillingView workspaceId={workspaceId} canManage={workspaceRole === "owner" || workspaceRole === "admin"} /></div>;
   if (view === "integrations") return <div className="h-full overflow-auto"><IntegrationsView workspaceId={workspaceId} canManage={workspaceRole === "owner" || workspaceRole === "admin"} /></div>;
   if (view === "team") return <div className="h-full overflow-auto"><TeamView workspaceId={workspaceId} /></div>;
-  return <div className="h-full overflow-auto p-4 md:p-7"><Overview view={view} tasks={tasks} displayName={displayName} workspaceName={workspaceName} /></div>;
+  return <div className="h-full overflow-auto p-4 md:p-7"><Overview view={view} tasks={tasks} moveTask={moveTask} displayName={displayName} workspaceName={workspaceName} /></div>;
 }
 
-function Overview({ view, tasks, displayName, workspaceName }: { view: Exclude<View, "office" | "projects" | "tasks">; tasks: ReturnType<typeof useWorkspaceData>["tasks"]; displayName: string; workspaceName: string }) {
+function Overview({ view, tasks, moveTask, displayName, workspaceName }: { view: Exclude<View, "office" | "projects" | "tasks">; tasks: ReturnType<typeof useWorkspaceData>["tasks"]; moveTask: ReturnType<typeof useWorkspaceData>["moveTask"]; displayName: string; workspaceName: string }) {
+  const { projects } = useWorkspaceRecords();
+  const onlineCount = useOfficeStore((state) => Object.keys(state.remotePlayers).length + 1);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const dueThisWeek = tasks.filter((task) => task.status !== "Done" && /^\d{4}-\d{2}-\d{2}$/.test(task.due) && new Date(task.due).getTime() >= Date.now() && new Date(task.due).getTime() <= Date.now() + 7 * 86400000).length;
+
   const firstName = displayName.trim().split(/\s+/)[0] || "there";
   const openTasks = tasks.filter((task) => task.status !== "Done").length;
   return <div className="mx-auto max-w-6xl">
     <div className="mb-7 flex flex-wrap items-end justify-between gap-4"><div><div className="eyebrow mb-3">{workspaceName} · Daily brief</div><h2 className="text-3xl font-extrabold tracking-[-.045em] md:text-[2.5rem]">Good afternoon, {firstName}.</h2><p className="mt-2 max-w-xl text-sm leading-6 text-[#68736b] md:text-base">Your workspace is moving. Here’s what deserves attention next.</p></div><Button><Plus size={17} /> Create new</Button></div>
-    <div className="grid gap-4 md:grid-cols-3"><Metric label="Active projects" value="3" note="One needs attention" color="#c8f560" /><Metric label="Open tasks" value={String(openTasks)} note="2 due this week" color="#ffc98b" /><Metric label="Team availability" value="67%" note="2 of 3 online" color="#9dd8c1" /></div>
-    <div className="mt-4 grid gap-4 lg:grid-cols-[1.4fr_.8fr]"><section className="surface-card rounded-[24px] p-5 md:p-6"><div className="mb-4 flex items-center justify-between"><div><div className="eyebrow">Focus queue</div><h3 className="mt-1 font-bold">Priority work</h3></div><Button variant="ghost" size="sm">View all</Button></div><div className="space-y-2">{tasks.slice(0,3).map((task) => <div key={task.id} className="group flex items-center gap-3 rounded-2xl border border-black/[.055] bg-white/65 p-3 transition hover:border-black/10 hover:bg-white hover:shadow-sm"><button className="h-5 w-5 rounded-md border-2 border-black/15 transition group-hover:border-[#397455]" aria-label={`Complete ${task.title}`} /><div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold">{task.title}</div><div className="mt-0.5 text-xs text-[#68736b]">{task.project} · {task.due}</div></div><Badge className={task.priority === "High" ? "bg-[#ffe0d1] text-[#8a3d24]" : "bg-black/5 text-[#68736b]"}>{task.priority}</Badge></div>)}</div></section><section className="relative overflow-hidden rounded-[24px] bg-[linear-gradient(145deg,#173f2b_0%,#0f2e20_100%)] p-5 text-white shadow-[0_22px_50px_rgba(15,46,32,.18)] md:p-6"><div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-[#c8f560]/10" /><div className="relative flex items-center justify-between"><div className="eyebrow !text-[#c8f560]">Next up</div><CalendarDays size={18} className="text-[#c8f560]" /></div><div className="relative mt-8 text-xs font-semibold text-white/50">3:30–4:00 PM</div><div className="relative mt-1 text-xl font-bold">Weekly product pulse</div><p className="relative mt-2 text-sm leading-6 text-white/65">Align on launch blockers and lock the beta timeline.</p><div className="relative mt-5 flex -space-x-2"><div className="grid h-9 w-9 place-items-center rounded-full border-2 border-[#173f2b] bg-[#efad73] text-xs font-bold text-[#17211b]">AF</div><div className="grid h-9 w-9 place-items-center rounded-full border-2 border-[#173f2b] bg-[#a8d4ed] text-xs font-bold text-[#17211b]">SK</div><div className="grid h-9 w-9 place-items-center rounded-full border-2 border-[#173f2b] bg-[#d7b4e6] text-xs font-bold text-[#17211b]">MJ</div></div><Button className="relative mt-5 w-full border-[#c8f560] bg-[#c8f560] text-[#173f2b] shadow-none hover:border-[#d5ff77] hover:bg-[#d5ff77]">Open agenda</Button></section></div>
+    {actionError && <div role="alert" className="mb-3 text-red-700">{actionError}</div>}
+    <div className="grid gap-4 md:grid-cols-3"><Metric label="Active projects" value={String(projects.filter((project) => project.status === "active").length)} note="In this workspace" color="#c8f560" /><Metric label="Open tasks" value={String(openTasks)} note={`${dueThisWeek} due this week`} color="#ffc98b" /><Metric label="Team availability" value={String(onlineCount)} note="Connected to this office" color="#9dd8c1" /></div>
+    <div className="mt-4 grid gap-4 lg:grid-cols-[1.4fr_.8fr]"><section className="surface-card rounded-[24px] p-5 md:p-6"><div className="mb-4 flex items-center justify-between"><div><div className="eyebrow">Focus queue</div><h3 className="mt-1 font-bold">Priority work</h3></div><Button variant="ghost" size="sm">View all</Button></div><div className="space-y-2">{tasks.slice(0,3).map((task) => <div key={task.id} className="group flex items-center gap-3 rounded-2xl border border-black/[.055] bg-white/65 p-3 transition hover:border-black/10 hover:bg-white hover:shadow-sm"><button className="h-5 w-5 rounded-md border-2 border-black/15 transition group-hover:border-[#397455]" aria-label={`Complete ${task.title}`} onClick={() => { void moveTask(task.id, "Done").catch((error) => setActionError(error instanceof Error ? error.message : "Could not complete task")); }} /><div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold">{task.title}</div><div className="mt-0.5 text-xs text-[#68736b]">{task.project} · {task.due}</div></div><Badge className={task.priority === "High" ? "bg-[#ffe0d1] text-[#8a3d24]" : "bg-black/5 text-[#68736b]"}>{task.priority}</Badge></div>)}</div></section><section className="surface-card rounded-[24px] p-5"><div className="eyebrow">Workspace execution</div><h3 className="mt-3 font-bold">Shared task progress</h3><div className="mt-5 text-4xl font-bold">{tasks.filter((task) => task.status === "Done").length} / {tasks.length}</div><p className="mt-3 text-sm text-[#68736b]">Tasks completed in {workspaceName}. Changes from your teammates refresh automatically.</p></section></div>
     {view !== "overview" && <div className="mt-4 rounded-[24px] border border-dashed border-black/15 bg-white/45 p-10 text-center"><h3 className="font-bold capitalize">{view} workspace</h3><p className="mt-2 text-sm text-[#68736b]">This view is wired into the shared application shell and ready for Supabase data.</p></div>}
   </div>;
 }
@@ -846,8 +888,10 @@ function Shortcut({ keys, label }: { keys: string; label: string }) {
 }
 
 function FeatureDialog({ kind, onClose, tasks, moveTask, addTask, huddle, workspaceId, workspaceName }: { kind: ReturnType<typeof useOfficeStore.getState>["activePanel"]; onClose: () => void; tasks: ReturnType<typeof useWorkspaceData>["tasks"]; moveTask: ReturnType<typeof useWorkspaceData>["moveTask"]; addTask: ReturnType<typeof useWorkspaceData>["addTask"]; huddle: HuddleController; workspaceId: string; workspaceName: string }) {
+  const { loading, error } = useWorkspaceRecords();
   if (!kind) return null;
-  if (kind === "projects") return <Dialog open title="Project board" onClose={onClose}><KanbanView workspaceId="northstar-demo" /></Dialog>;
+  if (kind === "ai_assistant" && (loading || error)) return <Dialog open title="AI Startup Copilot" onClose={onClose}><div role={error ? "alert" : "status"}>{error || "Loading workspace tasks…"}</div></Dialog>;
+  if (kind === "projects") return <Dialog open title="Project board" onClose={onClose}><KanbanView /></Dialog>;
   if (kind === "whiteboard") return <Dialog open title="Spatial Whiteboard" onClose={onClose}><WhiteboardPanel workspaceId={workspaceId} /></Dialog>;
   if (kind === "focus") return <Dialog open title="Focus pod" onClose={onClose}><FocusPanel /></Dialog>;
   if (kind === "ai_assistant") return <Dialog open title="AI Startup Copilot" size="xl" onClose={onClose}><AIAssistantPanel tasks={tasks} addTask={addTask} workspaceName={workspaceName} /></Dialog>;

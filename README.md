@@ -100,3 +100,7 @@ Deploy the Next.js app to Vercel and configure the same public Supabase variable
 - `tests`: deterministic movement tests and browser workflows.
 
 See `IMPLEMENTATION_CHECKLIST.md` and `PRODUCTION_READINESS.md` for completed scope and deployment gates. Only environment-dependent validation and scale upgrades remain: physical-device Supabase verification, restrictive-network TURN testing, a dedicated authoritative movement service for higher concurrency, and an SFU before large-group calling.
+
+## Workspace data unification
+
+Overview, office task panels, Projects, Kanban, and Copilot share a workspace-keyed task/project cache backed by the existing repository. Reviewed Copilot tasks persist through the same authenticated task writes as Kanban. See [the Phase 1 report](PHASE_1_WORKSPACE_DATA.md) for changes, local migration behavior, test evidence, and remaining validation boundaries.

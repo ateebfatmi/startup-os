@@ -1,3 +1,4 @@
+import { DEMO_WORKSPACE } from "./workspace-service";
 import { createSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase/client";
 import {
   AcceptInvitationSchema,
@@ -16,7 +17,7 @@ import {
 
 export const INITIAL_DEMO_MEMBERS: WorkspaceMember[] = [
   {
-    workspaceId: "northstar-demo",
+    workspaceId: DEMO_WORKSPACE.id,
     userId: "demo-user-1",
     displayName: "Ateeb Fatmi",
     email: "ateeb@northstar.io",
@@ -24,7 +25,7 @@ export const INITIAL_DEMO_MEMBERS: WorkspaceMember[] = [
     joinedAt: "2026-01-15T09:00:00.000Z",
   },
   {
-    workspaceId: "northstar-demo",
+    workspaceId: DEMO_WORKSPACE.id,
     userId: "demo-user-2",
     displayName: "Sarah Chen",
     email: "sarah@northstar.io",
@@ -32,7 +33,7 @@ export const INITIAL_DEMO_MEMBERS: WorkspaceMember[] = [
     joinedAt: "2026-02-01T10:30:00.000Z",
   },
   {
-    workspaceId: "northstar-demo",
+    workspaceId: DEMO_WORKSPACE.id,
     userId: "demo-user-3",
     displayName: "Marcus Johnson",
     email: "marcus@northstar.io",
@@ -40,7 +41,7 @@ export const INITIAL_DEMO_MEMBERS: WorkspaceMember[] = [
     joinedAt: "2026-02-20T14:15:00.000Z",
   },
   {
-    workspaceId: "northstar-demo",
+    workspaceId: DEMO_WORKSPACE.id,
     userId: "demo-user-4",
     displayName: "Elena Rostova",
     email: "elena@contractor.com",
@@ -52,7 +53,7 @@ export const INITIAL_DEMO_MEMBERS: WorkspaceMember[] = [
 export const INITIAL_DEMO_INVITATIONS: WorkspaceInvitation[] = [
   {
     id: "inv-demo-1",
-    workspaceId: "northstar-demo",
+    workspaceId: DEMO_WORKSPACE.id,
     email: "dev@orbit.workspace",
     role: "member",
     tokenHash: hashToken("demo-token-pending-1234567890"),
@@ -64,7 +65,7 @@ export const INITIAL_DEMO_INVITATIONS: WorkspaceInvitation[] = [
   },
   {
     id: "inv-demo-2",
-    workspaceId: "northstar-demo",
+    workspaceId: DEMO_WORKSPACE.id,
     email: "alex@northstar.io",
     role: "admin",
     tokenHash: hashToken("demo-token-accepted-1234567890"),
@@ -77,7 +78,7 @@ export const INITIAL_DEMO_INVITATIONS: WorkspaceInvitation[] = [
   },
   {
     id: "inv-demo-3",
-    workspaceId: "northstar-demo",
+    workspaceId: DEMO_WORKSPACE.id,
     email: "old-invite@partner.com",
     role: "guest",
     tokenHash: hashToken("demo-token-expired-1234567890"),
@@ -139,7 +140,7 @@ export function saveStoredLocalInvitations(invites: WorkspaceInvitation[]) {
 
 export async function fetchWorkspaceMembers(workspaceId: string): Promise<WorkspaceMember[]> {
   if (!hasSupabaseConfig) {
-    return getStoredLocalMembers();
+    return getStoredLocalMembers().filter((member) => member.workspaceId === workspaceId);
   }
 
   const supabase = createSupabaseBrowserClient();
@@ -166,7 +167,7 @@ export async function fetchWorkspaceMembers(workspaceId: string): Promise<Worksp
 export async function fetchWorkspaceInvitations(workspaceId: string): Promise<WorkspaceInvitation[]> {
   if (!hasSupabaseConfig) {
     const invites = getStoredLocalInvitations();
-    return invites.map((inv) => ({
+    return invites.filter((inv) => inv.workspaceId === workspaceId).map((inv) => ({
       ...inv,
       status: computeInvitationStatus(inv.expiresAt, inv.acceptedAt),
     }));
@@ -292,7 +293,7 @@ export async function revokeWorkspaceInvitation(input: {
   const validated = RevokeInvitationSchema.parse(input);
 
   if (!hasSupabaseConfig) {
-    const localInvites = getStoredLocalInvitations().filter((inv) => inv.id !== validated.invitationId);
+    const localInvites = getStoredLocalInvitations().filter((inv) => inv.id !== validated.invitationId || inv.workspaceId !== validated.workspaceId);
     saveStoredLocalInvitations(localInvites);
     return;
   }
@@ -330,17 +331,17 @@ export async function updateWorkspaceMemberRole(input: {
 
   if (!hasSupabaseConfig) {
     const members = getStoredLocalMembers();
-    const target = members.find((m) => m.userId === validated.userId);
+    const target = members.find((m) => m.userId === validated.userId && m.workspaceId === validated.workspaceId);
     if (!target) throw new Error("Member not found");
 
     if (target.role === "owner" && validated.role !== "owner") {
-      const ownerCount = members.filter((m) => m.role === "owner").length;
+      const ownerCount = members.filter((m) => m.role === "owner" && m.workspaceId === validated.workspaceId).length;
       if (ownerCount <= 1) {
         throw new Error("Cannot demote the final owner of the workspace");
       }
     }
 
-    const updated = members.map((m) => (m.userId === validated.userId ? { ...m, role: validated.role } : m));
+    const updated = members.map((m) => (m.userId === validated.userId && m.workspaceId === validated.workspaceId ? { ...m, role: validated.role } : m));
     saveStoredLocalMembers(updated);
     return;
   }
@@ -363,17 +364,17 @@ export async function removeWorkspaceMember(input: {
 
   if (!hasSupabaseConfig) {
     const members = getStoredLocalMembers();
-    const target = members.find((m) => m.userId === validated.userId);
+    const target = members.find((m) => m.userId === validated.userId && m.workspaceId === validated.workspaceId);
     if (!target) throw new Error("Member not found");
 
     if (target.role === "owner") {
-      const ownerCount = members.filter((m) => m.role === "owner").length;
+      const ownerCount = members.filter((m) => m.role === "owner" && m.workspaceId === validated.workspaceId).length;
       if (ownerCount <= 1) {
         throw new Error("Cannot remove the final owner of the workspace");
       }
     }
 
-    const updated = members.filter((m) => m.userId !== validated.userId);
+    const updated = members.filter((m) => m.userId !== validated.userId || m.workspaceId !== validated.workspaceId);
     saveStoredLocalMembers(updated);
     return;
   }

@@ -1,3 +1,4 @@
+import { DEMO_WORKSPACE } from "@/features/workspace/workspace-service";
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabaseConfig } from "@/lib/supabase/client";
@@ -16,8 +17,8 @@ export async function GET(request: Request) {
     if (!hasSupabaseConfig) {
       return NextResponse.json({
         id: "inv-preview-demo",
-        workspaceId: "northstar-demo",
-        workspaceName: "Northstar Labs",
+        workspaceId: DEMO_WORKSPACE.id,
+        workspaceName: DEMO_WORKSPACE.name,
         email: "invited@orbit.workspace",
         role: "member",
         expiresAt: new Date(Date.now() + 7 * 86400 * 1000).toISOString(),
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
     const validated = AcceptInvitationSchema.parse(body);
 
     if (!hasSupabaseConfig) {
-      return NextResponse.json({ success: true, workspaceId: "northstar-demo", isLocalDemo: true });
+      return NextResponse.json({ success: true, workspaceId: DEMO_WORKSPACE.id, isLocalDemo: true });
     }
 
     const supabase = await createSupabaseServerClient();

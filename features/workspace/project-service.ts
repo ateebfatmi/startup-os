@@ -1,3 +1,6 @@
+import { mergeLegacyDemoTasks } from "./legacy-task-migration";
+import { DEMO_WORKSPACE } from "./workspace-service";
+import { notifyWorkspaceRecordsChanged } from "./workspace-record-events";
 import { createSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase/client";
 import {
   CreateCommentSchema,
@@ -13,7 +16,7 @@ import {
 export const INITIAL_DEMO_PROJECTS: Project[] = [
   {
     id: "proj-1",
-    workspaceId: "northstar-demo",
+    workspaceId: DEMO_WORKSPACE.id,
     name: "Launch",
     description: "Milestone 1 product launch and market positioning",
     status: "active",
@@ -27,7 +30,7 @@ export const INITIAL_DEMO_PROJECTS: Project[] = [
   },
   {
     id: "proj-2",
-    workspaceId: "northstar-demo",
+    workspaceId: DEMO_WORKSPACE.id,
     name: "Product Core",
     description: "Core workspace architecture, real-time presence, and WebRTC",
     status: "active",
@@ -41,7 +44,7 @@ export const INITIAL_DEMO_PROJECTS: Project[] = [
   },
   {
     id: "proj-3",
-    workspaceId: "northstar-demo",
+    workspaceId: DEMO_WORKSPACE.id,
     name: "Customer Research",
     description: "User interviews and feedback synthesis for beta teams",
     status: "planned",
@@ -58,7 +61,7 @@ export const INITIAL_DEMO_PROJECTS: Project[] = [
 export const INITIAL_DEMO_TASKS: TaskItem[] = [
   {
     id: "task-1",
-    workspaceId: "northstar-demo",
+    workspaceId: DEMO_WORKSPACE.id,
     projectId: "proj-1",
     projectName: "Launch",
     title: "Confirm launch narrative",
@@ -75,7 +78,7 @@ export const INITIAL_DEMO_TASKS: TaskItem[] = [
   },
   {
     id: "task-2",
-    workspaceId: "northstar-demo",
+    workspaceId: DEMO_WORKSPACE.id,
     projectId: "proj-2",
     projectName: "Product Core",
     title: "Review onboarding flow",
@@ -92,7 +95,7 @@ export const INITIAL_DEMO_TASKS: TaskItem[] = [
   },
   {
     id: "task-3",
-    workspaceId: "northstar-demo",
+    workspaceId: DEMO_WORKSPACE.id,
     projectId: "proj-3",
     projectName: "Customer Research",
     title: "Publish customer notes",
@@ -109,7 +112,7 @@ export const INITIAL_DEMO_TASKS: TaskItem[] = [
   },
   {
     id: "task-4",
-    workspaceId: "northstar-demo",
+    workspaceId: DEMO_WORKSPACE.id,
     projectId: "proj-1",
     projectName: "Launch",
     title: "Close analytics gaps",
@@ -180,12 +183,16 @@ export function getStoredLocalTasks(): TaskItem[] {
     return memoryTasks;
   }
   const data = window.localStorage.getItem(LOCAL_TASKS_KEY);
-  if (!data) return INITIAL_DEMO_TASKS;
-  try {
-    return JSON.parse(data) as TaskItem[];
-  } catch {
-    return INITIAL_DEMO_TASKS;
+  let tasks: TaskItem[] = INITIAL_DEMO_TASKS;
+  try { if (data) { const stored = JSON.parse(data); if (Array.isArray(stored)) tasks = stored; } } catch { /* Retain demo seed on corrupt storage. */ }
+  if (!window.localStorage.getItem("orbit-demo-tasks-migrated-v3")) {
+    let legacy: unknown = [];
+    try { legacy = JSON.parse(window.localStorage.getItem("orbit-demo-tasks") || "[]"); } catch { /* Invalid legacy rows are ignored. */ }
+    tasks = mergeLegacyDemoTasks(tasks, legacy, DEMO_WORKSPACE.id);
+    window.localStorage.setItem(LOCAL_TASKS_KEY, JSON.stringify(tasks));
+    window.localStorage.setItem("orbit-demo-tasks-migrated-v3", "1");
   }
+  return tasks;
 }
 
 export function saveStoredLocalTasks(tasks: TaskItem[]) {
@@ -220,7 +227,7 @@ export function saveStoredLocalComments(comments: TaskComment[]) {
 
 export async function fetchWorkspaceProjects(workspaceId: string): Promise<Project[]> {
   if (!hasSupabaseConfig) {
-    return getStoredLocalProjects().filter((p) => p.workspaceId === workspaceId || workspaceId === "northstar-demo");
+    return getStoredLocalProjects().filter((p) => p.workspaceId === workspaceId);
   }
 
   const supabase = createSupabaseBrowserClient();
@@ -263,7 +270,7 @@ export async function createProject(input: {
 
   if (!hasSupabaseConfig) {
     const newProject: Project = {
-      id: `proj-local-${Date.now()}`,
+      id: `proj-local-${crypto.randomUUID()}`,
       workspaceId: validated.workspaceId,
       name: validated.name,
       description: validated.description,
@@ -278,6 +285,7 @@ export async function createProject(input: {
     };
     const projects = getStoredLocalProjects();
     saveStoredLocalProjects([newProject, ...projects]);
+    notifyWorkspaceRecordsChanged(validated.workspaceId);
     return newProject;
   }
 
@@ -301,6 +309,7 @@ export async function createProject(input: {
     .single();
 
   if (error) throw new Error(error.message);
+  notifyWorkspaceRecordsChanged(validated.workspaceId);
 
   return {
     id: data.id,
@@ -330,7 +339,7 @@ export async function updateProject(input: {
 
   if (!hasSupabaseConfig) {
     const projects = getStoredLocalProjects().map((p) => {
-      if (p.id !== validated.projectId) return p;
+      if (p.id !== validated.projectId || p.workspaceId !== validated.workspaceId) return p;
       return {
         ...p,
         ...(validated.name !== undefined && { name: validated.name }),
@@ -342,6 +351,7 @@ export async function updateProject(input: {
       };
     });
     saveStoredLocalProjects(projects);
+    notifyWorkspaceRecordsChanged(validated.workspaceId);
     return;
   }
 
@@ -360,12 +370,14 @@ export async function updateProject(input: {
     .eq("workspace_id", validated.workspaceId);
 
   if (error) throw new Error(error.message);
+  notifyWorkspaceRecordsChanged(validated.workspaceId);
 }
 
 export async function deleteProject(workspaceId: string, projectId: string): Promise<void> {
   if (!hasSupabaseConfig) {
-    const projects = getStoredLocalProjects().filter((p) => p.id !== projectId);
+    const projects = getStoredLocalProjects().filter((p) => p.id !== projectId || p.workspaceId !== workspaceId);
     saveStoredLocalProjects(projects);
+    notifyWorkspaceRecordsChanged(workspaceId);
     return;
   }
 
@@ -377,6 +389,7 @@ export async function deleteProject(workspaceId: string, projectId: string): Pro
     .eq("workspace_id", workspaceId);
 
   if (error) throw new Error(error.message);
+  notifyWorkspaceRecordsChanged(workspaceId);
 }
 
 /* Tasks Service API */
@@ -386,7 +399,7 @@ export async function fetchWorkspaceTasks(
   filters?: { projectId?: string; assigneeId?: string; status?: TaskItem["status"] },
 ): Promise<TaskItem[]> {
   if (!hasSupabaseConfig) {
-    let tasks = getStoredLocalTasks().filter((t) => t.workspaceId === workspaceId || workspaceId === "northstar-demo");
+    let tasks = getStoredLocalTasks().filter((t) => t.workspaceId === workspaceId);
     if (filters?.projectId) tasks = tasks.filter((t) => t.projectId === filters.projectId);
     if (filters?.assigneeId) tasks = tasks.filter((t) => t.assigneeId === filters.assigneeId);
     if (filters?.status) tasks = tasks.filter((t) => t.status === filters.status);
@@ -445,13 +458,14 @@ export async function createTask(input: {
 
   if (!hasSupabaseConfig) {
     const localProjects = getStoredLocalProjects();
-    const proj = localProjects.find((p) => p.id === validated.projectId);
+    const proj = localProjects.find((p) => p.id === validated.projectId && p.workspaceId === validated.workspaceId);
+    if (validated.projectId && !proj) throw new Error("Project does not belong to this workspace");
 
     const newTask: TaskItem = {
-      id: `task-local-${Date.now()}`,
+      id: `task-local-${crypto.randomUUID()}`,
       workspaceId: validated.workspaceId,
       projectId: validated.projectId || null,
-      projectName: proj?.name || "Product",
+      projectName: proj?.name || null,
       title: validated.title,
       description: validated.description,
       status: validated.status,
@@ -467,6 +481,7 @@ export async function createTask(input: {
 
     const tasks = getStoredLocalTasks();
     saveStoredLocalTasks([newTask, ...tasks]);
+    notifyWorkspaceRecordsChanged(validated.workspaceId);
     return newTask;
   }
 
@@ -491,6 +506,7 @@ export async function createTask(input: {
     .single();
 
   if (error) throw new Error(error.message);
+  notifyWorkspaceRecordsChanged(validated.workspaceId);
 
   return {
     id: data.id,
@@ -526,8 +542,9 @@ export async function updateTask(input: {
   if (!hasSupabaseConfig) {
     const projects = getStoredLocalProjects();
     const tasks = getStoredLocalTasks().map((t) => {
-      if (t.id !== validated.taskId) return t;
-      const proj = validated.projectId ? projects.find((p) => p.id === validated.projectId) : undefined;
+      if (t.id !== validated.taskId || t.workspaceId !== validated.workspaceId) return t;
+      const proj = validated.projectId ? projects.find((p) => p.id === validated.projectId && p.workspaceId === validated.workspaceId) : undefined;
+      if (validated.projectId && !proj) throw new Error("Project does not belong to this workspace");
       return {
         ...t,
         ...(validated.title !== undefined && { title: validated.title }),
@@ -535,13 +552,14 @@ export async function updateTask(input: {
         ...(validated.status !== undefined && { status: validated.status }),
         ...(validated.priority !== undefined && { priority: validated.priority }),
         ...(validated.assigneeId !== undefined && { assigneeId: validated.assigneeId }),
-        ...(validated.projectId !== undefined && { projectId: validated.projectId, projectName: proj?.name || t.projectName }),
+        ...(validated.projectId !== undefined && { projectId: validated.projectId, projectName: proj?.name || null }),
         ...(validated.dueAt !== undefined && { dueAt: validated.dueAt }),
         ...(validated.position !== undefined && { position: validated.position }),
         updatedAt: new Date().toISOString(),
       };
     });
     saveStoredLocalTasks(tasks);
+    notifyWorkspaceRecordsChanged(validated.workspaceId);
     return;
   }
 
@@ -563,12 +581,14 @@ export async function updateTask(input: {
     .eq("workspace_id", validated.workspaceId);
 
   if (error) throw new Error(error.message);
+  notifyWorkspaceRecordsChanged(validated.workspaceId);
 }
 
 export async function deleteTask(workspaceId: string, taskId: string): Promise<void> {
   if (!hasSupabaseConfig) {
-    const tasks = getStoredLocalTasks().filter((t) => t.id !== taskId);
+    const tasks = getStoredLocalTasks().filter((t) => t.id !== taskId || t.workspaceId !== workspaceId);
     saveStoredLocalTasks(tasks);
+    notifyWorkspaceRecordsChanged(workspaceId);
     return;
   }
 
@@ -580,13 +600,15 @@ export async function deleteTask(workspaceId: string, taskId: string): Promise<v
     .eq("workspace_id", workspaceId);
 
   if (error) throw new Error(error.message);
+  notifyWorkspaceRecordsChanged(workspaceId);
 }
 
 /* Task Comments Service API */
 
 export async function fetchTaskComments(workspaceId: string, taskId: string): Promise<TaskComment[]> {
   if (!hasSupabaseConfig) {
-    return getStoredLocalComments().filter((c) => c.taskId === taskId);
+    const task = getStoredLocalTasks().find((task) => task.id === taskId && task.workspaceId === workspaceId);
+    return task ? getStoredLocalComments().filter((c) => c.taskId === taskId) : [];
   }
 
   const supabase = createSupabaseBrowserClient();
@@ -619,6 +641,7 @@ export async function createTaskComment(input: {
   const validated = CreateCommentSchema.parse(input);
 
   if (!hasSupabaseConfig) {
+    if (!getStoredLocalTasks().some((task) => task.id === validated.taskId && task.workspaceId === validated.workspaceId)) throw new Error("Task does not belong to this workspace");
     const newComment: TaskComment = {
       id: `comment-local-${Date.now()}`,
       taskId: validated.taskId,
@@ -660,7 +683,8 @@ export async function createTaskComment(input: {
 
 export async function deleteTaskComment(workspaceId: string, commentId: string): Promise<void> {
   if (!hasSupabaseConfig) {
-    const comments = getStoredLocalComments().filter((c) => c.id !== commentId);
+    const taskIds = new Set(getStoredLocalTasks().filter((task) => task.workspaceId === workspaceId).map((task) => task.id));
+    const comments = getStoredLocalComments().filter((c) => c.id !== commentId || !taskIds.has(c.taskId));
     saveStoredLocalComments(comments);
     return;
   }

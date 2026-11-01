@@ -13,16 +13,16 @@ import {
   User,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { initialsFor } from "@/features/auth/auth-utils";
+import { useWorkspaceRecords } from "./workspace-data-provider";
 import type { Project, ProjectStatus, TaskPriority } from "./project-types";
 import {
   createProject,
   deleteProject,
-  fetchWorkspaceProjects,
   updateProject,
 } from "./project-service";
 import { hasSupabaseConfig } from "@/lib/supabase/client";
@@ -43,14 +43,11 @@ const PRIORITY_BADGES: Record<TaskPriority, { label: string; style: string }> = 
 };
 
 export function ProjectsView({
-  workspaceId,
   onSelectProject,
 }: {
-  workspaceId: string;
   onSelectProject?: (projectId: string) => void;
 }) {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { workspaceId, projects, loading, error: recordsError, reload } = useWorkspaceRecords();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -62,24 +59,6 @@ export function ProjectsView({
   const [priority, setPriority] = useState<TaskPriority>("medium");
   const [dueAt, setDueAt] = useState("");
   const [submitting, setSubmitting] = useState(false);
-
-  const reload = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await fetchWorkspaceProjects(workspaceId);
-      setProjects(data);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to load projects";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, [workspaceId]);
-
-  useEffect(() => {
-    void reload();
-  }, [reload]);
 
   const openCreateModal = () => {
     setEditingProject(null);
@@ -182,7 +161,7 @@ export function ProjectsView({
 
       {/* Messages */}
       <AnimatePresence>
-        {error && (
+        {(error || recordsError) && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -191,7 +170,7 @@ export function ProjectsView({
           >
             <div className="flex items-center gap-2.5">
               <AlertCircle size={18} className="shrink-0" />
-              <span>{error}</span>
+              <span>{error || recordsError}</span>
             </div>
             <button onClick={() => setError(null)} aria-label="Dismiss error">
               <X size={16} />

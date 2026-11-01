@@ -16,21 +16,20 @@ import {
   User,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { initialsFor } from "@/features/auth/auth-utils";
 import { playChime, playSlideClick } from "@/features/virtual-office/audio";
-import type { Project, TaskComment, TaskDbStatus, TaskItem, TaskPriority } from "./project-types";
+import { useWorkspaceRecords } from "./workspace-data-provider";
+import type { TaskComment, TaskDbStatus, TaskItem, TaskPriority } from "./project-types";
 import {
   createTask,
   createTaskComment,
   deleteTask,
   deleteTaskComment,
   fetchTaskComments,
-  fetchWorkspaceProjects,
-  fetchWorkspaceTasks,
   updateTask,
 } from "./project-service";
 import { fetchWorkspaceMembers } from "./member-service";
@@ -52,16 +51,13 @@ const PRIORITY_STYLES: Record<TaskPriority, string> = {
 };
 
 export function KanbanView({
-  workspaceId,
   initialProjectId,
 }: {
-  workspaceId: string;
   initialProjectId?: string | null;
 }) {
-  const [tasks, setTasks] = useState<TaskItem[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const { workspaceId, tasks, projects, loading, error: recordsError, reload } = useWorkspaceRecords();
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
-  const [loading, setLoading] = useState(true);
+
   const [error, setError] = useState<string | null>(null);
 
   // Filters
@@ -91,29 +87,12 @@ export function KanbanView({
   const [commentBody, setCommentBody] = useState("");
   const [postingComment, setPostingComment] = useState(false);
 
-  const reload = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [fetchedTasks, fetchedProjects, fetchedMembers] = await Promise.all([
-        fetchWorkspaceTasks(workspaceId),
-        fetchWorkspaceProjects(workspaceId),
-        fetchWorkspaceMembers(workspaceId),
-      ]);
-      setTasks(fetchedTasks);
-      setProjects(fetchedProjects);
-      setMembers(fetchedMembers);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to load tasks";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, [workspaceId]);
-
   useEffect(() => {
-    void reload();
-  }, [reload]);
+    let active = true;
+    void fetchWorkspaceMembers(workspaceId).then((members) => { if (active) setMembers(members); })
+      .catch((error) => { if (active) setError(error instanceof Error ? error.message : "Could not load members"); });
+    return () => { active = false; };
+  }, [workspaceId]);
 
   const loadComments = async (taskId: string) => {
     setLoadingComments(true);
@@ -161,12 +140,12 @@ export function KanbanView({
 
   const handleMoveTask = async (taskId: string, nextStatus: TaskDbStatus) => {
     try {
-      setTasks((current) => current.map((t) => (t.id === taskId ? { ...t, status: nextStatus } : t)));
       await updateTask({
         workspaceId,
         taskId,
         status: nextStatus,
       });
+      await reload();
       if (activeTask && activeTask.id === taskId) {
         setActiveTask((prev) => (prev ? { ...prev, status: nextStatus } : null));
       }
@@ -317,11 +296,11 @@ export function KanbanView({
       </div>
 
       {/* Error alert */}
-      {error && (
+      {(error || recordsError) && (
         <div className="flex items-center justify-between rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
           <div className="flex items-center gap-2">
             <AlertCircle size={18} />
-            <span>{error}</span>
+            <span>{error || recordsError}</span>
           </div>
           <button onClick={() => setError(null)}>
             <X size={16} />

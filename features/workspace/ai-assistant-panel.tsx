@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bot, Check, ClipboardCheck, Copy, Download, FileText, Lightbulb, Loader2, Plus, Rocket, Send, ShieldCheck, Sparkles, Target, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,9 +45,12 @@ const quickPrompts: Record<Exclude<CopilotMode, "tasks_summary">, string[]> = {
 };
 
 export function AIAssistantPanel({ tasks, addTask, workspaceName }: Props) {
+  const active = useRef(true);
+  useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   const [mode, setMode] = useState<CopilotMode>("chat");
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
   const [evidence, setEvidence] = useState<Evidence[]>([]);
@@ -75,6 +78,7 @@ export function AIAssistantPanel({ tasks, addTask, workspaceName }: Props) {
   };
 
   const selectMode = (nextMode: CopilotMode) => {
+    if (saving) return;
     setMode(nextMode);
     setPrompt("");
     resetResult();
@@ -82,6 +86,7 @@ export function AIAssistantPanel({ tasks, addTask, workspaceName }: Props) {
   };
 
   const handleGenerate = async (customPrompt?: string, targetMode?: CopilotMode) => {
+    if (saving) return;
     const requestedMode = targetMode || mode;
     const requestedPrompt = customPrompt !== undefined ? customPrompt : prompt;
     if (requestedMode !== "tasks_summary" && !requestedPrompt.trim()) {
@@ -97,7 +102,7 @@ export function AIAssistantPanel({ tasks, addTask, workspaceName }: Props) {
       const response = await fetch("/api/ai/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: requestedMode, prompt: requestedPrompt, tasks, workspaceName }),
+        body: JSON.stringify({ mode: requestedMode, prompt: requestedPrompt, tasks: tasks.slice(0, 100), workspaceName }),
       });
       const data = await response.json() as {
         success?: boolean;
@@ -154,12 +159,26 @@ export function AIAssistantPanel({ tasks, addTask, workspaceName }: Props) {
     return next;
   });
 
-  const handleAddTasksToKanban = () => {
-    const approved = generatedTasks.filter((_, index) => selectedTasks.has(index));
-    approved.forEach((task) => addTask({ title: task.title, priority: task.priority, project: task.project, due: task.due, status: "Todo" }));
-    setAddedTasksCount(approved.length);
-    setGeneratedTasks([]);
-    setSelectedTasks(new Set());
+  const handleAddTasksToKanban = async () => {
+    if (saving) return;
+    setSaving(true);
+    setError(null);
+    const saved = new Set<number>();
+    try {
+      for (const [index, task] of generatedTasks.entries()) {
+        if (!active.current) break;
+        if (!selectedTasks.has(index)) continue;
+        await addTask({ ...task, status: "Todo" });
+        saved.add(index);
+        setAddedTasksCount((count) => count + 1);
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Could not save tasks. Unsaved suggestions are available to retry.");
+    } finally {
+      setGeneratedTasks((tasks) => tasks.filter((_, index) => !saved.has(index)));
+      setSelectedTasks(new Set());
+      setSaving(false);
+    }
   };
 
   return (
@@ -182,7 +201,7 @@ export function AIAssistantPanel({ tasks, addTask, workspaceName }: Props) {
       {mode !== "tasks_summary" && <section className="rounded-[20px] border border-black/[.08] bg-white p-4">
         <div className="flex items-center justify-between gap-3"><div><label htmlFor="copilot-prompt" className="text-sm font-bold">What outcome do you need?</label><p className="mt-0.5 text-xs text-[#68736b]">Give Copilot the decision, feature, or company context—not just a topic.</p></div><Badge className="hidden bg-[#edf3e7] text-[#315e45] sm:inline-flex">{activeMode.label}</Badge></div>
         <textarea id="copilot-prompt" rows={3} className="mt-3 w-full resize-none rounded-2xl border border-black/10 bg-[#fbfaf5] p-3 text-sm leading-6 outline-none transition focus:border-[#4b7a5e]" placeholder={mode === "prd" ? "Describe the feature, target user, problem, and constraints…" : mode === "pitch" ? "Enter the company and the investor narrative you need…" : "Describe the decision, objective, and any constraints…"} value={prompt} onChange={(event) => setPrompt(event.target.value)} onKeyDown={(event) => { if ((event.metaKey || event.ctrlKey) && event.key === "Enter") void handleGenerate(); }} />
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-1.5">{quickPrompts[mode].map((suggestion) => <button key={suggestion} onClick={() => usePrompt(suggestion)} className="rounded-lg border border-black/[.08] bg-[#f6f5ef] px-2.5 py-1.5 text-xs font-medium text-[#405047] hover:border-[#6f9a80] hover:bg-[#edf3e7]">{suggestion}</button>)}</div><Button onClick={() => void handleGenerate()} disabled={loading || !prompt.trim()}>{loading ? <Loader2 className="animate-spin" size={17} /> : <Send size={17} />} Generate</Button></div>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-1.5">{quickPrompts[mode].map((suggestion) => <button key={suggestion} onClick={() => usePrompt(suggestion)} className="rounded-lg border border-black/[.08] bg-[#f6f5ef] px-2.5 py-1.5 text-xs font-medium text-[#405047] hover:border-[#6f9a80] hover:bg-[#edf3e7]">{suggestion}</button>)}</div><Button onClick={() => void handleGenerate()} disabled={loading || saving || !prompt.trim()}>{loading ? <Loader2 className="animate-spin" size={17} /> : <Send size={17} />} Generate</Button></div>
         <p className="mt-2 text-right text-[10px] text-[#89928c]">Press ⌘/Ctrl + Enter to generate</p>
       </section>}
 
@@ -197,7 +216,7 @@ export function AIAssistantPanel({ tasks, addTask, workspaceName }: Props) {
 
         {evidence.length > 0 && <section className="rounded-[20px] border border-black/[.07] bg-[#edf3e7] p-4"><div className="flex items-center gap-2 text-sm font-bold"><Target size={16} className="text-[#397455]" /> Context used</div><div className="mt-3 grid gap-2 sm:grid-cols-2">{evidence.map((item) => <div key={`${item.label}-${item.value}`} className="rounded-xl bg-white/75 p-3"><div className="text-[10px] font-bold uppercase tracking-[.12em] text-[#6d7a71]">{item.label}</div><div className="mt-1 text-xs font-medium text-[#33443a]">{item.value}</div></div>)}</div><p className="mt-3 text-[10px] text-[#718077]">Workspace records are treated as data, not instructions. Verify assumptions before making high-impact decisions.</p></section>}
 
-        {generatedTasks.length > 0 && <section className="rounded-[22px] border border-black/[.08] bg-white p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><div className="flex items-center gap-2 font-bold"><ClipboardCheck size={17} className="text-[#397455]" /> Review suggested tasks</div><p className="mt-1 text-xs text-[#68736b]">Only selected tasks will be added. Nothing happens until you confirm.</p></div><Badge className="bg-[#edf3e7] text-[#315e45]">{selectedCount} of {generatedTasks.length} selected</Badge></div><div className="mt-4 space-y-2">{generatedTasks.map((task, index) => <label key={`${task.title}-${index}`} className={`flex cursor-pointer gap-3 rounded-2xl border p-3 transition ${selectedTasks.has(index) ? "border-[#75a187] bg-[#f2f7ee]" : "border-black/[.07] bg-[#fbfaf6] opacity-70"}`}><input type="checkbox" className="mt-1 h-4 w-4 accent-[#173f2b]" checked={selectedTasks.has(index)} onChange={() => toggleTask(index)} aria-label={`Select ${task.title}`} /><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="text-sm font-bold">{task.title}</span><Badge className={task.priority === "High" ? "bg-[#ffe1d4] text-[#843d28]" : task.priority === "Medium" ? "bg-[#fff0c9] text-[#765917]" : "bg-black/5 text-[#59635d]"}>{task.priority}</Badge></div><p className="mt-1 text-xs leading-5 text-[#68736b]">{task.rationale}</p><div className="mt-2 flex flex-wrap gap-3 text-[10px] font-semibold uppercase tracking-wide text-[#758078]"><span>{task.project}</span><span>{task.due}</span></div></div></label>)}</div><div className="mt-4 flex flex-wrap items-center justify-between gap-3"><p className="max-w-md text-xs text-[#68736b]">Review titles, priority, scope, and timing. You remain accountable for every created task.</p><Button onClick={handleAddTasksToKanban} disabled={selectedCount === 0}><Plus size={16} /> Add {selectedCount} selected task{selectedCount === 1 ? "" : "s"}</Button></div></section>}
+        {generatedTasks.length > 0 && <section className="rounded-[22px] border border-black/[.08] bg-white p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><div className="flex items-center gap-2 font-bold"><ClipboardCheck size={17} className="text-[#397455]" /> Review suggested tasks</div><p className="mt-1 text-xs text-[#68736b]">Only selected tasks will be added. Nothing happens until you confirm.</p></div><Badge className="bg-[#edf3e7] text-[#315e45]">{selectedCount} of {generatedTasks.length} selected</Badge></div><div className="mt-4 space-y-2">{generatedTasks.map((task, index) => <label key={`${task.title}-${index}`} className={`flex cursor-pointer gap-3 rounded-2xl border p-3 transition ${selectedTasks.has(index) ? "border-[#75a187] bg-[#f2f7ee]" : "border-black/[.07] bg-[#fbfaf6] opacity-70"}`}><input type="checkbox" className="mt-1 h-4 w-4 accent-[#173f2b]" disabled={saving} checked={selectedTasks.has(index)} onChange={() => toggleTask(index)} aria-label={`Select ${task.title}`} /><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="text-sm font-bold">{task.title}</span><Badge className={task.priority === "High" ? "bg-[#ffe1d4] text-[#843d28]" : task.priority === "Medium" ? "bg-[#fff0c9] text-[#765917]" : "bg-black/5 text-[#59635d]"}>{task.priority}</Badge></div><p className="mt-1 text-xs leading-5 text-[#68736b]">{task.rationale}</p><div className="mt-2 flex flex-wrap gap-3 text-[10px] font-semibold uppercase tracking-wide text-[#758078]"><span>{task.project}</span><span>{task.due}</span></div></div></label>)}</div><div className="mt-4 flex flex-wrap items-center justify-between gap-3"><p className="max-w-md text-xs text-[#68736b]">Review titles, priority, scope, and timing. You remain accountable for every created task.</p><Button onClick={() => void handleAddTasksToKanban()} disabled={saving || selectedCount === 0}><Plus size={16} /> Add {selectedCount} selected task{selectedCount === 1 ? "" : "s"}</Button></div></section>}
 
         {addedTasksCount > 0 && <div className="flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-bold text-green-800"><Check size={17} /> Added {addedTasksCount} reviewed task{addedTasksCount === 1 ? "" : "s"} to My tasks.</div>}
       </> : <EmptyState mode={activeMode.label} />}

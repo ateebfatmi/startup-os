@@ -1,3 +1,4 @@
+import { DEMO_WORKSPACE } from "./workspace-service";
 import { createSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase/client";
 
 export type ActivityEvent = {
@@ -13,13 +14,13 @@ export type ActivityEvent = {
 };
 
 const DEMO_ACTIVITY: ActivityEvent[] = [
-  { id: "activity-1", workspaceId: "northstar-demo", actorId: "demo-user-1", actorName: "Ateeb Fatmi", verb: "update", objectType: "tasks", objectId: "task-1", name: "Confirm launch narrative", createdAt: new Date(Date.now() - 18 * 60_000).toISOString() },
-  { id: "activity-2", workspaceId: "northstar-demo", actorId: "demo-user-2", actorName: "Sarah Chen", verb: "insert", objectType: "task_comments", objectId: "task-2", name: null, createdAt: new Date(Date.now() - 70 * 60_000).toISOString() },
-  { id: "activity-3", workspaceId: "northstar-demo", actorId: "demo-user-1", actorName: "Ateeb Fatmi", verb: "insert", objectType: "projects", objectId: "proj-1", name: "Launch", createdAt: new Date(Date.now() - 26 * 3_600_000).toISOString() },
+  { id: "activity-1", workspaceId: DEMO_WORKSPACE.id, actorId: "demo-user-1", actorName: "Ateeb Fatmi", verb: "update", objectType: "tasks", objectId: "task-1", name: "Confirm launch narrative", createdAt: new Date(Date.now() - 18 * 60_000).toISOString() },
+  { id: "activity-2", workspaceId: DEMO_WORKSPACE.id, actorId: "demo-user-2", actorName: "Sarah Chen", verb: "insert", objectType: "task_comments", objectId: "task-2", name: null, createdAt: new Date(Date.now() - 70 * 60_000).toISOString() },
+  { id: "activity-3", workspaceId: DEMO_WORKSPACE.id, actorId: "demo-user-1", actorName: "Ateeb Fatmi", verb: "insert", objectType: "projects", objectId: "proj-1", name: "Launch", createdAt: new Date(Date.now() - 26 * 3_600_000).toISOString() },
 ];
 
 export async function fetchWorkspaceActivity(workspaceId: string, limit = 50): Promise<ActivityEvent[]> {
-  if (!hasSupabaseConfig) return DEMO_ACTIVITY;
+  if (!hasSupabaseConfig) return DEMO_ACTIVITY.filter((event) => event.workspaceId === workspaceId);
 
   const supabase = createSupabaseBrowserClient();
   const { data, error } = await supabase
