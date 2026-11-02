@@ -67,7 +67,7 @@ function InviteAcceptContent() {
           const { data: { user: currentUser } } = await supabase.auth.getUser();
           if (active) setUser(currentUser ? { email: currentUser.email, id: currentUser.id } : null);
         } else {
-          if (active) setUser({ email: "demo@orbit.workspace", id: "demo-user-1" });
+          if (active) setUser({ email: "demo@crewvilla.workspace", id: "demo-user-1" });
         }
 
         const data = await getInvitationPreview(rawToken);
@@ -100,9 +100,9 @@ function InviteAcceptContent() {
     try {
       const res = await acceptInvitationByToken(rawToken);
       if (typeof window !== "undefined") {
-        window.localStorage.setItem("orbit-workspace-id", res.workspaceId);
+        window.localStorage.setItem("crewvilla-workspace-id", res.workspaceId);
         if (preview?.workspaceName) {
-          window.localStorage.setItem("orbit-workspace-name", preview.workspaceName);
+          window.localStorage.setItem("crewvilla-workspace-name", preview.workspaceName);
         }
       }
       router.push("/office");
@@ -128,7 +128,7 @@ function InviteAcceptContent() {
             <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#173f2b] text-[#c8f560]">
               <Command size={22} strokeWidth={2.5} />
             </div>
-            <span className="text-xl font-bold tracking-tight">orbit</span>
+            <span className="text-xl font-bold tracking-tight">crewvilla</span>
           </div>
           {!hasSupabaseConfig && (
             <Badge className="bg-[#ffeedd] text-[#a84b17]">Local Demo Mode</Badge>

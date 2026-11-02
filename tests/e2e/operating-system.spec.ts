@@ -46,8 +46,8 @@ test("creates a measurable company objective", async ({ page }) => {
 test("opens and reads workspace notifications", async ({ page }) => {
   await page.goto("/office");
   await page.getByRole("button", { name: "Notifications" }).click();
-  await expect(page.getByText("Welcome to Orbit")).toBeVisible();
-  await page.getByText("Welcome to Orbit").click();
+  await expect(page.getByText("Welcome to CrewVilla")).toBeVisible();
+  await page.getByText("Welcome to CrewVilla").click();
   await expect(page.getByText("0 unread")).toBeVisible();
 });
 

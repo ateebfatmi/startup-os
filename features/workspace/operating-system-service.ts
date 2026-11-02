@@ -9,8 +9,8 @@ export type WorkspaceNotification = { id: string; title: string; body: string; k
 const MeetingInput = z.object({ workspaceId: z.string().min(1), title: z.string().trim().min(1).max(180), agenda: z.string().trim().max(5000).default(""), startsAt: z.string().datetime(), endsAt: z.string().datetime(), timezone: z.string().min(1).max(80) }).refine((value) => new Date(value.endsAt) > new Date(value.startsAt), { message: "Meeting end must be after its start" });
 const ObjectiveInput = z.object({ workspaceId: z.string().min(1), title: z.string().trim().min(1).max(180), description: z.string().trim().max(3000).default(""), dueAt: z.string().nullable(), keyResultTitle: z.string().trim().min(1).max(220), targetValue: z.number().positive() });
 
-const meetingsKey = (workspaceId: string) => `orbit-meetings:${workspaceId}`;
-const objectivesKey = (workspaceId: string) => `orbit-objectives:${workspaceId}`;
+const meetingsKey = (workspaceId: string) => `crewvilla-meetings:${workspaceId}`;
+const objectivesKey = (workspaceId: string) => `crewvilla-objectives:${workspaceId}`;
 const readLocal = <T>(key: string, fallback: T): T => { if (typeof window === "undefined") return fallback; try { return JSON.parse(window.localStorage.getItem(key) || "") as T; } catch { return fallback; } };
 
 const demoMeetings = (workspaceId: string): Meeting[] => [{ id: "meeting-weekly", workspaceId, title: "Weekly product pulse", agenda: "Review launch blockers and assign owners.", startsAt: new Date(Date.now() + 3_600_000).toISOString(), endsAt: new Date(Date.now() + 5_400_000).toISOString(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, status: "scheduled", createdBy: "demo-user-1" }];
@@ -56,7 +56,7 @@ export async function updateKeyResult(workspaceId: string, objectiveId: string, 
 }
 
 export async function fetchNotifications(): Promise<WorkspaceNotification[]> {
-  if (!hasSupabaseConfig) return [{ id: "notification-demo", title: "Welcome to Orbit", body: "Your workspace operating system is ready.", kind: "welcome", readAt: null, createdAt: new Date().toISOString() }];
+  if (!hasSupabaseConfig) return [{ id: "notification-demo", title: "Welcome to CrewVilla", body: "Your workspace operating system is ready.", kind: "welcome", readAt: null, createdAt: new Date().toISOString() }];
   const { data, error } = await createSupabaseBrowserClient().from("notifications").select("id, title, body, kind, read_at, created_at").order("created_at", { ascending: false }).limit(50);
   if (error) throw new Error(error.message);
   return (data || []).map((row) => ({ id: row.id, title: row.title, body: row.body, kind: row.kind, readAt: row.read_at, createdAt: row.created_at }));

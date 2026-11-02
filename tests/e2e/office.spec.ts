@@ -9,7 +9,7 @@ test("creates a personalized local workspace and exits the demo", async ({ page 
   await page.getByRole("button", { name: "Enter local demo" }).click();
   await expect(page.getByRole("button", { name: /Arc Studio/ })).toBeVisible();
   await expect(page.getByRole("button", { name: "Maya Chen profile" })).toBeVisible();
-  await expect.poll(() => page.evaluate(() => window.localStorage.getItem("orbit-avatar-color"))).toBe("#6c86d9");
+  await expect.poll(() => page.evaluate(() => window.localStorage.getItem("crewvilla-avatar-color"))).toBe("#6c86d9");
   await page.getByRole("button", { name: "Exit demo" }).click();
   await expect(page).toHaveURL(/\/login$/);
 });
@@ -20,7 +20,7 @@ test("opens the 3D office shell", async ({ page }) => {
   await expect(page.getByText("Move with WASD or arrow keys")).toBeVisible();
   await expect(page.getByRole("button", { name: "Start huddle" })).toBeVisible();
   await expect(page.getByText("Animated GLTF avatar ready")).toBeAttached();
-  const avatar = await page.request.get("/models/orbit-avatar.gltf");
+  const avatar = await page.request.get("/models/crewvilla-avatar.gltf");
   expect(avatar.ok()).toBe(true);
   expect(((await avatar.json()).animations as Array<{ name: string }>).map((clip) => clip.name)).toEqual(["Idle", "Walk"]);
   await expect.poll(async () => page.getByText("You", { exact: true }).last().evaluate((label) => label.getBoundingClientRect().width)).toBeLessThan(100);
@@ -116,7 +116,7 @@ test("stores private file metadata and shows the workspace audit trail", async (
   await page.locator('input[type="file"]').setInputFiles({
     name: "launch-brief.txt",
     mimeType: "text/plain",
-    buffer: Buffer.from("Orbit launch brief"),
+    buffer: Buffer.from("CrewVilla launch brief"),
   });
   await expect(page.getByText("launch-brief.txt")).toBeVisible();
   await page.getByRole("button", { name: "Activity" }).click();

@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "PZ Orbit",
-    short_name: "Orbit",
+    name: "CrewVilla",
+    short_name: "CrewVilla",
     description: "A spatial operating system for focused startup teams.",
     start_url: "/office",
     display: "standalone",

@@ -54,7 +54,7 @@ export const INITIAL_DEMO_INVITATIONS: WorkspaceInvitation[] = [
   {
     id: "inv-demo-1",
     workspaceId: DEMO_WORKSPACE.id,
-    email: "dev@orbit.workspace",
+    email: "dev@crewvilla.workspace",
     role: "member",
     tokenHash: hashToken("demo-token-pending-1234567890"),
     invitedBy: "demo-user-1",
@@ -90,8 +90,8 @@ export const INITIAL_DEMO_INVITATIONS: WorkspaceInvitation[] = [
   },
 ];
 
-const LOCAL_MEMBERS_KEY = "orbit-demo-members";
-const LOCAL_INVITES_KEY = "orbit-demo-invitations";
+const LOCAL_MEMBERS_KEY = "crewvilla-demo-members";
+const LOCAL_INVITES_KEY = "crewvilla-demo-invitations";
 
 let memoryMembers: WorkspaceMember[] | null = null;
 let memoryInvitations: WorkspaceInvitation[] | null = null;

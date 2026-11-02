@@ -23,7 +23,7 @@ export type WhiteboardOperation = z.infer<typeof OperationSchema>;
 export type WhiteboardRecord = { id: string; document: WhiteboardDocument };
 
 const emptyDocument = (): WhiteboardDocument => ({ version: 2, elements: [] });
-const localKey = (workspaceId: string) => `orbit-whiteboard:${workspaceId}:main`;
+const localKey = (workspaceId: string) => `crewvilla-whiteboard:${workspaceId}:main`;
 
 export function compareElementVersion(left: Pick<WhiteboardElement, "clock" | "clientId">, right: Pick<WhiteboardElement, "clock" | "clientId">) {
   if (left.clock !== right.clock) return left.clock - right.clock;

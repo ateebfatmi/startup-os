@@ -9,9 +9,9 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript((workspaces) => {
     if (localStorage.getItem("phase1-initialized")) return;
     localStorage.setItem("phase1-initialized", "1");
-    localStorage.setItem("orbit-local-workspaces", JSON.stringify(workspaces));
-    localStorage.setItem("orbit-workspace-id", workspaces[0].id);
-    localStorage.setItem("orbit-workspace-name", workspaces[0].name);
+    localStorage.setItem("crewvilla-local-workspaces", JSON.stringify(workspaces));
+    localStorage.setItem("crewvilla-workspace-id", workspaces[0].id);
+    localStorage.setItem("crewvilla-workspace-name", workspaces[0].name);
   }, workspaces);
 });
 
@@ -43,7 +43,7 @@ test("Copilot saves reviewed tasks into Kanban, overview and office panels after
   await copilot.getByRole("button", { name: "Close dialog" }).click();
   await page.getByRole("button", { name: /^My tasks/ }).click();
   // Match the provider's exact generated title rather than assuming text from the document body.
-  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("orbit-demo-tasks-v2") || "[]").filter((task: { workspaceId: string }) => task.workspaceId === "local-alpha").map((task: { title: string }) => task.title));
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("crewvilla-demo-tasks-v2") || "[]").filter((task: { workspaceId: string }) => task.workspaceId === "local-alpha").map((task: { title: string }) => task.title));
   expect(saved).toHaveLength(2);
   const persistedTitle = saved[0];
   await expect(page.getByText(persistedTitle, { exact: true })).toBeVisible();
@@ -53,6 +53,7 @@ test("Copilot saves reviewed tasks into Kanban, overview and office panels after
   await page.getByRole("button", { name: "Overview", exact: true }).click();
   await expect(page.getByText(persistedTitle, { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Office", exact: true }).click();
+  await page.getByRole("button", { name: "Open people and tasks panel" }).click();
   await page.getByRole("button", { name: "Open office task board" }).click();
   const officeBoard = page.getByRole("dialog", { name: "Project board" });
   await expect(officeBoard.getByText(persistedTitle, { exact: true })).toBeVisible();
@@ -128,7 +129,7 @@ test("Copilot reports partial save failure and retries only unsaved suggestions"
     const original = Storage.prototype.setItem;
     let writes = 0;
     Storage.prototype.setItem = function (key, value) {
-      if (key === "orbit-demo-tasks-v2" && ++writes === 2) throw new Error("Simulated task save failure");
+      if (key === "crewvilla-demo-tasks-v2" && ++writes === 2) throw new Error("Simulated task save failure");
       return original.call(this, key, value);
     };
   });
@@ -140,7 +141,7 @@ test("Copilot reports partial save failure and retries only unsaved suggestions"
   await copilot.getByRole("checkbox").nth(1).check();
   await copilot.getByRole("button", { name: "Add 2 selected tasks" }).click();
   await expect(copilot.getByText("Added 3 reviewed tasks to My tasks.")).toBeVisible();
-  const titles = await page.evaluate(() => JSON.parse(localStorage.getItem("orbit-demo-tasks-v2") || "[]").filter((task: { workspaceId: string }) => task.workspaceId === "local-alpha").map((task: { title: string }) => task.title));
+  const titles = await page.evaluate(() => JSON.parse(localStorage.getItem("crewvilla-demo-tasks-v2") || "[]").filter((task: { workspaceId: string }) => task.workspaceId === "local-alpha").map((task: { title: string }) => task.title));
   expect(titles).toHaveLength(3);
   expect(new Set(titles).size).toBe(3);
 });

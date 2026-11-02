@@ -39,7 +39,7 @@ export async function fetchWorkspaceActivity(workspaceId: string, limit = 50): P
       id: row.id,
       workspaceId: row.workspace_id,
       actorId: row.actor_id,
-      actorName: actor?.display_name || "Orbit teammate",
+      actorName: actor?.display_name || "CrewVilla teammate",
       verb: row.verb,
       objectType: row.object_type,
       objectId: row.object_id,

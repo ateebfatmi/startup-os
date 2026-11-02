@@ -29,7 +29,7 @@ export default function OnboardingPage() {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const storedName = window.localStorage.getItem("orbit-display-name");
+    const storedName = window.localStorage.getItem("crewvilla-display-name");
     if (storedName) setDisplayName(storedName);
     if (!hasSupabaseConfig) return;
     void createSupabaseBrowserClient().auth.getUser().then(({ data }) => {
@@ -48,12 +48,12 @@ export default function OnboardingPage() {
 
     if (!hasSupabaseConfig) {
       const workspace = await createLocalWorkspace(workspaceName);
-      window.localStorage.setItem("orbit-workspace-id", workspace.id);
-      window.localStorage.setItem("orbit-display-name", profileName);
-      window.localStorage.setItem("orbit-workspace-name", workspaceName);
-      window.localStorage.setItem("orbit-workspace-type", workspaceType);
-      window.localStorage.setItem("orbit-office-template", template);
-      window.localStorage.setItem("orbit-avatar-color", avatarColor);
+      window.localStorage.setItem("crewvilla-workspace-id", workspace.id);
+      window.localStorage.setItem("crewvilla-display-name", profileName);
+      window.localStorage.setItem("crewvilla-workspace-name", workspaceName);
+      window.localStorage.setItem("crewvilla-workspace-type", workspaceType);
+      window.localStorage.setItem("crewvilla-office-template", template);
+      window.localStorage.setItem("crewvilla-avatar-color", avatarColor);
       router.push("/office");
       return;
     }
@@ -61,7 +61,7 @@ export default function OnboardingPage() {
     const supabase = createSupabaseBrowserClient();
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) { setMessage("Your session expired. Sign in again to continue."); setSubmitting(false); return; }
-    const { error: profileError } = await supabase.from("profiles").upsert({ id: user.id, display_name: profileName, avatar_config: { model: "orbit-avatar-v1", color: avatarColor } }, { onConflict: "id" });
+    const { error: profileError } = await supabase.from("profiles").upsert({ id: user.id, display_name: profileName, avatar_config: { model: "crewvilla-avatar-v1", color: avatarColor } }, { onConflict: "id" });
     if (profileError) { setMessage(profileError.message); setSubmitting(false); return; }
 
     const slug = buildWorkspaceSlug(workspaceName, user.id);
@@ -70,17 +70,17 @@ export default function OnboardingPage() {
     const { error: settingsError } = await supabase.from("workspaces").update({ settings: { type: workspaceType } }).eq("id", workspaceId);
     if (settingsError) { setMessage(settingsError.message); setSubmitting(false); return; }
 
-    window.localStorage.setItem("orbit-display-name", profileName);
-    window.localStorage.setItem("orbit-workspace-name", workspaceName);
-    window.localStorage.setItem("orbit-workspace-type", workspaceType);
-    window.localStorage.setItem("orbit-office-template", template);
-    window.localStorage.setItem("orbit-avatar-color", avatarColor);
-    window.localStorage.setItem("orbit-workspace-id", String(workspaceId));
+    window.localStorage.setItem("crewvilla-display-name", profileName);
+    window.localStorage.setItem("crewvilla-workspace-name", workspaceName);
+    window.localStorage.setItem("crewvilla-workspace-type", workspaceType);
+    window.localStorage.setItem("crewvilla-office-template", template);
+    window.localStorage.setItem("crewvilla-avatar-color", avatarColor);
+    window.localStorage.setItem("crewvilla-workspace-id", String(workspaceId));
     router.push("/office");
     router.refresh();
   };
 
-  return <main className="ambient-auth min-h-screen bg-[#f4f1e8] p-5 md:p-10"><div className="mx-auto max-w-5xl"><div className="flex items-center gap-2.5 font-extrabold tracking-tight"><div className="grid h-9 w-9 place-items-center rounded-xl bg-[#173f2b] text-[#c8f560]"><Command size={19} /></div>PZ Orbit</div><div className="mt-10 grid gap-8 lg:grid-cols-[.68fr_1.32fr]"><aside><span className="eyebrow">Workspace setup</span><h1 className="mt-3 text-4xl font-extrabold tracking-[-.05em]">Give your team a place to meet.</h1><p className="mt-4 leading-7 text-[#68736b]">Set your identity, choose a workspace style, and enter a ready-to-use 3D office.</p><div className="mt-7 space-y-3 text-sm"><CheckLine>Persistent member profile</CheckLine><CheckLine>Private workspace membership</CheckLine><CheckLine>Keyboard-ready 3D office</CheckLine><CheckLine>Project and meeting spaces</CheckLine></div></aside>
+  return <main className="ambient-auth min-h-screen bg-[#f4f1e8] p-5 md:p-10"><div className="mx-auto max-w-5xl"><div className="flex items-center gap-2.5 font-extrabold tracking-tight"><div className="grid h-9 w-9 place-items-center rounded-xl bg-[#173f2b] text-[#c8f560]"><Command size={19} /></div>CrewVilla</div><div className="mt-10 grid gap-8 lg:grid-cols-[.68fr_1.32fr]"><aside><span className="eyebrow">Workspace setup</span><h1 className="mt-3 text-4xl font-extrabold tracking-[-.05em]">Give your team a place to meet.</h1><p className="mt-4 leading-7 text-[#68736b]">Set your identity, choose a workspace style, and enter a ready-to-use 3D office.</p><div className="mt-7 space-y-3 text-sm"><CheckLine>Persistent member profile</CheckLine><CheckLine>Private workspace membership</CheckLine><CheckLine>Keyboard-ready 3D office</CheckLine><CheckLine>Project and meeting spaces</CheckLine></div></aside>
     <section className="surface-card rounded-[28px] p-5 shadow-panel md:p-7">
       <div className="grid gap-5 sm:grid-cols-2"><Field label="Your display name" icon={<UserRound size={18} />}><input value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoComplete="name" className="h-12 w-full bg-transparent pl-11 pr-4 outline-none" placeholder="Ateeb Fatmi" /></Field><Field label="Workspace name" icon={<Building2 size={18} />}><input value={name} onChange={(event) => setName(event.target.value)} className="h-12 w-full bg-transparent pl-11 pr-4 outline-none" /></Field></div>
       <fieldset className="mt-7"><legend className="text-sm font-bold">What kind of team is this?</legend><div className="mt-3 flex flex-wrap gap-2">{workspaceTypes.map((item) => <button type="button" key={item} onClick={() => setWorkspaceType(item)} className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${workspaceType === item ? "border-[#315e45] bg-[#173f2b] text-white" : "border-black/10 bg-white text-[#68736b] hover:border-black/25"}`}>{item}</button>)}</div></fieldset>

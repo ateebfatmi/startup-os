@@ -11,7 +11,7 @@ export async function GET(request: Request, context: { params: Promise<{ provide
   const origin = getSiteOrigin(request.url); const fail = (reason: string) => NextResponse.redirect(new URL(`/office?integration_error=${encodeURIComponent(reason)}`, origin));
   try {
     const { provider: rawProvider } = await context.params; if (!integrationProviders.includes(rawProvider as IntegrationProvider)) return fail("unknown_provider"); const provider = rawProvider as IntegrationProvider;
-    const url = new URL(request.url); const code = url.searchParams.get("code"); const returnedState = url.searchParams.get("state"); const storedState = (await cookies()).get(`orbit_oauth_state_${provider}`)?.value;
+    const url = new URL(request.url); const code = url.searchParams.get("code"); const returnedState = url.searchParams.get("state"); const storedState = (await cookies()).get(`crewvilla_oauth_state_${provider}`)?.value;
     if (!code || !returnedState || !storedState || returnedState !== storedState) return fail("invalid_state");
     const state = verifyOAuthState(returnedState); if (state.provider !== provider) return fail("invalid_state");
     const supabase = await createSupabaseServerClient(); const { data: { user } } = await supabase.auth.getUser(); if (!user || user.id !== state.userId) return fail("session_expired");
@@ -27,7 +27,7 @@ export async function GET(request: Request, context: { params: Promise<{ provide
     const scopes = (token.scope || token.authed_user?.scope || config.scopes.join(config.scopeSeparator)).split(/[ ,]+/).filter(Boolean);
     const { error } = await createSupabaseAdminClient().from("integration_connections").upsert({ workspace_id: state.workspaceId, provider, external_account_id: identity.id, external_account_name: identity.name, encrypted_access_token: encryptIntegrationToken(accessToken), encrypted_refresh_token: token.refresh_token ? encryptIntegrationToken(token.refresh_token) : null, scopes, expires_at: token.expires_in ? new Date(Date.now() + token.expires_in * 1000).toISOString() : null, connected_by: user.id, updated_at: new Date().toISOString() }, { onConflict: "workspace_id,provider" });
     if (error) return fail("storage_failed");
-    const response = NextResponse.redirect(new URL(`/office?integration=${provider}`, origin)); response.cookies.set(`orbit_oauth_state_${provider}`, "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: `/api/integrations/${provider}/callback`, maxAge: 0 }); return response;
+    const response = NextResponse.redirect(new URL(`/office?integration=${provider}`, origin)); response.cookies.set(`crewvilla_oauth_state_${provider}`, "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: `/api/integrations/${provider}/callback`, maxAge: 0 }); return response;
   } catch (error) { console.error("Integration callback failed", error); return fail("callback_failed"); }
 }
 

@@ -151,7 +151,7 @@ export function WhiteboardPanel({ workspaceId }: { workspaceId: string }) {
       if (element.type === "note") { context.fillStyle = element.color; context.fillRect(element.x, element.y, element.width, element.height); context.fillStyle = "#173f2b"; context.font = "600 16px sans-serif"; context.fillText(element.text.slice(0, 60), element.x + 12, element.y + 30, element.width - 24); }
       if (element.type === "text") { context.font = `700 ${element.size}px sans-serif`; context.fillText(element.text.slice(0, 80), element.x, element.y + element.size, element.width); }
     }
-    const link = document.createElement("a"); link.download = `orbit-whiteboard-${Date.now()}.png`; link.href = canvas.toDataURL(); link.click();
+    const link = document.createElement("a"); link.download = `crewvilla-whiteboard-${Date.now()}.png`; link.href = canvas.toDataURL(); link.click();
   };
 
   if (!board && !error) return <div className="grid place-items-center p-16"><Loader2 className="animate-spin" /></div>;

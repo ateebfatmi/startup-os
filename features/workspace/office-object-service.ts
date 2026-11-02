@@ -10,7 +10,7 @@ const TransformSchema = z.object({
   scale: z.number().min(0.5).max(2).default(1),
 });
 const AssetSchema = z.enum(OFFICE_ASSET_KEYS as [typeof OFFICE_ASSET_KEYS[number], ...typeof OFFICE_ASSET_KEYS]);
-const localKey = (workspaceId: string) => `orbit-office-objects:${workspaceId}`;
+const localKey = (workspaceId: string) => `crewvilla-office-objects:${workspaceId}`;
 
 function localObjects(workspaceId: string): OfficeObject[] {
   try { return z.array(z.object({ id: z.string(), assetKey: AssetSchema, transform: TransformSchema })).parse(JSON.parse(window.localStorage.getItem(localKey(workspaceId)) || "[]")).map((object) => ({ ...object, interaction: OFFICE_OBJECT_CATALOG[object.assetKey].interaction || null })); }

@@ -1244,7 +1244,7 @@ function Reception() {
         <boxGeometry args={[2.7, 0.06, 0.36]} />
         <meshStandardMaterial color="#ece3d2" roughness={0.28} />
       </mesh>
-      {/* Backlit 3D Metallic ORBIT Emblem */}
+      {/* Backlit 3D Metallic CREWVILLA Emblem */}
       <mesh position={[0, 0.65, 0.39]}>
         <boxGeometry args={[1.2, 0.28, 0.03]} />
         <meshStandardMaterial color="#173f2b" roughness={0.3} />
@@ -1388,7 +1388,7 @@ function BoardroomScreen() {
 
     ctx.font = "bold 20px -apple-system, BlinkMacSystemFont, sans-serif";
     ctx.fillStyle = "#ffffff";
-    ctx.fillText("ORBIT EXECUTIVE BOARDROOM", 56, 35);
+    ctx.fillText("CREWVILLA EXECUTIVE BOARDROOM", 56, 35);
 
     // Slide pill
     ctx.fillStyle = "rgba(200, 245, 96, 0.18)";
@@ -1722,7 +1722,7 @@ function Desk({ position, deskIndex }: { position: readonly [number, number, num
       ctx.fillRect(30, 4, 120, 26);
       ctx.fillStyle = "#c8f560";
       ctx.font = "bold 13px monospace";
-      ctx.fillText(deskIndex % 2 === 0 ? "orbit-engine.ts" : "routes.tsx", 45, 22);
+      ctx.fillText(deskIndex % 2 === 0 ? "crewvilla-engine.ts" : "routes.tsx", 45, 22);
 
       // Syntax highlighted lines
       const colors = ["#5cd0ff", "#ff7b72", "#c8f560", "#d2a8ff", "#79c0ff", "#ffa657"];
@@ -2173,7 +2173,7 @@ function Whiteboard() {
     // Top Title
     ctx.fillStyle = "#1e3a2b";
     ctx.font = "bold 20px -apple-system, BlinkMacSystemFont, sans-serif";
-    ctx.fillText("🚀 ORBIT SPRINT #14 · SYSTEM ARCHITECTURE & ROADMAP", 36, 42);
+    ctx.fillText("🚀 CREWVILLA SPRINT #14 · SYSTEM ARCHITECTURE & ROADMAP", 36, 42);
 
     // Subtitle
     ctx.fillStyle = "#68736b";

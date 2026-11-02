@@ -32,7 +32,7 @@ const ResourceInput = z.object({
 
 const NoteContent = z.object({ body: z.string().default("") });
 const LinkContent = z.object({ url: z.string().url(), description: z.string().default("") });
-const localKey = (workspaceId: string, meetingId: string) => `orbit-meeting-collaboration:${workspaceId}:${meetingId}`;
+const localKey = (workspaceId: string, meetingId: string) => `crewvilla-meeting-collaboration:${workspaceId}:${meetingId}`;
 
 function readLocal(workspaceId: string, meetingId: string): MeetingCollaboration {
   if (typeof window === "undefined") return { noteId: null, notes: "", resources: [] };

@@ -41,7 +41,7 @@ export class BrowserChannelTransport implements MultiplayerTransport {
 
   constructor(private readonly workspaceId: string) {}
 
-  private get storageKey() { return `orbit-presence-event:${this.workspaceId}`; }
+  private get storageKey() { return `crewvilla-presence-event:${this.workspaceId}`; }
 
   async connect(events: MultiplayerEvents) {
     this.events = events;
@@ -50,7 +50,7 @@ export class BrowserChannelTransport implements MultiplayerTransport {
       events.onState("offline", "This browser does not support local presence");
       return;
     }
-    this.channel = new BroadcastChannel(`orbit:${this.workspaceId}`);
+    this.channel = new BroadcastChannel(`crewvilla:${this.workspaceId}`);
     window.addEventListener("pagehide", this.handlePageHide);
     window.addEventListener("storage", this.handleStorage);
     this.channel.onmessage = (event: MessageEvent<unknown>) => {

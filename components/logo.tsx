@@ -14,7 +14,7 @@ export function Logo({
   className = "",
   showText = true,
   textColor,
-  text = "PZ Orbit",
+  text = "CrewVilla",
 }: LogoProps) {
   let dimension = 36;
   let textClass = "text-lg";
@@ -43,7 +43,7 @@ export function Logo({
       >
         <Image
           src="/logo.png"
-          alt="PZ Orbit"
+          alt="CrewVilla"
           className="h-full w-full object-contain p-0.5"
           width={dimension}
           height={dimension}

@@ -1,4 +1,4 @@
-# Orbit implementation checklist
+# CrewVilla implementation checklist
 
 ## Phase 0 — repository and architecture
 

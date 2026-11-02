@@ -76,9 +76,9 @@ export function WorkspaceShell() {
   const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([DEMO_WORKSPACE]);
   useEffect(() => {
     const localIdentity = {
-      displayName: window.localStorage.getItem("orbit-display-name") || "Ateeb Fatmi",
-      workspaceName: window.localStorage.getItem("orbit-workspace-name") || "Northstar Labs",
-      workspaceId: window.localStorage.getItem("orbit-workspace-id") || DEMO_WORKSPACE.id,
+      displayName: window.localStorage.getItem("crewvilla-display-name") || "Ateeb Fatmi",
+      workspaceName: window.localStorage.getItem("crewvilla-workspace-name") || "Northstar Labs",
+      workspaceId: window.localStorage.getItem("crewvilla-workspace-id") || DEMO_WORKSPACE.id,
       workspaceRole: "owner" as WorkspaceSummary["role"],
     };
     if (!hasSupabaseConfig) {
@@ -113,12 +113,12 @@ export function WorkspaceShell() {
       setWorkspaces(availableWorkspaces);
       setIdentity(nextIdentity);
       setIdentityReady(true);
-      window.localStorage.setItem("orbit-display-name", nextIdentity.displayName);
-      window.localStorage.setItem("orbit-workspace-name", nextIdentity.workspaceName);
-      window.localStorage.setItem("orbit-workspace-id", nextIdentity.workspaceId);
+      window.localStorage.setItem("crewvilla-display-name", nextIdentity.displayName);
+      window.localStorage.setItem("crewvilla-workspace-name", nextIdentity.workspaceName);
+      window.localStorage.setItem("crewvilla-workspace-id", nextIdentity.workspaceId);
       const avatarConfig = profile?.avatar_config as { color?: unknown } | null;
       if (typeof avatarConfig?.color === "string" && /^#[0-9a-f]{6}$/i.test(avatarConfig.color)) {
-        window.localStorage.setItem("orbit-avatar-color", avatarConfig.color);
+        window.localStorage.setItem("crewvilla-avatar-color", avatarConfig.color);
         const player = useOfficeStore.getState().player;
         useOfficeStore.getState().setPlayerIdentity({ id: player.id, name: nextIdentity.displayName, color: avatarConfig.color });
       }
@@ -128,8 +128,8 @@ export function WorkspaceShell() {
   const selectWorkspace = (workspace: WorkspaceSummary) => {
     closeWorkspacePanels();
     setIdentity((current) => ({ ...current, workspaceId: workspace.id, workspaceName: workspace.name, workspaceRole: workspace.role }));
-    window.localStorage.setItem("orbit-workspace-id", workspace.id);
-    window.localStorage.setItem("orbit-workspace-name", workspace.name);
+    window.localStorage.setItem("crewvilla-workspace-id", workspace.id);
+    window.localStorage.setItem("crewvilla-workspace-name", workspace.name);
     useOfficeStore.getState().clearRemotePlayers();
   };
   if (identityError) return <div role="alert" className="p-8">{identityError}</div>;
@@ -203,7 +203,7 @@ function WorkspaceContent({ identity, workspaces, selectWorkspace }: { identity:
           onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
           onExit={async () => {
             if (hasSupabaseConfig) await createSupabaseBrowserClient().auth.signOut();
-            ["orbit-display-name", "orbit-workspace-name", "orbit-workspace-id", "orbit-workspace-type", "orbit-office-template"].forEach((key) => window.localStorage.removeItem(key));
+            ["crewvilla-display-name", "crewvilla-workspace-name", "crewvilla-workspace-id", "crewvilla-workspace-type", "crewvilla-office-template"].forEach((key) => window.localStorage.removeItem(key));
             router.push("/login");
             router.refresh();
           }}
@@ -264,11 +264,11 @@ function Sidebar({ view, setView, mobileNav, onClose, taskCount, workspaceName, 
     {mobileNav && <button className="fixed inset-0 z-30 bg-black/35 lg:hidden" aria-label="Close navigation" onClick={onClose} />}
     <aside className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-white/[.06] bg-[linear-gradient(180deg,#173f2b_0%,#102f21_100%)] p-2.5 text-[#f5f0e4] shadow-2xl transition-all lg:static lg:translate-x-0 lg:shadow-none ${mobileNav ? "translate-x-0 w-[17rem]" : "-translate-x-full lg:translate-x-0"} ${isCollapsed ? "lg:w-[4.5rem]" : "lg:w-[17rem]"}`}>
       <div className={`flex h-14 items-center ${isCollapsed ? "justify-center px-0" : "justify-between px-2"}`}>
-        <button onClick={onToggleCollapse} title={isCollapsed ? "Expand sidebar (shortcut)" : "Orbit Workspace OS"} className="flex items-center gap-2.5 rounded-xl hover:bg-white/10 p-1.5 transition">
+        <button onClick={onToggleCollapse} title={isCollapsed ? "Expand sidebar (shortcut)" : "CrewVilla Workspace OS"} className="flex items-center gap-2.5 rounded-xl hover:bg-white/10 p-1.5 transition">
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[13px] bg-[#c8f560] text-[#173f2b] shadow-[0_8px_24px_rgba(200,245,96,.18)]">
             <Command size={19} strokeWidth={2.7} />
           </div>
-          {!isCollapsed && <div><div className="text-[15px] font-extrabold leading-none tracking-[-.02em]">PZ Orbit</div><div className="mt-1 text-[9px] font-bold uppercase tracking-[.18em] text-white/35">Workspace OS</div></div>}
+          {!isCollapsed && <div><div className="text-[15px] font-extrabold leading-none tracking-[-.02em]">CrewVilla</div><div className="mt-1 text-[9px] font-bold uppercase tracking-[.18em] text-white/35">Workspace OS</div></div>}
         </button>
         {!isCollapsed && (
           <button className="hidden lg:grid h-8 w-8 place-items-center rounded-lg text-white/50 hover:bg-white/10 hover:text-white" onClick={onToggleCollapse} title="Collapse sidebar (more office area)">
@@ -700,6 +700,8 @@ function GatherBottomDock({
       {/* People Toggle */}
       <button
         onClick={onToggleRail}
+        aria-label={rightRail ? "Close people and tasks panel" : "Open people and tasks panel"}
+        aria-expanded={rightRail}
         className={`flex h-10 items-center gap-1.5 rounded-xl border border-black/10 px-2.5 text-xs font-bold transition shadow-xs cursor-pointer ${
           rightRail ? "bg-[#173f2b] text-[#c8f560]" : "bg-white/80 text-[#173f2b] hover:bg-black/5"
         }`}
@@ -870,11 +872,11 @@ function Metric({ label, value, note, color }: { label: string; value: string; n
 function QuickStartDialog({ open, onClose, onNavigate }: { open: boolean; onClose: () => void; onNavigate: (view: View) => void }) {
   return <Dialog open={open} title="Make yourself at home" onClose={onClose}>
     <div className="rounded-[22px] bg-[#173f2b] p-5 text-white">
-      <div className="flex items-start gap-4"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#c8f560] text-[#173f2b]"><Command size={22} /></div><div><h3 className="font-bold">Orbit keeps work and presence in one place</h3><p className="mt-1 text-sm leading-6 text-white/65">Move through the office, find your priorities, and start collaborating without hunting through menus.</p></div></div>
+      <div className="flex items-start gap-4"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#c8f560] text-[#173f2b]"><Command size={22} /></div><div><h3 className="font-bold">CrewVilla keeps work and presence in one place</h3><p className="mt-1 text-sm leading-6 text-white/65">Move through the office, find your priorities, and start collaborating without hunting through menus.</p></div></div>
     </div>
     <div className="mt-4 grid gap-3 sm:grid-cols-2">
       <section className="rounded-2xl border border-black/[.07] bg-white p-4"><div className="flex items-center gap-2 font-bold"><DoorOpen size={17} className="text-[#397455]" /> Explore the office</div><p className="mt-2 text-sm leading-6 text-[#68736b]">Use WASD or arrow keys, click the floor to walk, and press E near an object to interact.</p></section>
-      <section className="rounded-2xl border border-black/[.07] bg-white p-4"><div className="flex items-center gap-2 font-bold"><Headphones size={17} className="text-[#397455]" /> Talk when you choose</div><p className="mt-2 text-sm leading-6 text-[#68736b]">Huddles and proximity audio are opt-in. Orbit asks before using your microphone or camera.</p></section>
+      <section className="rounded-2xl border border-black/[.07] bg-white p-4"><div className="flex items-center gap-2 font-bold"><Headphones size={17} className="text-[#397455]" /> Talk when you choose</div><p className="mt-2 text-sm leading-6 text-[#68736b]">Huddles and proximity audio are opt-in. CrewVilla asks before using your microphone or camera.</p></section>
       <section className="rounded-2xl border border-black/[.07] bg-white p-4"><div className="flex items-center gap-2 font-bold"><Search size={17} className="text-[#397455]" /> Jump anywhere</div><p className="mt-2 text-sm leading-6 text-[#68736b]">Open workspace search with <kbd className="rounded-md bg-black/5 px-1.5 py-0.5 text-xs">⌘ K</kbd> or use the search button on any screen.</p></section>
       <section className="rounded-2xl border border-black/[.07] bg-white p-4"><div className="flex items-center gap-2 font-bold"><Users size={17} className="text-[#397455]" /> Know who is around</div><p className="mt-2 text-sm leading-6 text-[#68736b]">Open the people panel to see availability. Set your own status from the top bar.</p></section>
     </div>
@@ -904,7 +906,7 @@ function MeetingPanel({ huddle }: { huddle: HuddleController }) {
   const waiting = huddle.status === "requesting_permission" || huddle.status === "joining";
   return <div>
     <div className="rounded-2xl bg-[#173f2b] p-5 text-white"><div className="flex flex-wrap items-start justify-between gap-4"><div><Badge className="bg-[#c8f560] text-[#173f2b]">TODAY · 3:30 PM</Badge><p className="mt-4 max-w-md text-sm leading-6 text-white/70">Align on launch blockers, review beta readiness, and leave with one owner per open decision.</p></div><div className="flex items-center gap-2 text-xs text-white/60"><Wifi size={15} /> Peer-to-peer huddle</div></div></div>
-    {huddle.status === "idle" || huddle.status === "error" ? <div className="mt-5 rounded-2xl border border-black/[.08] bg-white p-5"><h3 className="font-bold">Choose how to join</h3><p className="mt-2 text-sm leading-6 text-[#68736b]">Your browser will ask before Orbit accesses a microphone or camera. Nothing starts automatically.</p>{huddle.error && <p className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-800">{huddle.error}</p>}<div className="mt-5 flex flex-wrap gap-2"><Button onClick={() => void huddle.join(true)}><Video size={17} /> Join with camera</Button><Button variant="outline" onClick={() => void huddle.join(false)}><Mic size={17} /> Audio only</Button></div></div> : null}
+    {huddle.status === "idle" || huddle.status === "error" ? <div className="mt-5 rounded-2xl border border-black/[.08] bg-white p-5"><h3 className="font-bold">Choose how to join</h3><p className="mt-2 text-sm leading-6 text-[#68736b]">Your browser will ask before CrewVilla accesses a microphone or camera. Nothing starts automatically.</p>{huddle.error && <p className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-800">{huddle.error}</p>}<div className="mt-5 flex flex-wrap gap-2"><Button onClick={() => void huddle.join(true)}><Video size={17} /> Join with camera</Button><Button variant="outline" onClick={() => void huddle.join(false)}><Mic size={17} /> Audio only</Button></div></div> : null}
     {waiting && <div className="mt-5 flex items-center gap-3 rounded-2xl bg-[#eef4ea] p-5 text-sm text-[#315e45]"><Loader2 className="animate-spin" size={18} /> Waiting for media permission…</div>}
     {huddle.status === "connected" && <><div className="mt-5 grid gap-3 sm:grid-cols-2">{participants.map((participant) => <VideoTile key={participant.id} participant={participant} />)}</div><div className="mt-4 flex flex-wrap items-center gap-2"><Button variant={local?.microphoneEnabled ? "solid" : "outline"} size="icon" onClick={huddle.toggleMicrophone} aria-label={local?.microphoneEnabled ? "Mute microphone" : "Unmute microphone"}>{local?.microphoneEnabled ? <Mic size={18} /> : <MicOff size={18} />}</Button><Button variant={local?.cameraEnabled ? "solid" : "outline"} size="icon" onClick={huddle.toggleCamera} aria-label={local?.cameraEnabled ? "Turn camera off" : "Turn camera on"}>{local?.cameraEnabled ? <Video size={18} /> : <VideoOff size={18} />}</Button><Button variant={local?.screenSharing ? "solid" : "outline"} onClick={() => void huddle.toggleScreenShare()} aria-label={local?.screenSharing ? "Stop sharing screen" : "Share screen"}><MonitorUp size={17} /> {local?.screenSharing ? "Stop sharing" : "Share screen"}</Button><Button className="ml-auto bg-[#b64b3e] hover:bg-[#9f3f34]" onClick={() => void huddle.leave()}><PhoneOff size={17} /> Leave huddle</Button></div></>}
   </div>;

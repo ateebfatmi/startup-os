@@ -1,6 +1,6 @@
-# Orbit
+# CrewVilla
 
-Orbit is a spatial startup operating system built around a navigable 3D office. The current small-team release combines the production application foundation, premium 3D office, realtime collaboration, Startup OS workflows, integrations, and commercial infrastructure while keeping database and networking concerns outside the render loop.
+CrewVilla is a spatial startup operating system built around a navigable 3D office. The current small-team release combines the production application foundation, premium 3D office, realtime collaboration, Startup OS workflows, integrations, and commercial infrastructure while keeping database and networking concerns outside the render loop.
 
 ## What works now
 
@@ -66,7 +66,7 @@ Without a provider key, Copilot clearly reports **Professional local mode** and 
 ### Authentication configuration
 
 - Set the Supabase Auth site URL to `http://localhost:3000` for local development and to the canonical HTTPS origin in production.
-- Add both origins to the redirect allowlist. Orbit returns email verification and OAuth responses through `/auth/callback`; password recovery continues from that callback to `/reset-password`.
+- Add both origins to the redirect allowlist. CrewVilla returns email verification and OAuth responses through `/auth/callback`; password recovery continues from that callback to `/reset-password`.
 - Enable the Google provider in Supabase only after configuring its OAuth client and the Supabase callback URL shown by the provider settings.
 - When email confirmation is enabled, new users remain on the login screen until they follow the verification link. When disabled, onboarding begins immediately.
 - `/office`, `/onboarding`, and `/reset-password` are session-protected whenever public Supabase credentials are configured. Without credentials, they remain available for the explicit local demo.

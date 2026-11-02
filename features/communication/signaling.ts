@@ -19,7 +19,7 @@ class BrowserSignalingTransport implements SignalingTransport {
   constructor(private readonly workspaceId: string, private readonly roomId: string) {}
   async connect(onMessage: (message: SignalMessage) => void) {
     if (typeof BroadcastChannel === "undefined") throw new Error("This browser does not support local call signaling.");
-    this.channel = new BroadcastChannel(`orbit-call:${this.workspaceId}:${this.roomId}`);
+    this.channel = new BroadcastChannel(`crewvilla-call:${this.workspaceId}:${this.roomId}`);
     this.channel.onmessage = (event: MessageEvent<unknown>) => { if (isSignalMessage(event.data)) onMessage(event.data); };
   }
   async send(message: SignalMessage) { this.channel?.postMessage(message); }

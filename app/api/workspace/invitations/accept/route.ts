@@ -19,7 +19,7 @@ export async function GET(request: Request) {
         id: "inv-preview-demo",
         workspaceId: DEMO_WORKSPACE.id,
         workspaceName: DEMO_WORKSPACE.name,
-        email: "invited@orbit.workspace",
+        email: "invited@crewvilla.workspace",
         role: "member",
         expiresAt: new Date(Date.now() + 7 * 86400 * 1000).toISOString(),
         inviterName: "Ateeb Fatmi",

@@ -9,7 +9,7 @@ const DesignSchema = z.object({
   plantsEnabled: z.boolean(),
 });
 
-const localKey = (workspaceId: string) => `orbit-office-design:${workspaceId}`;
+const localKey = (workspaceId: string) => `crewvilla-office-design:${workspaceId}`;
 
 export async function loadOfficeDesign(workspaceId: string): Promise<OfficeDesignSettings> {
   if (!hasSupabaseConfig) {

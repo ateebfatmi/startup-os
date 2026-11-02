@@ -29,7 +29,7 @@ const DocumentMetadataSchema = z.object({
   size: z.number().int().nonnegative(),
 });
 
-const LOCAL_DOCUMENTS_KEY = "orbit-demo-documents";
+const LOCAL_DOCUMENTS_KEY = "crewvilla-demo-documents";
 
 function localDocuments(): WorkspaceDocument[] {
   if (typeof window === "undefined") return [];

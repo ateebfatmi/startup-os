@@ -12,7 +12,7 @@ export default function ErrorPage({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Orbit application error", error);
+    console.error("CrewVilla application error", error);
   }, [error]);
 
   return (

@@ -7,7 +7,7 @@ export function GET() {
   return NextResponse.json(
     {
       status: "ok",
-      service: "orbit-hq",
+      service: "crewvilla",
       version: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12) || "local",
       database: hasSupabaseConfig ? "configured" : "demo-mode",
       timestamp: new Date().toISOString(),

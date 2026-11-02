@@ -9,13 +9,13 @@ import { createTransport } from "./transport";
 const AVATAR_COLORS = ["#58a77b", "#6c86d9", "#d06fa9", "#e5a13e", "#7863c6"];
 
 function getSessionIdentity() {
-  const storedId = window.sessionStorage.getItem("orbit-player-id");
+  const storedId = window.sessionStorage.getItem("crewvilla-player-id");
   const id = storedId ?? crypto.randomUUID();
-  if (!storedId) window.sessionStorage.setItem("orbit-player-id", id);
+  if (!storedId) window.sessionStorage.setItem("crewvilla-player-id", id);
   const colorIndex = Array.from(id).reduce((total, char) => total + char.charCodeAt(0), 0) % AVATAR_COLORS.length;
-  const savedColor = window.localStorage.getItem("orbit-avatar-color");
+  const savedColor = window.localStorage.getItem("crewvilla-avatar-color");
   const color = savedColor && /^#[0-9a-f]{6}$/i.test(savedColor) ? savedColor : AVATAR_COLORS[colorIndex];
-  return { id, name: window.localStorage.getItem("orbit-display-name") || "Teammate", color };
+  return { id, name: window.localStorage.getItem("crewvilla-display-name") || "Teammate", color };
 }
 
 export function useMultiplayer(workspaceId: string) {

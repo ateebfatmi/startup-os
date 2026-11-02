@@ -15,6 +15,6 @@ describe("auth utilities", () => {
 
   it("builds readable initials", () => {
     expect(initialsFor("Ateeb Fatmi")).toBe("AF");
-    expect(initialsFor("Orbit")).toBe("O");
+    expect(initialsFor("CrewVilla")).toBe("C");
   });
 });

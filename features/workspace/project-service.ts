@@ -148,9 +148,9 @@ export const INITIAL_DEMO_COMMENTS: TaskComment[] = [
   },
 ];
 
-const LOCAL_PROJECTS_KEY = "orbit-demo-projects";
-const LOCAL_TASKS_KEY = "orbit-demo-tasks-v2";
-const LOCAL_COMMENTS_KEY = "orbit-demo-task-comments";
+const LOCAL_PROJECTS_KEY = "crewvilla-demo-projects";
+const LOCAL_TASKS_KEY = "crewvilla-demo-tasks-v2";
+const LOCAL_COMMENTS_KEY = "crewvilla-demo-task-comments";
 
 let memoryProjects: Project[] | null = null;
 let memoryTasks: TaskItem[] | null = null;
@@ -185,12 +185,12 @@ export function getStoredLocalTasks(): TaskItem[] {
   const data = window.localStorage.getItem(LOCAL_TASKS_KEY);
   let tasks: TaskItem[] = INITIAL_DEMO_TASKS;
   try { if (data) { const stored = JSON.parse(data); if (Array.isArray(stored)) tasks = stored; } } catch { /* Retain demo seed on corrupt storage. */ }
-  if (!window.localStorage.getItem("orbit-demo-tasks-migrated-v3")) {
+  if (!window.localStorage.getItem("crewvilla-demo-tasks-migrated-v3")) {
     let legacy: unknown = [];
     try { legacy = JSON.parse(window.localStorage.getItem("orbit-demo-tasks") || "[]"); } catch { /* Invalid legacy rows are ignored. */ }
     tasks = mergeLegacyDemoTasks(tasks, legacy, DEMO_WORKSPACE.id);
     window.localStorage.setItem(LOCAL_TASKS_KEY, JSON.stringify(tasks));
-    window.localStorage.setItem("orbit-demo-tasks-migrated-v3", "1");
+    window.localStorage.setItem("crewvilla-demo-tasks-migrated-v3", "1");
   }
   return tasks;
 }

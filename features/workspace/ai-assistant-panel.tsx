@@ -41,7 +41,7 @@ const modes: Array<{ id: CopilotMode; label: string; description: string; icon: 
 const quickPrompts: Record<Exclude<CopilotMode, "tasks_summary">, string[]> = {
   chat: ["Build a 30-day activation plan", "How should we prioritize our next release?", "Identify the riskiest assumption in our product strategy"],
   prd: ["Proximity audio for small team huddles", "Workspace onboarding and activation", "AI meeting notes with reviewed action items"],
-  pitch: ["Orbit Spatial OS", "Create an investor narrative for our next fundraising meeting"],
+  pitch: ["CrewVilla Spatial OS", "Create an investor narrative for our next fundraising meeting"],
 };
 
 export function AIAssistantPanel({ tasks, addTask, workspaceName }: Props) {
@@ -148,7 +148,7 @@ export function AIAssistantPanel({ tasks, addTask, workspaceName }: Props) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `orbit-${mode}-${new Date().toISOString().slice(0, 10)}.md`;
+    link.download = `crewvilla-${mode}-${new Date().toISOString().slice(0, 10)}.md`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -187,7 +187,7 @@ export function AIAssistantPanel({ tasks, addTask, workspaceName }: Props) {
         <div className="flex flex-wrap items-start justify-between gap-4 p-5">
           <div className="flex items-start gap-3">
             <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#c8f560] text-[#173f2b]"><Bot size={23} /></div>
-            <div><div className="flex flex-wrap items-center gap-2"><h3 className="text-lg font-bold">Orbit Copilot</h3><Badge className="bg-white/10 text-[#c8f560]">Professional workspace intelligence</Badge></div><p className="mt-1 max-w-xl text-sm leading-6 text-white/65">Turn workspace context into decisions, product specifications, investor narratives, and reviewed execution plans.</p></div>
+            <div><div className="flex flex-wrap items-center gap-2"><h3 className="text-lg font-bold">CrewVilla Copilot</h3><Badge className="bg-white/10 text-[#c8f560]">Professional workspace intelligence</Badge></div><p className="mt-1 max-w-xl text-sm leading-6 text-white/65">Turn workspace context into decisions, product specifications, investor narratives, and reviewed execution plans.</p></div>
           </div>
           <div className="flex items-center gap-2 rounded-xl bg-white/[.07] px-3 py-2 text-xs text-white/70"><ShieldCheck size={16} className="text-[#c8f560]" /><span>Review required before any action</span></div>
         </div>

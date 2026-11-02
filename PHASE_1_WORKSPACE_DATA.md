@@ -2,7 +2,7 @@
 
 ## Audit findings and implementation
 
-Previously, the office shell/overview/Copilot used `orbit-demo-tasks`, while Kanban used a separate repository. The office project dialog hardcoded the demo workspace, and demo repository reads treated that workspace as a wildcard. Kanban retained its own snapshot and could display a late response from a previous workspace.
+Previously, the office shell/overview/Copilot used the legacy `orbit-demo-tasks` key, while Kanban used a separate repository. The office project dialog hardcoded the demo workspace, and demo repository reads treated that workspace as a wildcard. Kanban retained its own snapshot and could display a late response from a previous workspace.
 
 All task surfaces now use `project-service.ts` as the persistence boundary and a TanStack Query snapshot keyed by workspace ID. Authenticated reads and writes continue through the existing session-bound Supabase client and existing RLS. There are no new service-role paths or public realtime channels.
 
@@ -24,7 +24,7 @@ The one intentional demo workspace ID remains in `DEMO_WORKSPACE`. Sample fixtur
 ## Migrations and data safety
 
 - No SQL migration, schema change, auth-policy change, or RLS change is required or applied.
-- Local-only migration: once per browser profile, merge valid missing legacy `orbit-demo-tasks` rows into `orbit-demo-tasks-v2`, then set `orbit-demo-tasks-migrated-v3`.
+- Local-only migration: once per browser profile, merge valid missing legacy `orbit-demo-tasks` rows into `crewvilla-demo-tasks-v2`, then set `crewvilla-demo-tasks-migrated-v3`.
 - Legacy rows have no workspace identity, so they belong only to the original demo. They are never imported into an authenticated workspace or a newly created demo workspace.
 - Existing canonical IDs win collisions; legacy storage is retained. Relative legacy deadlines remain contextual text rather than guessed dates.
 - No deployment, remote database write, provider connection, or production-data operation was performed.
@@ -42,7 +42,7 @@ The one intentional demo workspace ID remains in `DEMO_WORKSPACE`. Sample fixtur
 - `npm run check`: PASS on the final source revision. Includes TypeScript checking, ESLint (no warnings/errors), all 65 unit/security tests across 16 files, and the optimized Next.js production build.
 - Full existing + Phase 1 browser run: 30/30 passed in 1.2 minutes.
 - Final Phase 1 browser run after adding the partial-failure regression: 5/5 passed in 18.7 seconds. Together the runs cover 31 distinct browser tests; the complete 31-test suite was not rerun as a single invocation.
-- Browser command: `npx playwright test --config=/private/tmp/orbit-phase1.playwright.config.ts` (full run), then the same command with `workspace-data.spec.ts` (final targeted run).
+- Browser command: `npm run test:e2e` (full run), then the same Playwright command with `workspace-data.spec.ts` for a targeted run.
 - Browser configuration reused the repository Playwright configuration and the installed Google Chrome executable because a bundled Playwright Chromium runtime was absent. The temporary override did not change repository test configuration. Browser runs used the local Next.js development server; the optimized production build was checked separately.
 - The first targeted browser attempt exposed a test-selector error: the shared task count changes the accessible button name from `My tasks` to `My tasks 2`. The selector now matches the label prefix; subsequent full and targeted runs passed.
 - `git diff --check`: PASS.
