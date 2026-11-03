@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { SignInButton } from "@clerk/nextjs";
 import { Command, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -70,13 +71,6 @@ export default function LoginPage() {
     router.push(requested);
   };
 
-  const startGoogle = async () => {
-    setMessage(null);
-    if (!hasSupabaseConfig) { setMessage("Connect Supabase before enabling Google sign-in."); return; }
-    const redirectTo = `${window.location.origin}/auth/callback?next=/office`;
-    const { error } = await createSupabaseBrowserClient().auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
-    if (error) setMessage(error.message);
-  };
 
   const title = mode === "signup" ? "Create your account" : mode === "recovery" ? "Reset your password" : "Enter your workspace";
   const eyebrow = mode === "signup" ? "START YOUR WORKSPACE" : mode === "recovery" ? "ACCOUNT RECOVERY" : "WELCOME BACK";
@@ -95,7 +89,18 @@ export default function LoginPage() {
         {message && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-800">{message}</p>}{notice && <p className="rounded-xl bg-[#e8f5e9] p-3 text-sm text-[#276141]">{notice}</p>}
         <Button className="w-full" type={hasSupabaseConfig ? "submit" : "button"} onClick={hasSupabaseConfig ? undefined : () => router.push("/office")} disabled={isSubmitting}>{isSubmitting ? "Working…" : !hasSupabaseConfig ? "Enter local demo" : mode === "signup" ? "Create account" : mode === "recovery" ? "Send reset link" : "Sign in"}</Button>
       </form>
-      {hasSupabaseConfig && mode !== "recovery" && <><div className="my-5 flex items-center gap-3 text-xs text-[#899089]"><span className="h-px flex-1 bg-black/10" />OR<span className="h-px flex-1 bg-black/10" /></div><Button variant="outline" className="w-full" type="button" onClick={() => void startGoogle()}>Continue with Google</Button></>}
+      {hasSupabaseConfig && mode !== "recovery" && (
+        <>
+          <div className="my-5 flex items-center gap-3 text-xs text-[#899089]">
+            <span className="h-px flex-1 bg-black/10" />OR<span className="h-px flex-1 bg-black/10" />
+          </div>
+          <SignInButton mode="modal" forceRedirectUrl="/office">
+            <Button variant="outline" className="w-full" type="button">
+              Continue with Google (via Clerk)
+            </Button>
+          </SignInButton>
+        </>
+      )}
       <div className="mt-5 flex items-center justify-between text-sm">{mode === "signin" ? <><button type="button" onClick={() => { setMode("signup"); setMessage(null); setNotice(null); }} className="font-semibold text-[#315e45] hover:underline">Create an account</button><button type="button" onClick={() => { setMode("recovery"); setMessage(null); setNotice(null); }} className="text-[#68736b] hover:underline">Forgot password?</button></> : <button type="button" onClick={() => { setMode("signin"); setMessage(null); setNotice(null); }} className="font-semibold text-[#315e45] hover:underline">Back to sign in</button>}</div>
       {!hasSupabaseConfig && <p className="mt-8 rounded-2xl border border-[#dfd5a8] bg-[#fff6c8] p-4 text-sm leading-6 text-[#66551d]">Supabase credentials are not present, so this build opens in local demo mode. No account data leaves your browser.</p>}
     </div></section>

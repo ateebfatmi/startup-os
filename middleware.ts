@@ -21,8 +21,10 @@ export async function middleware(request: NextRequest) {
   });
 
   const { data: { user } } = await supabase.auth.getUser();
+  const hasClerkSession = !!request.cookies.get("__session") || !!request.cookies.get("__client_uat");
+  const isAuthenticated = !!user || hasClerkSession;
   const needsUser = protectedPaths.some((path) => request.nextUrl.pathname.startsWith(path));
-  if (!user && needsUser) {
+  if (!isAuthenticated && needsUser) {
     const login = request.nextUrl.clone();
     login.pathname = "/login";
     login.searchParams.set("next", `${request.nextUrl.pathname}${request.nextUrl.search}`);
