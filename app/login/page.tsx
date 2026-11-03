@@ -39,7 +39,7 @@ export default function LoginPage() {
 
     if (mode === "recovery") {
       const redirectTo = `${window.location.origin}/auth/callback?next=/reset-password`;
-      const { error } = await supabase.auth.resetPasswordForEmail(values.email, { redirectTo });
+      const { error } = await supabase.auth.resetPasswordForEmail(values.email.trim(), { redirectTo });
       if (error) { setMessage(error.message); return; }
       setNotice("Check your inbox for a secure password-reset link.");
       return;
@@ -47,10 +47,12 @@ export default function LoginPage() {
 
     if (mode === "signup") {
       const displayName = values.displayName?.trim();
+      const email = values.email.trim();
+      const password = values.password?.trim() || "";
       if (!displayName) { setMessage("Enter the name your teammates should see."); return; }
-      if (!values.password || values.password.length < 8) { setMessage("Use at least 8 password characters."); return; }
+      if (password.length < 8) { setMessage("Use at least 8 password characters."); return; }
       const emailRedirectTo = `${window.location.origin}/auth/callback?next=/onboarding`;
-      const { data, error } = await supabase.auth.signUp({ email: values.email, password: values.password, options: { emailRedirectTo, data: { display_name: displayName } } });
+      const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo, data: { display_name: displayName } } });
       if (error) { setMessage(error.message); return; }
       window.localStorage.setItem("crewvilla-display-name", displayName);
       if (!data.session) { setNotice("Account created. Verify your email to finish setting up your workspace."); return; }
@@ -58,8 +60,10 @@ export default function LoginPage() {
       return;
     }
 
-    if (!values.password || values.password.length < 8) { setMessage("Use at least 8 password characters."); return; }
-    const { data, error } = await supabase.auth.signInWithPassword({ email: values.email, password: values.password });
+    const email = values.email.trim();
+    const password = values.password?.trim() || "";
+    if (password.length < 8) { setMessage("Use at least 8 password characters."); return; }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) { setMessage(error.message); return; }
     const { data: memberships } = await supabase.from("workspace_members").select("workspace_id").eq("user_id", data.user.id).limit(1);
     const requested = safeNextPath(new URLSearchParams(window.location.search).get("next"), memberships?.length ? "/office" : "/onboarding");
