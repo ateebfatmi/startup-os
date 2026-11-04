@@ -26,7 +26,16 @@ export async function fetchMyWorkspaces(): Promise<WorkspaceSummary[]> {
 
   const supabase = createSupabaseBrowserClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Authentication required");
+  if (!user) {
+    if (typeof window !== "undefined") {
+      try {
+        const stored: unknown = JSON.parse(window.localStorage.getItem("crewvilla-local-workspaces") || "[]");
+        const workspaces = Array.isArray(stored) ? stored.filter((value): value is WorkspaceSummary => value && typeof value.id === "string" && typeof value.name === "string" && typeof value.slug === "string" && value.role === "owner" && value.id !== DEMO_WORKSPACE.id) : [];
+        return [DEMO_WORKSPACE, ...workspaces];
+      } catch { return [DEMO_WORKSPACE]; }
+    }
+    return [DEMO_WORKSPACE];
+  }
 
   const { data, error } = await supabase
     .from("workspace_members")

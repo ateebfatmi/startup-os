@@ -1,47 +1,44 @@
-import { createServerClient, type SetAllCookies } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
-const protectedPaths = ["/office", "/onboarding", "/reset-password"];
+export default clerkMiddleware(
+  async (auth, request) => {
+    const pathname = request.nextUrl.pathname;
+    const isProtected =
+      pathname.startsWith("/office") ||
+      pathname.startsWith("/onboarding") ||
+      pathname.startsWith("/reset-password");
 
-export async function middleware(request: NextRequest) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return NextResponse.next();
-
-  let response = NextResponse.next({ request });
-  const supabase = createServerClient(url, key, {
-    cookies: {
-      getAll: () => request.cookies.getAll(),
-      setAll: (values: Parameters<SetAllCookies>[0]) => {
-        values.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
-        values.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
-      },
-    },
-  });
-
-  const { data: { user } } = await supabase.auth.getUser();
-  const hasClerkSession = !!request.cookies.get("__session") || !!request.cookies.get("__client_uat");
-  const isAuthenticated = !!user || hasClerkSession;
-  const needsUser = protectedPaths.some((path) => request.nextUrl.pathname.startsWith(path));
-  if (!isAuthenticated && needsUser) {
-    const login = request.nextUrl.clone();
-    login.pathname = "/login";
-    login.searchParams.set("next", `${request.nextUrl.pathname}${request.nextUrl.search}`);
-    return NextResponse.redirect(login);
-  }
-  if (user && request.nextUrl.pathname.startsWith("/office")) {
-    const { data: memberships } = await supabase.from("workspace_members").select("workspace_id").eq("user_id", user.id).limit(1);
-    if (!memberships?.length) {
-      const onboarding = request.nextUrl.clone();
-      onboarding.pathname = "/onboarding";
-      onboarding.search = "";
-      return NextResponse.redirect(onboarding);
+    if (isProtected) {
+      const authObj = await auth();
+      if (!authObj.userId) {
+        const hasSession = Boolean(
+          request.cookies.get("__session") ||
+          request.cookies.get("__client_uat") ||
+          request.cookies.get("sb-bwvbplkmjbrrllpsnhwh-auth-token")
+        );
+        if (!hasSession) {
+          const login = request.nextUrl.clone();
+          login.pathname = "/login";
+          login.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
+          return NextResponse.redirect(login);
+        }
+      }
     }
+    return NextResponse.next();
+  },
+  {
+    frontendApiProxy: {
+      enabled: true,
+      path: "/__clerk",
+    },
   }
-  return response;
-}
+);
 
 export const config = {
-  matcher: ["/office/:path*", "/onboarding/:path*", "/reset-password/:path*"],
+  matcher: [
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/(api|trpc)(.*)",
+    "/__clerk/(.*)",
+  ],
 };

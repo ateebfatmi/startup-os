@@ -18,6 +18,7 @@ import { useMultiplayer } from "@/features/multiplayer/use-multiplayer";
 import { useHuddle, type HuddleController } from "@/features/communication/use-huddle";
 import type { CallParticipant } from "@/features/communication/types";
 import { createSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase/client";
+import { useUser } from "@clerk/nextjs";
 import { WorkspaceDataProvider, useWorkspaceRecords } from "./workspace-data-provider";
 import { useWorkspaceData } from "./use-workspace-data";
 import { TeamView } from "./team-view";
@@ -70,11 +71,13 @@ type WorkspaceIdentity = { displayName: string; workspaceName: string; workspace
 
 export function WorkspaceShell() {
   const router = useRouter();
+  const { user: clerkUser, isLoaded: clerkLoaded } = useUser();
   const [identityReady, setIdentityReady] = useState(false);
   const [identityError, setIdentityError] = useState<string | null>(null);
   const [identity, setIdentity] = useState<WorkspaceIdentity>({ displayName: "", workspaceName: "", workspaceId: "", workspaceRole: "guest" });
   const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([DEMO_WORKSPACE]);
   useEffect(() => {
+    if (!clerkLoaded) return;
     const localIdentity = {
       displayName: window.localStorage.getItem("crewvilla-display-name") || "Ateeb Fatmi",
       workspaceName: window.localStorage.getItem("crewvilla-workspace-name") || "Northstar Labs",
@@ -96,21 +99,24 @@ export function WorkspaceShell() {
     void (async () => {
       const supabase = createSupabaseBrowserClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.replace("/login"); return; }
+      const effectiveUser = user || (clerkUser ? { id: clerkUser.id, email: clerkUser.primaryEmailAddress?.emailAddress } : null);
+      if (!effectiveUser) { router.replace("/login"); return; }
+      const profilePromise = user
+        ? supabase.from("profiles").select("display_name, avatar_config").eq("id", user.id).maybeSingle()
+        : Promise.resolve({ data: null, error: null });
       const [{ data: profile }, availableWorkspaces] = await Promise.all([
-        supabase.from("profiles").select("display_name, avatar_config").eq("id", user.id).maybeSingle(),
+        profilePromise,
         fetchMyWorkspaces(),
       ]);
-      const selectedWorkspace = availableWorkspaces.find((workspace) => workspace.id === localIdentity.workspaceId) || availableWorkspaces[0];
-      if (!selectedWorkspace) { router.replace("/onboarding"); return; }
+      const selectedWorkspace = availableWorkspaces.find((workspace) => workspace.id === localIdentity.workspaceId) || availableWorkspaces[0] || DEMO_WORKSPACE;
       const nextIdentity = {
-        displayName: profile?.display_name || localIdentity.displayName,
+        displayName: profile?.display_name || clerkUser?.fullName || clerkUser?.primaryEmailAddress?.emailAddress?.split("@")[0] || localIdentity.displayName,
         workspaceName: selectedWorkspace?.name || localIdentity.workspaceName,
         workspaceId: selectedWorkspace?.id || localIdentity.workspaceId,
         workspaceRole: selectedWorkspace?.role || localIdentity.workspaceRole,
       };
       if (!active) return;
-      setWorkspaces(availableWorkspaces);
+      setWorkspaces(availableWorkspaces.length > 0 ? availableWorkspaces : [DEMO_WORKSPACE]);
       setIdentity(nextIdentity);
       setIdentityReady(true);
       window.localStorage.setItem("crewvilla-display-name", nextIdentity.displayName);
@@ -124,7 +130,7 @@ export function WorkspaceShell() {
       }
     })().catch((error) => { if (active) setIdentityError(error instanceof Error ? error.message : "Could not load workspace"); });
     return () => { active = false; };
-  }, [router]);
+  }, [router, clerkLoaded, clerkUser]);
   const selectWorkspace = (workspace: WorkspaceSummary) => {
     closeWorkspacePanels();
     setIdentity((current) => ({ ...current, workspaceId: workspace.id, workspaceName: workspace.name, workspaceRole: workspace.role }));

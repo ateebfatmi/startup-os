@@ -30,7 +30,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body>
-        <ClerkProvider>{children}</ClerkProvider>
+        <ClerkProvider
+          proxyUrl="/__clerk"
+          signInUrl="/login"
+          signUpUrl="/sign-up"
+          signInFallbackRedirectUrl="/office"
+          signUpFallbackRedirectUrl="/office"
+        >
+          {children}
+        </ClerkProvider>
       </body>
     </html>
   );
