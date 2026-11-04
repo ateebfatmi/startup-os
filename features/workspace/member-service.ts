@@ -1,4 +1,4 @@
-import { DEMO_WORKSPACE } from "./workspace-service";
+import { DEMO_WORKSPACE, isUuid } from "./workspace-service";
 import { createSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase/client";
 import {
   AcceptInvitationSchema,
@@ -139,7 +139,7 @@ export function saveStoredLocalInvitations(invites: WorkspaceInvitation[]) {
 }
 
 export async function fetchWorkspaceMembers(workspaceId: string): Promise<WorkspaceMember[]> {
-  if (!hasSupabaseConfig) {
+  if (!hasSupabaseConfig || workspaceId === DEMO_WORKSPACE.id) {
     return getStoredLocalMembers().filter((member) => member.workspaceId === workspaceId);
   }
 
@@ -149,7 +149,12 @@ export async function fetchWorkspaceMembers(workspaceId: string): Promise<Worksp
     .select("workspace_id, user_id, role, joined_at, profiles(display_name, avatar_url)")
     .eq("workspace_id", workspaceId);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.message.includes("invalid input syntax for type uuid")) {
+      return getStoredLocalMembers().filter((member) => member.workspaceId === workspaceId);
+    }
+    throw new Error(error.message);
+  }
 
   return (data || []).map((row) => {
     const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
@@ -165,7 +170,7 @@ export async function fetchWorkspaceMembers(workspaceId: string): Promise<Worksp
 }
 
 export async function fetchWorkspaceInvitations(workspaceId: string): Promise<WorkspaceInvitation[]> {
-  if (!hasSupabaseConfig) {
+  if (!hasSupabaseConfig || workspaceId === DEMO_WORKSPACE.id) {
     const invites = getStoredLocalInvitations();
     return invites.filter((inv) => inv.workspaceId === workspaceId).map((inv) => ({
       ...inv,
@@ -180,7 +185,16 @@ export async function fetchWorkspaceInvitations(workspaceId: string): Promise<Wo
     .eq("workspace_id", workspaceId)
     .order("created_at", { ascending: false });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.message.includes("invalid input syntax for type uuid")) {
+      const invites = getStoredLocalInvitations();
+      return invites.filter((inv) => inv.workspaceId === workspaceId).map((inv) => ({
+        ...inv,
+        status: computeInvitationStatus(inv.expiresAt, inv.acceptedAt),
+      }));
+    }
+    throw new Error(error.message);
+  }
 
   return (data || []).map((row) => {
     const inviter = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;

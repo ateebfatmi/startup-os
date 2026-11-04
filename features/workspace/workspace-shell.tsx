@@ -18,7 +18,7 @@ import { useMultiplayer } from "@/features/multiplayer/use-multiplayer";
 import { useHuddle, type HuddleController } from "@/features/communication/use-huddle";
 import type { CallParticipant } from "@/features/communication/types";
 import { createSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase/client";
-import { useUser } from "@clerk/nextjs";
+import { useClerk, useUser } from "@clerk/nextjs";
 import { WorkspaceDataProvider, useWorkspaceRecords } from "./workspace-data-provider";
 import { useWorkspaceData } from "./use-workspace-data";
 import { TeamView } from "./team-view";
@@ -152,6 +152,7 @@ function closeWorkspacePanels() {
 
 function WorkspaceContent({ identity, workspaces, selectWorkspace }: { identity: WorkspaceIdentity; workspaces: WorkspaceSummary[]; selectWorkspace: (workspace: WorkspaceSummary) => void }) {
   const router = useRouter();
+  const { signOut } = useClerk();
   useEffect(() => {
     let active = true;
     void Promise.all([loadOfficeDesign(identity.workspaceId), loadOfficeObjects(identity.workspaceId)]).then(([design, objects]) => {
@@ -208,10 +209,25 @@ function WorkspaceContent({ identity, workspaces, selectWorkspace }: { identity:
           isCollapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
           onExit={async () => {
-            if (hasSupabaseConfig) await createSupabaseBrowserClient().auth.signOut();
-            ["crewvilla-display-name", "crewvilla-workspace-name", "crewvilla-workspace-id", "crewvilla-workspace-type", "crewvilla-office-template"].forEach((key) => window.localStorage.removeItem(key));
-            router.push("/login");
-            router.refresh();
+            try {
+              if (hasSupabaseConfig) await createSupabaseBrowserClient().auth.signOut();
+            } catch (err) {
+              console.error("Supabase signOut error", err);
+            }
+            [
+              "crewvilla-display-name",
+              "crewvilla-workspace-name",
+              "crewvilla-workspace-id",
+              "crewvilla-workspace-type",
+              "crewvilla-office-template",
+              "crewvilla-avatar-color",
+            ].forEach((key) => window.localStorage.removeItem(key));
+            try {
+              await signOut();
+            } catch (err) {
+              console.error("Clerk signOut error", err);
+            }
+            window.location.href = "/login";
           }}
         />
       )}

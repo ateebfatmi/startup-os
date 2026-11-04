@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase/client";
 import { OFFICE_ASSET_KEYS, OFFICE_OBJECT_CATALOG, type OfficeObject } from "@/features/virtual-office/office-object-catalog";
+import { isUuid } from "./workspace-service";
 
 const TransformSchema = z.object({
   x: z.number().min(-10.5).max(10.5),
@@ -24,23 +25,30 @@ async function latestLayoutId(workspaceId: string) {
 }
 
 export async function loadOfficeObjects(workspaceId: string): Promise<OfficeObject[]> {
-  if (!hasSupabaseConfig) return localObjects(workspaceId);
-  const supabase = createSupabaseBrowserClient();
-  const layoutId = await latestLayoutId(workspaceId);
-  const { data, error } = await supabase.from("office_objects").select("id, asset_key, transform, interaction").eq("office_layout_id", layoutId).order("created_at");
-  if (error) throw new Error(error.message);
-  return (data || []).flatMap((row) => {
-    const asset = AssetSchema.safeParse(row.asset_key); const transform = TransformSchema.safeParse(row.transform);
-    if (!asset.success || !transform.success) return [];
-    return [{ id: row.id, assetKey: asset.data, transform: transform.data, interaction: OFFICE_OBJECT_CATALOG[asset.data].interaction || null }];
-  });
+  if (!hasSupabaseConfig || !isUuid(workspaceId)) return localObjects(workspaceId);
+  try {
+    const supabase = createSupabaseBrowserClient();
+    const layoutId = await latestLayoutId(workspaceId);
+    const { data, error } = await supabase.from("office_objects").select("id, asset_key, transform, interaction").eq("office_layout_id", layoutId).order("created_at");
+    if (error) throw new Error(error.message);
+    return (data || []).flatMap((row) => {
+      const asset = AssetSchema.safeParse(row.asset_key); const transform = TransformSchema.safeParse(row.transform);
+      if (!asset.success || !transform.success) return [];
+      return [{ id: row.id, assetKey: asset.data, transform: transform.data, interaction: OFFICE_OBJECT_CATALOG[asset.data].interaction || null }];
+    });
+  } catch (err) {
+    if (err instanceof Error && (err.message.includes("invalid input syntax for type uuid") || err.message.includes("JSON object requested, multiple (or no) rows returned"))) {
+      return localObjects(workspaceId);
+    }
+    throw err;
+  }
 }
 
 export async function createOfficeObject(workspaceId: string, assetKey: string, transform: z.input<typeof TransformSchema>): Promise<OfficeObject[]> {
   const asset = AssetSchema.parse(assetKey); const validated = TransformSchema.parse(transform);
   const current = await loadOfficeObjects(workspaceId);
   if (current.length >= 25) throw new Error("Office layouts support up to 25 custom objects");
-  if (!hasSupabaseConfig) {
+  if (!hasSupabaseConfig || !isUuid(workspaceId)) {
     const next = [...current, { id: crypto.randomUUID(), assetKey: asset, transform: validated, interaction: OFFICE_OBJECT_CATALOG[asset].interaction || null }];
     window.localStorage.setItem(localKey(workspaceId), JSON.stringify(next)); return next;
   }

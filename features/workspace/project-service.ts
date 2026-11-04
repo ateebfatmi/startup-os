@@ -1,5 +1,5 @@
 import { mergeLegacyDemoTasks } from "./legacy-task-migration";
-import { DEMO_WORKSPACE } from "./workspace-service";
+import { DEMO_WORKSPACE, isUuid } from "./workspace-service";
 import { notifyWorkspaceRecordsChanged } from "./workspace-record-events";
 import { createSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase/client";
 import {
@@ -226,7 +226,7 @@ export function saveStoredLocalComments(comments: TaskComment[]) {
 /* Projects Service API */
 
 export async function fetchWorkspaceProjects(workspaceId: string): Promise<Project[]> {
-  if (!hasSupabaseConfig) {
+  if (!hasSupabaseConfig || workspaceId === DEMO_WORKSPACE.id) {
     return getStoredLocalProjects().filter((p) => p.workspaceId === workspaceId);
   }
 
@@ -237,7 +237,12 @@ export async function fetchWorkspaceProjects(workspaceId: string): Promise<Proje
     .eq("workspace_id", workspaceId)
     .order("created_at", { ascending: false });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.message.includes("invalid input syntax for type uuid")) {
+      return getStoredLocalProjects().filter((p) => p.workspaceId === workspaceId);
+    }
+    throw new Error(error.message);
+  }
 
   return (data || []).map((row) => {
     const owner = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
@@ -398,7 +403,7 @@ export async function fetchWorkspaceTasks(
   workspaceId: string,
   filters?: { projectId?: string; assigneeId?: string; status?: TaskItem["status"] },
 ): Promise<TaskItem[]> {
-  if (!hasSupabaseConfig) {
+  if (!hasSupabaseConfig || workspaceId === DEMO_WORKSPACE.id) {
     let tasks = getStoredLocalTasks().filter((t) => t.workspaceId === workspaceId);
     if (filters?.projectId) tasks = tasks.filter((t) => t.projectId === filters.projectId);
     if (filters?.assigneeId) tasks = tasks.filter((t) => t.assigneeId === filters.assigneeId);
@@ -419,7 +424,16 @@ export async function fetchWorkspaceTasks(
   if (filters?.status) query = query.eq("status", filters.status);
 
   const { data, error } = await query;
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.message.includes("invalid input syntax for type uuid")) {
+      let tasks = getStoredLocalTasks().filter((t) => t.workspaceId === workspaceId);
+      if (filters?.projectId) tasks = tasks.filter((t) => t.projectId === filters.projectId);
+      if (filters?.assigneeId) tasks = tasks.filter((t) => t.assigneeId === filters.assigneeId);
+      if (filters?.status) tasks = tasks.filter((t) => t.status === filters.status);
+      return tasks;
+    }
+    throw new Error(error.message);
+  }
 
   return (data || []).map((row) => {
     const proj = Array.isArray(row.projects) ? row.projects[0] : row.projects;
@@ -606,7 +620,7 @@ export async function deleteTask(workspaceId: string, taskId: string): Promise<v
 /* Task Comments Service API */
 
 export async function fetchTaskComments(workspaceId: string, taskId: string): Promise<TaskComment[]> {
-  if (!hasSupabaseConfig) {
+  if (!hasSupabaseConfig || workspaceId === DEMO_WORKSPACE.id) {
     const task = getStoredLocalTasks().find((task) => task.id === taskId && task.workspaceId === workspaceId);
     return task ? getStoredLocalComments().filter((c) => c.taskId === taskId) : [];
   }
@@ -618,7 +632,13 @@ export async function fetchTaskComments(workspaceId: string, taskId: string): Pr
     .eq("task_id", taskId)
     .order("created_at", { ascending: true });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.message.includes("invalid input syntax for type uuid")) {
+      const task = getStoredLocalTasks().find((task) => task.id === taskId && task.workspaceId === workspaceId);
+      return task ? getStoredLocalComments().filter((c) => c.taskId === taskId) : [];
+    }
+    throw new Error(error.message);
+  }
 
   return (data || []).map((row) => {
     const author = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;

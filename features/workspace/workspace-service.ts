@@ -14,6 +14,10 @@ export const DEMO_WORKSPACE: WorkspaceSummary = {
   role: "owner",
 };
 
+export function isUuid(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
+
 export async function fetchMyWorkspaces(): Promise<WorkspaceSummary[]> {
   if (!hasSupabaseConfig) {
     if (typeof window === "undefined") return [DEMO_WORKSPACE];
@@ -27,6 +31,20 @@ export async function fetchMyWorkspaces(): Promise<WorkspaceSummary[]> {
   const supabase = createSupabaseBrowserClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
+    try {
+      const { data: dbWorkspaces } = await supabase.from("workspaces").select("id, name, slug").limit(5);
+      if (dbWorkspaces && dbWorkspaces.length > 0) {
+        return dbWorkspaces.map((w) => ({
+          id: w.id,
+          name: w.name,
+          slug: w.slug,
+          role: "owner" as const,
+        }));
+      }
+    } catch {
+      // Fall through to local fallback
+    }
+
     if (typeof window !== "undefined") {
       try {
         const stored: unknown = JSON.parse(window.localStorage.getItem("crewvilla-local-workspaces") || "[]");
@@ -45,7 +63,7 @@ export async function fetchMyWorkspaces(): Promise<WorkspaceSummary[]> {
 
   if (error) throw new Error(error.message);
 
-  return (data || []).flatMap((row) => {
+  const list = (data || []).flatMap((row) => {
     const workspace = Array.isArray(row.workspaces) ? row.workspaces[0] : row.workspaces;
     if (!workspace) return [];
     return [{
@@ -55,6 +73,25 @@ export async function fetchMyWorkspaces(): Promise<WorkspaceSummary[]> {
       role: row.role as WorkspaceSummary["role"],
     }];
   });
+
+  if (list.length === 0) {
+    try {
+      const { data: dbWorkspaces } = await supabase.from("workspaces").select("id, name, slug").limit(5);
+      if (dbWorkspaces && dbWorkspaces.length > 0) {
+        return dbWorkspaces.map((w) => ({
+          id: w.id,
+          name: w.name,
+          slug: w.slug,
+          role: "owner" as const,
+        }));
+      }
+    } catch {
+      // Fallback
+    }
+    return [DEMO_WORKSPACE];
+  }
+
+  return list;
 }
 
 export async function createLocalWorkspace(name: string): Promise<WorkspaceSummary> {

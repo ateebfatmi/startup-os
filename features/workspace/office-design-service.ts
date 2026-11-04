@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase/client";
 import { DEFAULT_OFFICE_DESIGN, type OfficeDesignSettings } from "@/features/virtual-office/office-design";
+import { isUuid } from "./workspace-service";
 
 const DesignSchema = z.object({
   theme: z.enum(["atelier", "biophilic", "midnight"]),
@@ -12,12 +13,15 @@ const DesignSchema = z.object({
 const localKey = (workspaceId: string) => `crewvilla-office-design:${workspaceId}`;
 
 export async function loadOfficeDesign(workspaceId: string): Promise<OfficeDesignSettings> {
-  if (!hasSupabaseConfig) {
+  if (!hasSupabaseConfig || !isUuid(workspaceId)) {
     try { return DesignSchema.parse(JSON.parse(window.localStorage.getItem(localKey(workspaceId)) || "null")); }
     catch { return DEFAULT_OFFICE_DESIGN; }
   }
   const { data, error } = await createSupabaseBrowserClient().from("office_layouts").select("layout").eq("workspace_id", workspaceId).order("version", { ascending: false }).limit(1).maybeSingle();
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.message.includes("invalid input syntax for type uuid")) return DEFAULT_OFFICE_DESIGN;
+    throw new Error(error.message);
+  }
   const layout = (data?.layout || {}) as Record<string, unknown>;
   const parsed = DesignSchema.safeParse(layout.design);
   return parsed.success ? parsed.data : DEFAULT_OFFICE_DESIGN;
@@ -25,7 +29,7 @@ export async function loadOfficeDesign(workspaceId: string): Promise<OfficeDesig
 
 export async function saveOfficeDesign(workspaceId: string, design: OfficeDesignSettings): Promise<void> {
   const validated = DesignSchema.parse(design);
-  if (!hasSupabaseConfig) {
+  if (!hasSupabaseConfig || !isUuid(workspaceId)) {
     window.localStorage.setItem(localKey(workspaceId), JSON.stringify(validated));
     return;
   }
