@@ -41,11 +41,15 @@ export async function fetchObjectives(workspaceId: string): Promise<Objective[]>
 export async function createObjective(input: z.input<typeof ObjectiveInput>): Promise<void> {
   const value = ObjectiveInput.parse(input);
   if (!hasSupabaseConfig) { const current = readLocal(objectivesKey(value.workspaceId), demoObjectives(value.workspaceId)); const id = crypto.randomUUID(); const objective: Objective = { id, workspaceId: value.workspaceId, title: value.title, description: value.description, status: "active", ownerId: "demo-user-1", startsAt: new Date().toISOString().slice(0, 10), dueAt: value.dueAt, createdBy: "demo-user-1", keyResults: [{ id: crypto.randomUUID(), objectiveId: id, title: value.keyResultTitle, unit: "number", startValue: 0, currentValue: 0, targetValue: value.targetValue }] }; window.localStorage.setItem(objectivesKey(value.workspaceId), JSON.stringify([objective, ...current])); return; }
-  const supabase = createSupabaseBrowserClient(); const { data: { user } } = await supabase.auth.getUser(); if (!user) throw new Error("Authentication required");
-  const { data: objective, error } = await supabase.from("objectives").insert({ workspace_id: value.workspaceId, title: value.title, description: value.description, due_at: value.dueAt, owner_id: user.id, created_by: user.id }).select("id").single();
+  const { error } = await createSupabaseBrowserClient().rpc("create_workspace_objective", {
+    target_workspace: value.workspaceId,
+    objective_title: value.title,
+    objective_description: value.description,
+    objective_due_at: value.dueAt,
+    key_result_title: value.keyResultTitle,
+    key_result_target: value.targetValue,
+  });
   if (error) throw new Error(error.message);
-  const { error: krError } = await supabase.from("key_results").insert({ workspace_id: value.workspaceId, objective_id: objective.id, title: value.keyResultTitle, target_value: value.targetValue, owner_id: user.id });
-  if (krError) { await supabase.from("objectives").delete().eq("id", objective.id); throw new Error(krError.message); }
 }
 
 export async function updateKeyResult(workspaceId: string, objectiveId: string, keyResultId: string, currentValue: number): Promise<void> {

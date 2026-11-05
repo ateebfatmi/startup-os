@@ -120,13 +120,16 @@ export async function PATCH(request: Request) {
     if (validated.dueAt !== undefined) updates.due_at = validated.dueAt;
     if (validated.position !== undefined) updates.position = validated.position;
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("tasks")
       .update(updates)
       .eq("id", validated.taskId)
-      .eq("workspace_id", validated.workspaceId);
+      .eq("workspace_id", validated.workspaceId)
+      .select("id")
+      .maybeSingle();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    if (!data) return NextResponse.json({ error: "Task is unavailable in this workspace" }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to update task";
@@ -152,13 +155,16 @@ export async function DELETE(request: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("tasks")
       .delete()
       .eq("id", taskId)
-      .eq("workspace_id", workspaceId);
+      .eq("workspace_id", workspaceId)
+      .select("id")
+      .maybeSingle();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    if (!data) return NextResponse.json({ error: "Task is unavailable in this workspace" }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to delete task";

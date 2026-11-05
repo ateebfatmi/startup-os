@@ -33,14 +33,15 @@ test.describe("Workspace Invitations & Member Administration E2E", () => {
     // Verify link generated
     await expect(page.getByText("Invitation Link Generated!")).toBeVisible();
 
+    const inviteUrl = await page.getByRole("textbox", { name: "Invitation link" }).inputValue();
+
     // Switch to Workspace Invitations tab
     await page.getByRole("button", { name: "Close", exact: true }).click();
     await page.getByRole("button", { name: /Workspace Invitations/i }).click();
     await expect(page.getByText(testEmail)).toBeVisible();
 
-    // Generate a fresh raw token and navigate directly to invitation acceptance page
-    const demoToken = "demo-token-pending-1234567890";
-    await page.goto(`/invite/accept?token=${demoToken}`);
+    await page.goto(inviteUrl);
+    await expect(page.getByText(testEmail)).toBeVisible();
 
     // Verify invitation preview card renders
     await expect(page.getByText("Workspace Invitation")).toBeVisible();
@@ -52,6 +53,13 @@ test.describe("Workspace Invitations & Member Administration E2E", () => {
     // Should redirect back to office
     await expect(page).toHaveURL(/\/office/);
     await expect(page.getByRole("heading", { name: "Office", exact: true })).toBeVisible();
+  });
+
+  test("opens signup mode for an invitation return path", async ({ page }) => {
+    const next = "/invite/accept?token=synthetic-invitation-token";
+    await page.goto(`/login?mode=signup&next=${encodeURIComponent(next)}`);
+    await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
+    await expect(page.getByLabel("Display name")).toBeVisible();
   });
 
   test("displays error state for invalid invitation tokens", async ({ page }) => {

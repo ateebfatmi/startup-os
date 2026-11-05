@@ -1,3 +1,7 @@
+import { validatePrelaunch } from "./scripts/prelaunch-guard.mjs";
+
+if (process.env.CREWVILLA_PRELAUNCH) validatePrelaunch(process.env);
+
 const publicSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const publicSupabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 

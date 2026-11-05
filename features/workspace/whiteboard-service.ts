@@ -53,20 +53,7 @@ export async function loadWhiteboard(workspaceId: string): Promise<WhiteboardRec
   }
 
   const supabase = createSupabaseBrowserClient();
-  const { data: existing, error: lookupError } = await supabase.from("whiteboards")
-    .select("id, document").eq("workspace_id", workspaceId).eq("name", "Spatial Whiteboard")
-    .order("created_at").limit(1).maybeSingle();
-  if (lookupError) throw new Error(lookupError.message);
-  if (existing) return { id: existing.id, document: parseWhiteboardDocument(existing.document) };
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Authentication required");
-  const { data, error } = await supabase.from("whiteboards").insert({
-    workspace_id: workspaceId,
-    name: "Spatial Whiteboard",
-    document: emptyDocument(),
-    updated_by: user.id,
-  }).select("id, document").single();
+  const { data, error } = await supabase.rpc("open_spatial_whiteboard", { target_workspace: workspaceId }).single<{ id: string; document: unknown }>();
   if (error) throw new Error(error.message);
   return { id: data.id, document: parseWhiteboardDocument(data.document) };
 }
@@ -80,9 +67,34 @@ export async function saveWhiteboard(workspaceId: string, board: WhiteboardRecor
   const supabase = createSupabaseBrowserClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Authentication required");
-  const { error } = await supabase.from("whiteboards").update({ document, updated_by: user.id, updated_at: new Date().toISOString() })
-    .eq("id", board.id).eq("workspace_id", workspaceId);
-  if (error) throw new Error(error.message);
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const { data: current, error: lookupError } = await supabase.from("whiteboards")
+      .select("document, revision").eq("id", board.id).eq("workspace_id", workspaceId).single();
+    if (lookupError) throw new Error(lookupError.message);
+
+    const persisted = DocumentSchema.safeParse(current.document);
+    const legacyEmpty = current.document?.version === 1
+      && Array.isArray(current.document.elements) && current.document.elements.length === 0;
+    if (!persisted.success && !legacyEmpty) throw new Error("The saved whiteboard has an unsupported format");
+    const merged = new Map((persisted.data?.elements ?? []).map((element) => [element.id, element]));
+    for (const element of document.elements) {
+      const previous = merged.get(element.id);
+      if (!previous || compareElementVersion(previous, element) < 0) merged.set(element.id, element);
+    }
+
+    const { data: saved, error } = await supabase.from("whiteboards")
+      .update({
+        document: DocumentSchema.parse({ version: 2, elements: [...merged.values()] }),
+        revision: current.revision + 1,
+        updated_by: user.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", board.id).eq("workspace_id", workspaceId).eq("revision", current.revision)
+      .select("id").maybeSingle();
+    if (error) throw new Error(error.message);
+    if (saved) return;
+  }
+  throw new Error("The whiteboard changed while saving. Make another edit to retry.");
 }
 
 export function connectWhiteboardChannel(workspaceId: string, boardId: string, receive: (operation: WhiteboardOperation) => void) {
@@ -99,7 +111,7 @@ export function connectWhiteboardChannel(workspaceId: string, boardId: string, r
   const supabase = createSupabaseBrowserClient();
   const pending: WhiteboardOperation[] = [];
   let ready = false;
-  const channel = supabase.channel(channelName, { config: { broadcast: { self: false, ack: false } } })
+  const channel = supabase.channel(channelName, { config: { private: true, broadcast: { self: false, ack: false } } })
     .on("broadcast", { event: "operation" }, ({ payload }) => {
       const parsed = OperationSchema.safeParse(payload);
       if (parsed.success) receive(parsed.data);

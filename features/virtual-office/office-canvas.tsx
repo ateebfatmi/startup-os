@@ -13,8 +13,10 @@ import { AITeammateAvatars, AI_TEAMMATES } from "./ai-teammates";
 import { OFFICE_THEME_PALETTES } from "./office-design";
 import { OFFICE_OBJECT_CATALOG, officeObjectCollider, type OfficeObject } from "./office-object-catalog";
 import { AvatarModel } from "./avatar-model";
+import { hasSupabaseConfig } from "@/lib/supabase/client";
 
 const keys = new Set<string>();
+const demoTeammates = hasSupabaseConfig ? [] : Object.values(AI_TEAMMATES);
 export const localAvatarPosition = new THREE.Vector2(0, 1.6);
 
 export function OfficeCanvas() {
@@ -511,7 +513,7 @@ function LocalPlayer() {
     const customAction = customObjects.find((item) => item.interaction && Math.hypot(item.transform.x - next.x, item.transform.z - next.z) <= 1.45);
 
     // AI Teammates proximity
-    const nearTeammate = Object.values(AI_TEAMMATES).find((t) => Math.hypot(t.position[0] - next.x, t.position[2] - next.z) <= 1.8);
+    const nearTeammate = demoTeammates.find((t) => Math.hypot(t.position[0] - next.x, t.position[2] - next.z) <= 1.8);
     // Smart Stations proximity
     const nearEspresso = Math.hypot(8.1 - next.x, 2.4 - next.z) <= 1.5;
     const nearVinyl = Math.hypot(6.8 - next.x, 5.2 - next.z) <= 1.5;
@@ -738,7 +740,7 @@ function ProximityAudioBeams() {
   const remotePlayers = useOfficeStore((state) => state.remotePlayers);
 
   // Find AI teammates within 3.2m
-  const connectedAIs = Object.values(AI_TEAMMATES).filter((t) => {
+  const connectedAIs = demoTeammates.filter((t) => {
     return Math.hypot(t.position[0] - player.x, t.position[2] - player.z) <= 3.2;
   });
 
@@ -825,7 +827,7 @@ function OfficeEnvironment() {
     <group>
       <Floor />
       {design.terraceEnabled && <PenthouseTerrace />}
-      <AITeammateAvatars />
+      {!hasSupabaseConfig && <AITeammateAvatars />}
       <ProximityAudioBeams />
       <EmoteParticleManager />
 

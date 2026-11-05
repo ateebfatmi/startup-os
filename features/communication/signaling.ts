@@ -31,7 +31,7 @@ class SupabaseSignalingTransport implements SignalingTransport {
   constructor(private readonly workspaceId: string, private readonly roomId: string) {}
   async connect(onMessage: (message: SignalMessage) => void) {
     const supabase = createSupabaseBrowserClient();
-    this.channel = supabase.channel(`call:${this.workspaceId}:${this.roomId}`, { config: { broadcast: { self: false, ack: false } } });
+    this.channel = supabase.channel(`call:${this.workspaceId}:${this.roomId}`, { config: { private: true, broadcast: { self: false, ack: false } } });
     this.channel.on("broadcast", { event: "signal" }, ({ payload }) => { if (isSignalMessage(payload)) onMessage(payload); });
     await new Promise<void>((resolve, reject) => {
       this.channel?.subscribe((status) => {

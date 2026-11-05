@@ -1,19 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const session = vi.hoisted(() => ({ user: null as { id: string } | null, insert: vi.fn(), error: null as { message: string } | null }));
+const session = vi.hoisted(() => ({ user: null as { id: string } | null, insert: vi.fn(), mutate: vi.fn(), error: null as { message: string } | null }));
 vi.mock("@/lib/supabase/client", () => ({ hasSupabaseConfig: true }));
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: async () => ({
     auth: { getUser: async () => ({ data: { user: session.user } }) },
-    from: () => ({ insert: session.insert }),
+    from: () => ({ insert: session.insert, update: session.mutate, delete: session.mutate }),
   }),
 }));
-import { POST } from "@/app/api/workspace/tasks/route";
+import { DELETE, PATCH, POST } from "@/app/api/workspace/tasks/route";
 const request = () => new Request("http://localhost/api/workspace/tasks", { method: "POST", body: JSON.stringify({ workspaceId: "workspace-alpha", title: "Reviewed task", createdBy: "forged-author" }) });
 
 beforeEach(() => {
   session.user = null;
   session.error = null;
   session.insert.mockReset();
+  session.mutate.mockReset();
   session.insert.mockImplementation((row) => ({ select: () => ({ single: async () => ({ data: row, error: session.error }) }) }));
 });
 
@@ -33,5 +34,24 @@ describe("task creation HTTP authorization contract", () => {
     session.user = { id: "alice" };
     expect((await POST(request())).status).toBe(200);
     expect(session.insert).toHaveBeenCalledWith(expect.objectContaining({ workspace_id: "workspace-alpha", created_by: "alice" }));
+  });
+});
+
+
+describe("task mutation HTTP result", () => {
+  it.each([
+    ["PATCH", PATCH, "http://localhost/api/workspace/tasks", { workspaceId: "workspace-alpha", taskId: "task-missing", title: "Updated" }],
+    ["DELETE", DELETE, "http://localhost/api/workspace/tasks?workspaceId=workspace-alpha&taskId=task-missing", undefined],
+  ] as const)("returns 404 when %s cannot see or affect the row", async (method, handler, url, body) => {
+    session.user = { id: "alice" };
+    const query = {
+      eq: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+    };
+    session.mutate.mockReturnValue(query);
+    const response = await handler(new Request(url, { method, body: body && JSON.stringify(body) }));
+    expect(query.eq.mock.calls).toEqual([["id", "task-missing"], ["workspace_id", "workspace-alpha"]]);
+    expect(response.status).toBe(404);
   });
 });

@@ -128,13 +128,14 @@ export function AITeammateDialog() {
                 className="rounded-full px-2 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider"
                 style={{ backgroundColor: config.accent }}
               >
-                AI {config.id}
+                Scripted demo
               </span>
             </div>
-            <p className="text-xs text-[#68736b]">{config.role} · {config.department}</p>
+            <p className="text-xs text-[#68736b]">{config.role} · Fictional sample dialogue</p>
           </div>
         </div>
         <button
+          aria-label="Close scripted teammate"
           onClick={closeAITeammate}
           className="rounded-lg p-1.5 text-[#68736b] hover:bg-black/5 hover:text-[#17211b]"
         >

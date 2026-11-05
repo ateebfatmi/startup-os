@@ -259,7 +259,7 @@ function WorkspaceContent({ identity, workspaces, selectWorkspace }: { identity:
                 onToggleMinimap={() => setShowMinimap((v) => !v)}
               />
               <SpatialOverlays displayName={identity.displayName} />
-              <AITeammateDialog />
+              {!hasSupabaseConfig && <AITeammateDialog />}
               <GatherBottomDock
                 huddle={huddle}
                 proximity={proximity}

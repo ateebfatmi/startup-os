@@ -11,7 +11,7 @@ const catalog: Record<Provider, { name: string; description: string; icon: typeo
   slack: { name: "Slack", description: "Publish workspace updates and meeting reminders to team channels.", icon: Plug },
   github: { name: "GitHub", description: "Connect repositories, issues, and engineering delivery context.", icon: Github },
   linear: { name: "Linear", description: "Sync product issues and project execution with CrewVilla tasks.", icon: RefreshCw },
-  spotify: { name: "Spotify", description: "Stream shared team focus playlists and lo-fi office background music.", icon: Music },
+  spotify: { name: "Spotify", description: "Connect a Spotify account and check current playback status.", icon: Music },
 };
 
 export function IntegrationsView({ workspaceId, canManage }: { workspaceId: string; canManage: boolean }) {

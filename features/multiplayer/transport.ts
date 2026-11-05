@@ -100,7 +100,7 @@ export class SupabaseRealtimeTransport implements MultiplayerTransport {
     events.onState("connecting", "Supabase Realtime");
     const supabase = createSupabaseBrowserClient();
     this.channel = supabase.channel(`workspace:${this.workspaceId}`, {
-      config: { presence: { key: this.playerId }, broadcast: { self: false, ack: false } },
+      config: { private: true, presence: { key: this.playerId }, broadcast: { self: false, ack: false } },
     });
     this.channel
       .on("broadcast", { event: "player-transform" }, ({ payload }) => {

@@ -1,4 +1,4 @@
-import { DEMO_WORKSPACE, isUuid } from "./workspace-service";
+import { DEMO_WORKSPACE, fetchMyWorkspaces } from "./workspace-service";
 import { createSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase/client";
 import {
   AcceptInvitationSchema,
@@ -425,7 +425,7 @@ export async function getInvitationPreview(rawToken: string): Promise<{
     return {
       id: matched.id,
       workspaceId: matched.workspaceId,
-      workspaceName: "Northstar Labs",
+      workspaceName: (await fetchMyWorkspaces()).find((workspace) => workspace.id === matched.workspaceId)?.name ?? "Local workspace",
       email: matched.email,
       role: matched.role,
       expiresAt: matched.expiresAt,
@@ -480,7 +480,7 @@ export async function acceptInvitationByToken(rawToken: string): Promise<{ works
     saveStoredLocalInvitations(localInvites);
 
     const localMembers = getStoredLocalMembers();
-    if (!localMembers.some((m) => m.email === matched.email)) {
+    if (!localMembers.some((m) => m.workspaceId === matched.workspaceId && m.email?.toLowerCase() === matched.email.toLowerCase())) {
       localMembers.push({
         workspaceId: matched.workspaceId,
         userId: `user-local-${Date.now()}`,

@@ -368,13 +368,16 @@ export async function updateProject(input: {
   if (validated.priority !== undefined) updates.priority = validated.priority;
   if (validated.dueAt !== undefined) updates.due_at = validated.dueAt;
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("projects")
     .update(updates)
     .eq("id", validated.projectId)
-    .eq("workspace_id", validated.workspaceId);
+    .eq("workspace_id", validated.workspaceId)
+    .select("id")
+    .maybeSingle();
 
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("Project is unavailable in this workspace");
   notifyWorkspaceRecordsChanged(validated.workspaceId);
 }
 
@@ -387,13 +390,16 @@ export async function deleteProject(workspaceId: string, projectId: string): Pro
   }
 
   const supabase = createSupabaseBrowserClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("projects")
     .delete()
     .eq("id", projectId)
-    .eq("workspace_id", workspaceId);
+    .eq("workspace_id", workspaceId)
+    .select("id")
+    .maybeSingle();
 
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("Project is unavailable in this workspace");
   notifyWorkspaceRecordsChanged(workspaceId);
 }
 
@@ -588,13 +594,16 @@ export async function updateTask(input: {
   if (validated.dueAt !== undefined) updates.due_at = validated.dueAt;
   if (validated.position !== undefined) updates.position = validated.position;
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("tasks")
     .update(updates)
     .eq("id", validated.taskId)
-    .eq("workspace_id", validated.workspaceId);
+    .eq("workspace_id", validated.workspaceId)
+    .select("id")
+    .maybeSingle();
 
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("Task is unavailable in this workspace");
   notifyWorkspaceRecordsChanged(validated.workspaceId);
 }
 
@@ -607,13 +616,16 @@ export async function deleteTask(workspaceId: string, taskId: string): Promise<v
   }
 
   const supabase = createSupabaseBrowserClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("tasks")
     .delete()
     .eq("id", taskId)
-    .eq("workspace_id", workspaceId);
+    .eq("workspace_id", workspaceId)
+    .select("id")
+    .maybeSingle();
 
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("Task is unavailable in this workspace");
   notifyWorkspaceRecordsChanged(workspaceId);
 }
 

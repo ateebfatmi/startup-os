@@ -1,4 +1,6 @@
-# CrewVilla production deployment
+# CrewVilla deployment
+
+Use one Supabase project and one Vercel project. Start with a protected Preview within that Vercel project, then approve public release separately using the same projects. Follow the [prelaunch setup and recovery guide](docs/PRELAUNCH_SETUP_GUIDE.md) before applying migrations, connecting Git, or deploying. The settings below describe the later public-release gate.
 
 ## Required platform settings
 

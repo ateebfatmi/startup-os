@@ -65,10 +65,8 @@ export default function OnboardingPage() {
     if (profileError) { setMessage(profileError.message); setSubmitting(false); return; }
 
     const slug = buildWorkspaceSlug(workspaceName, user.id);
-    const { data: workspaceId, error } = await supabase.rpc("create_workspace", { workspace_name: workspaceName, workspace_slug: slug, template_key: template });
+    const { data: workspaceId, error } = await supabase.rpc("create_workspace", { workspace_name: workspaceName, workspace_slug: slug, template_key: template, workspace_type: workspaceType });
     if (error || !workspaceId) { setMessage(error?.message ?? "The workspace could not be created."); setSubmitting(false); return; }
-    const { error: settingsError } = await supabase.from("workspaces").update({ settings: { type: workspaceType } }).eq("id", workspaceId);
-    if (settingsError) { setMessage(settingsError.message); setSubmitting(false); return; }
 
     window.localStorage.setItem("crewvilla-display-name", profileName);
     window.localStorage.setItem("crewvilla-workspace-name", workspaceName);

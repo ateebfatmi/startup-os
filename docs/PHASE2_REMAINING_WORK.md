@@ -1,0 +1,9 @@
+# Phase 2 remaining work
+
+1. **P0 · Identify prelaunch.** Supply the Vercel team/project, Preview branch and canonical origin, plus the dedicated Supabase organization/project ref. Confirm these are isolated from production. If projects do not exist, identify the owning accounts and approve creation of the single Supabase and single Vercel launch projects.
+2. **P0 · Approve exact hosted operations.** Approve prelaunch environment configuration, pending migrations with backup and recovery plan, then deployment of a named revision. Approve synthetic accounts and workspace writes separately. Confirm preview link accessibility for the testers.
+3. **P0 · Run authorization and authentication tests.** Verify registration, recovery, login, refresh, sign-out and invitation redemption. Run the full role matrix through application, direct database API, Storage and Realtime. Fix any confirmed isolation or session defect before broader testing.
+4. **P1 · Verify persistence and recovery.** Run independent-session reads and writes, concurrent edits, cache switching, and Storage failure cases. Prioritize reproducible data loss and false success paths.
+5. **P2/P3 · Run the physical collaboration acceptance.** Arrange two devices and separate networks, approve an isolated TURN issuer, collect selected ICE pairs and measure office performance on supported devices. Complete keyboard, responsive, accessibility and failure handling checks.
+6. **P4 · Verify providers individually.** Approve optional Gemini, test-mode Stripe and prelaunch OAuth configuration separately. Check status, retries, token rotation and disconnect/revoke. Keep optional integrations marked blocked until evidenced.
+7. **Release gate.** Record the evidence for each mandatory matrix test and clear every P0/P1 defect before treating Phase 2 as complete. Public release on those same projects requires separate approval.

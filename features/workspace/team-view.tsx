@@ -374,11 +374,12 @@ export function TeamView({ workspaceId }: { workspaceId: string }) {
                   <Check size={16} /> Invitation Link Generated!
                 </div>
                 <p className="text-xs text-emerald-800">
-                  Raw token is securely generated on the server and never logged. Share this single-use link:
+                  {isLocalDemo ? "This link works in this browser’s local demo." : "Share this single-use link with your invited teammate."}
                 </p>
                 <div className="flex items-center gap-2">
                   <input
                     readOnly
+                    aria-label="Invitation link"
                     value={createdInviteUrl}
                     className="h-9 flex-1 rounded-lg border border-emerald-200 bg-white px-2.5 text-xs text-[#17211b]"
                   />
