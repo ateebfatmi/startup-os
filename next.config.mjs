@@ -1,9 +1,17 @@
+import { fileURLToPath } from "node:url";
 import { validatePrelaunch } from "./scripts/prelaunch-guard.mjs";
 
 if (process.env.CREWVILLA_PRELAUNCH) validatePrelaunch(process.env);
 
 const publicSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const publicSupabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+const e2eDemo = process.env.CREWVILLA_E2E_DEMO === "1";
+
+if (e2eDemo && (process.env.VERCEL || publicSupabaseUrl || publicSupabaseKey ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || process.env.CLERK_PUBLISHABLE_KEY || process.env.CLERK_SECRET_KEY)) {
+  throw new Error("The Playwright demo build requires a local environment without Supabase or Clerk credentials.");
+}
 
 if (Boolean(publicSupabaseUrl) !== Boolean(publicSupabaseKey)) {
   throw new Error(
@@ -51,6 +59,15 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
   productionBrowserSourceMaps: false,
+  ...(e2eDemo && {
+    // Keep the build with test fixtures separate from the normal production build.
+    distDir: ".next/playwright",
+    webpack(config) {
+      config.resolve.alias["@clerk/nextjs$"] = fileURLToPath(new URL("./tests/fixtures/clerk-demo.tsx", import.meta.url));
+      config.resolve.alias["@clerk/nextjs/server$"] = fileURLToPath(new URL("./tests/fixtures/clerk-demo-server.ts", import.meta.url));
+      return config;
+    },
+  }),
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },

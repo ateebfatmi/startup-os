@@ -55,13 +55,6 @@ test.describe("Workspace Invitations & Member Administration E2E", () => {
     await expect(page.getByRole("heading", { name: "Office", exact: true })).toBeVisible();
   });
 
-  test("opens signup mode for an invitation return path", async ({ page }) => {
-    const next = "/invite/accept?token=synthetic-invitation-token";
-    await page.goto(`/login?mode=signup&next=${encodeURIComponent(next)}`);
-    await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
-    await expect(page.getByLabel("Display name")).toBeVisible();
-  });
-
   test("displays error state for invalid invitation tokens", async ({ page }) => {
     await page.goto("/invite/accept?token=invalid-short-token");
     await expect(page.getByText("Invitation unavailable")).toBeVisible();

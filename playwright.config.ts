@@ -15,7 +15,9 @@ export default defineConfig({
     command: isCI
       ? "npm run build && npm run start -- --hostname 127.0.0.1 --port 3100"
       : "npm run dev -- --hostname 127.0.0.1 --port 3100",
-    url: "http://127.0.0.1:3100",
+    env: { CREWVILLA_E2E_DEMO: "1" },
+    url: "http://127.0.0.1:3100/api/health",
+    stdout: "pipe",
     reuseExistingServer: false,
     timeout: isCI ? 180_000 : 120_000,
   },
