@@ -14,6 +14,15 @@ import { OFFICE_THEME_PALETTES } from "./office-design";
 import { OFFICE_OBJECT_CATALOG, officeObjectCollider, type OfficeObject } from "./office-object-catalog";
 import { AvatarModel } from "./avatar-model";
 import { hasSupabaseConfig } from "@/lib/supabase/client";
+import {
+  getWoodFloorTexture,
+  getTravertinePromenadeTexture,
+  getCheckeredTileTexture,
+  getWovenCarpetTexture,
+  getCodeEditorTexture,
+  getDashboardScreenTexture,
+  getBookshelfSpineTexture,
+} from "./textures";
 
 const keys = new Set<string>();
 const demoTeammates = hasSupabaseConfig ? [] : Object.values(AI_TEAMMATES);
@@ -115,13 +124,13 @@ export function OfficeCanvas() {
       <color attach="background" args={[lighting.canvasBg]} />
       <OrthographicCamera
         makeDefault
-        position={[0, 34, 1.5]}
+        position={[0, 18, 14.5]}
         zoom={32}
         near={0.1}
         far={160}
         onUpdate={(camera) => {
-          camera.up.set(0, 0, -1);
-          camera.lookAt(0, 0, 1.5);
+          camera.up.set(0, 1, 0);
+          camera.lookAt(0, 0.85, 1.5);
         }}
       />
       <CameraRig />
@@ -542,12 +551,6 @@ function LocalPlayer() {
 
   return (
     <group ref={group}>
-      {/* Dynamic Ground Shadow */}
-      <mesh position={[0, 0.02, 0]} rotation-x={-Math.PI / 2}>
-        <ringGeometry args={[0.22, 0.44, 24]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.25} />
-      </mesh>
-
       <AvatarModel
         color={isCaffeinated ? "#ff7030" : "#ff8a4c"}
         motion={motion}
@@ -596,10 +599,6 @@ function RemotePlayer({ player }: { player: ReturnType<typeof useOfficeStore.get
 
   return (
     <group ref={group} position={[player.x, 0.06, player.z]} rotation-y={player.rotation}>
-      <mesh position={[0, 0.02, 0]} rotation-x={-Math.PI / 2}>
-        <ringGeometry args={[0.22, 0.44, 24]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.2} />
-      </mesh>
       <AvatarModel color={player.color} motion={motion} />
       <SpriteLabel text={player.name} position={[0, 1.78, 0]} background="rgba(255,255,255,0.96)" color="#17211b" width={2.2} />
     </group>
@@ -832,10 +831,10 @@ function OfficeEnvironment() {
       <EmoteParticleManager />
 
       {/* Zone Carpets & Inlays */}
-      <RoomRug position={[-6.8, 0.045, -4.1]} color={palette.rug} trim={design.accentColor} size={[8.2, 5.8]} />
-      <RoomRug position={[-6.8, 0.045, 3.8]} color={palette.rug} trim={design.accentColor} size={[8.2, 5.6]} />
-      <RoomRug position={[6.8, 0.045, 3.8]} color={design.theme === "midnight" ? "#352735" : "#56382b"} trim={design.accentColor} size={[8.2, 5.6]} />
-      <RoomRug position={[6.8, 0.045, -4.1]} color={design.theme === "biophilic" ? "#294b3b" : "#222b30"} trim={design.accentColor} size={[8.2, 5.8]} />
+      <RoomRug position={[-6.8, 0.045, -4.1]} variant="navy" color={palette.rug} trim={design.accentColor} size={[8.2, 5.8]} />
+      <RoomRug position={[-6.8, 0.045, 3.8]} variant="green" color={palette.rug} trim={design.accentColor} size={[8.2, 5.6]} />
+      <RoomRug position={[6.8, 0.045, 3.8]} variant="tile" color={design.theme === "midnight" ? "#352735" : "#56382b"} trim={design.accentColor} size={[8.2, 5.6]} />
+      <RoomRug position={[6.8, 0.045, -4.1]} variant="warm" color={design.theme === "biophilic" ? "#294b3b" : "#222b30"} trim={design.accentColor} size={[8.2, 5.8]} />
 
       <Walls />
       <GlassPartitions />
@@ -895,25 +894,76 @@ function RoomWayfinding() {
 }
 
 function StandupNook() {
-  return <group position={[0, 0, -1.7]}>
-    <mesh castShadow position={[0, 0.56, 0]}>
-      <cylinderGeometry args={[0.72, 0.58, 1.08, 24]} />
-      <meshStandardMaterial color="#e7ddca" roughness={0.55} />
-    </mesh>
-    <mesh position={[0, 1.12, 0]}>
-      <cylinderGeometry args={[0.78, 0.78, 0.08, 28]} />
-      <meshStandardMaterial color="#315641" roughness={0.4} />
-    </mesh>
-    {[0, Math.PI * 2 / 3, Math.PI * 4 / 3].map((angle) => <group key={angle} position={[Math.sin(angle) * 1.25, 0, Math.cos(angle) * 1.25]}>
-      <mesh castShadow position={[0, 0.42, 0]}><cylinderGeometry args={[0.25, 0.25, 0.08, 18]} /><meshStandardMaterial color="#d39a68" /></mesh>
-      <mesh position={[0, 0.2, 0]}><cylinderGeometry args={[0.035, 0.035, 0.4, 10]} /><meshStandardMaterial color="#28342e" metalness={0.55} /></mesh>
-    </group>)}
-  </group>;
+  return (
+    <group position={[0, 0, -1.7]}>
+      {/* Modern High-Top Discussion Cafe Table */}
+      <mesh castShadow position={[0, 0.02, 0]}>
+        <cylinderGeometry args={[0.42, 0.44, 0.04, 24]} />
+        <meshStandardMaterial color="#1a1e1b" roughness={0.4} metalness={0.7} />
+      </mesh>
+      <mesh castShadow position={[0, 0.54, 0]}>
+        <cylinderGeometry args={[0.04, 0.045, 1.04, 16]} />
+        <meshStandardMaterial color="#1a1e1b" roughness={0.3} metalness={0.8} />
+      </mesh>
+      {/* Terrazzo / Natural White Birch Top */}
+      <mesh castShadow position={[0, 1.06, 0]}>
+        <cylinderGeometry args={[0.66, 0.66, 0.05, 32]} />
+        <meshStandardMaterial color="#f0ece1" roughness={0.32} />
+      </mesh>
+      {/* Brass Edge Bevel Ring */}
+      <mesh position={[0, 1.06, 0]}>
+        <cylinderGeometry args={[0.67, 0.67, 0.02, 32]} />
+        <meshStandardMaterial color="#c9a562" metalness={0.75} roughness={0.3} />
+      </mesh>
+
+      {/* Tabletop Centerpiece: Glass Carafe / Small Foliage Vase */}
+      <mesh castShadow position={[0, 1.15, 0]}>
+        <cylinderGeometry args={[0.05, 0.07, 0.14, 16]} />
+        <meshPhysicalMaterial color="#d4e6df" transparent opacity={0.6} transmission={0.8} roughness={0.1} />
+      </mesh>
+      <mesh position={[0, 1.25, 0]}>
+        <sphereGeometry args={[0.04, 8, 8]} />
+        <meshStandardMaterial color="#315641" roughness={0.6} />
+      </mesh>
+
+      {/* 3 Modern Scandinavian Barstools */}
+      {[0, (Math.PI * 2) / 3, (Math.PI * 4) / 3].map((angle) => {
+        const dist = 0.95;
+        const bx = Math.sin(angle) * dist;
+        const bz = Math.cos(angle) * dist;
+        return (
+          <group key={angle} position={[bx, 0, bz]} rotation-y={angle + Math.PI}>
+            {[-0.12, 0.12].map((lx) => (
+              <mesh key={lx} position={[lx, 0.35, 0]}>
+                <cylinderGeometry args={[0.015, 0.015, 0.7, 8]} />
+                <meshStandardMaterial color="#1c221e" metalness={0.7} />
+              </mesh>
+            ))}
+            <mesh position={[0, 0.24, 0]} rotation-x={Math.PI / 2}>
+              <torusGeometry args={[0.14, 0.012, 8, 16]} />
+              <meshStandardMaterial color="#1c221e" metalness={0.7} />
+            </mesh>
+            <mesh castShadow position={[0, 0.72, 0]}>
+              <cylinderGeometry args={[0.18, 0.18, 0.035, 20]} />
+              <meshStandardMaterial color="#c99b68" roughness={0.5} />
+            </mesh>
+            <mesh position={[0, 0.8, -0.14]}>
+              <boxGeometry args={[0.22, 0.12, 0.02]} />
+              <meshStandardMaterial color="#c99b68" roughness={0.5} />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
+  );
 }
 
 function Floor() {
   const design = useOfficeStore((state) => state.officeDesign);
   const palette = OFFICE_THEME_PALETTES[design.theme];
+  const woodTexture = useMemo(() => getWoodFloorTexture(), []);
+  const promenadeTexture = useMemo(() => getTravertinePromenadeTexture(), []);
+
   return (
     <group>
       {/* Foundation Grand Plinth Slab (Encompassing Interior + Terrace) */}
@@ -922,16 +972,16 @@ function Floor() {
         <meshStandardMaterial color={palette.foundation} roughness={0.7} />
       </mesh>
 
-      {/* Primary Warm Scandinavian Hardwood Floor */}
+      {/* Primary Warm Scandinavian Hardwood Floor (Gather.town authentic oak parquet) */}
       <mesh receiveShadow position={[0, 0.01, 0]} rotation-x={-Math.PI / 2}>
         <planeGeometry args={[30, 19]} />
-        <meshStandardMaterial color={palette.floor} roughness={0.55} metalness={0.04} />
+        <meshStandardMaterial map={woodTexture} roughness={0.55} metalness={0.02} />
       </mesh>
 
       {/* Central Polished Terrazzo Promenade Highway */}
       <mesh receiveShadow position={[0, 0.025, 0.35]} rotation-x={-Math.PI / 2}>
         <planeGeometry args={[4.2, 17.8]} />
-        <meshStandardMaterial color={palette.promenade} roughness={0.42} />
+        <meshStandardMaterial map={promenadeTexture} roughness={0.42} />
       </mesh>
       {/* Central Brushed Brass Inlay Inset Lines */}
       <mesh position={[-2.1, 0.032, 0.35]} rotation-x={-Math.PI / 2}>
@@ -942,20 +992,6 @@ function Floor() {
         <planeGeometry args={[0.04, 17.8]} />
         <meshBasicMaterial color={design.accentColor} />
       </mesh>
-
-      {/* Architectural Floor Grid Tile Seams */}
-      {[-10, -5, 5, 10].map((x) => (
-        <mesh key={`grid-x-${x}`} position={[x, 0.02, 0]} rotation-x={-Math.PI / 2}>
-          <planeGeometry args={[0.02, 18.6]} />
-          <meshBasicMaterial color={palette.seam} />
-        </mesh>
-      ))}
-      {[-5, 0, 5].map((z) => (
-        <mesh key={`grid-z-${z}`} position={[0, 0.021, z]} rotation-x={-Math.PI / 2}>
-          <planeGeometry args={[29.6, 0.02]} />
-          <meshBasicMaterial color={palette.seam} />
-        </mesh>
-      ))}
 
       {/* North Wall Baseboard Ambient Warm Cove Light Strip */}
       <mesh position={[0, 0.035, -9.18]} rotation-x={-Math.PI / 2}>
@@ -1109,35 +1145,42 @@ function RoomRug({
   color,
   trim,
   size,
+  variant = "navy",
 }: {
   position: [number, number, number];
-  color: string;
+  color?: string;
   trim: string;
   size: [number, number];
+  variant?: "navy" | "green" | "warm" | "tile";
 }) {
+  const rugTexture = useMemo(() => {
+    if (variant === "tile") return getCheckeredTileTexture();
+    return getWovenCarpetTexture(variant);
+  }, [variant]);
+
   return (
     <group position={position} rotation-x={-Math.PI / 2}>
-      {/* Base Acoustic Carpet Slab */}
+      {/* Base Acoustic Carpet Slab / Bistro Ceramic Tile */}
       <mesh receiveShadow>
         <planeGeometry args={size} />
-        <meshStandardMaterial color={color} roughness={0.92} metalness={0.02} />
+        <meshStandardMaterial map={rugTexture} roughness={variant === "tile" ? 0.35 : 0.88} />
       </mesh>
-      {/* Perimeter Stitched Border Frame (Gather.town Room Boundary Highlight) */}
+      {/* Perimeter Stitched Border Frame (Gather.town Signature Private Room Boundary) */}
       <mesh position={[0, 0, 0.003]}>
         <planeGeometry args={[size[0] - 0.12, size[1] - 0.12]} />
-        <meshBasicMaterial color={color} />
+        <meshBasicMaterial color={color || "#24322d"} transparent opacity={0.2} />
       </mesh>
-      {/* Elegant Architectural Threshold Brass/Graphite Trim Inlay along edges */}
+      {/* Architectural Boundary Trim Inlay along edges */}
       {[-size[0] / 2 + 0.03, size[0] / 2 - 0.03].map((x, i) => (
         <mesh key={`x-${i}`} position={[x, 0, 0.004]}>
           <planeGeometry args={[0.06, size[1]]} />
-          <meshBasicMaterial color={trim} transparent opacity={0.7} />
+          <meshBasicMaterial color={trim} transparent opacity={0.8} />
         </mesh>
       ))}
       {[-size[1] / 2 + 0.03, size[1] / 2 - 0.03].map((y, i) => (
         <mesh key={`y-${i}`} position={[0, y, 0.004]}>
           <planeGeometry args={[size[0], 0.06]} />
-          <meshBasicMaterial color={trim} transparent opacity={0.7} />
+          <meshBasicMaterial color={trim} transparent opacity={0.8} />
         </mesh>
       ))}
     </group>
@@ -1273,24 +1316,74 @@ function MeetingTable() {
 
   return (
     <group position={[-6.2, 0, -3.7]}>
-      {/* Solid Walnut Oval Conference Table */}
-      <RoundedBox castShadow position={[0, 0.74, 0]} args={[4.4, 0.22, 2.15]} radius={0.32} smoothness={5}>
-        <meshStandardMaterial color="#3d271e" roughness={0.32} />
+      {/* Executive Boat-Shaped Solid Walnut Conference Table */}
+      <RoundedBox castShadow position={[0, 0.74, 0]} args={[4.2, 0.08, 2.1]} radius={0.06}>
+        <meshStandardMaterial color="#362217" roughness={0.28} />
       </RoundedBox>
-      <RoundedBox castShadow position={[0, 0.58, 0]} args={[2.5, 0.72, 0.85]} radius={0.16}>
-        <meshStandardMaterial color="#281e19" roughness={0.45} />
-      </RoundedBox>
-      {/* Leather Center Runner & Microphones */}
-      <mesh position={[0, 0.87, 0]}>
-        <boxGeometry args={[1.6, 0.02, 0.42]} />
-        <meshStandardMaterial color="#1b2420" metalness={0.3} roughness={0.5} />
+      <mesh position={[0, 0.69, 0]}>
+        <boxGeometry args={[4.0, 0.04, 1.9]} />
+        <meshStandardMaterial color="#22150e" roughness={0.4} />
       </mesh>
-      {[-0.45, 0.45].map((x) => (
-        <mesh key={x} position={[x, 0.9, 0]}>
-          <cylinderGeometry args={[0.06, 0.07, 0.03, 16]} />
-          <meshStandardMaterial color="#0c0e0d" metalness={0.8} />
-        </mesh>
+
+      {/* 2 Heavy Dual Fluted Architectural Pedestal Legs */}
+      {[-1.25, 1.25].map((px) => (
+        <group key={px} position={[px, 0.34, 0]}>
+          <mesh castShadow>
+            <cylinderGeometry args={[0.34, 0.44, 0.68, 24]} />
+            <meshStandardMaterial color="#241812" roughness={0.5} />
+          </mesh>
+          <mesh position={[0, -0.32, 0]}>
+            <cylinderGeometry args={[0.5, 0.52, 0.04, 24]} />
+            <meshStandardMaterial color="#1a110b" metalness={0.6} />
+          </mesh>
+        </group>
       ))}
+
+      {/* Central Flush Brushed Aluminum Connectivity Trough */}
+      <mesh position={[0, 0.785, 0]}>
+        <boxGeometry args={[1.8, 0.01, 0.32]} />
+        <meshStandardMaterial color="#222b2e" metalness={0.7} roughness={0.25} />
+      </mesh>
+
+      {/* Star Executive Conference Speakerphone Hub */}
+      <group position={[0, 0.795, 0]}>
+        <mesh castShadow>
+          <cylinderGeometry args={[0.14, 0.16, 0.035, 18]} />
+          <meshStandardMaterial color="#121614" metalness={0.8} roughness={0.2} />
+        </mesh>
+        {/* Soft glowing active call indicator ring */}
+        <mesh position={[0, 0.02, 0]} rotation-x={-Math.PI / 2}>
+          <ringGeometry args={[0.07, 0.09, 16]} />
+          <meshBasicMaterial color="#c8f560" />
+        </mesh>
+      </group>
+
+      {/* 4 Open Laptops on Table */}
+      {[-1.2, 0.6].map((lx) => (
+        <group key={`lap-n-${lx}`} position={[lx, 0.79, -0.55]} rotation-y={0}>
+          <mesh castShadow>
+            <boxGeometry args={[0.34, 0.015, 0.24]} />
+            <meshStandardMaterial color="#c0c5c8" metalness={0.85} roughness={0.2} />
+          </mesh>
+          <mesh position={[0, 0.11, -0.11]} rotation-x={-0.3}>
+            <boxGeometry args={[0.34, 0.22, 0.012]} />
+            <meshStandardMaterial color="#161a1d" metalness={0.8} />
+          </mesh>
+        </group>
+      ))}
+      {[-0.6, 1.2].map((lx) => (
+        <group key={`lap-s-${lx}`} position={[lx, 0.79, 0.55]} rotation-y={Math.PI}>
+          <mesh castShadow>
+            <boxGeometry args={[0.34, 0.015, 0.24]} />
+            <meshStandardMaterial color="#c0c5c8" metalness={0.85} roughness={0.2} />
+          </mesh>
+          <mesh position={[0, 0.11, -0.11]} rotation-x={-0.3}>
+            <boxGeometry args={[0.34, 0.22, 0.012]} />
+            <meshStandardMaterial color="#161a1d" metalness={0.8} />
+          </mesh>
+        </group>
+      ))}
+
       {/* 8 Ergonomic Conference Chairs */}
       {[
         [-1.55, -0.75], [-0.5, -0.75], [0.5, -0.75], [1.55, -0.75],
@@ -1590,41 +1683,65 @@ function BoardroomScreen() {
 }
 
 function ProjectTable() {
+  const setIsSitting = useOfficeStore((state) => state.setIsSitting);
+
   return (
     <group position={[-5.8, 0, 3.4]}>
-      {/* Oak Strategy & Product Table */}
-      <RoundedBox castShadow position={[0, 0.68, 0]} args={[4.4, 0.18, 2.15]} radius={0.1}>
-        <meshStandardMaterial color="#553a29" roughness={0.46} />
+      {/* Natural White Oak Architectural Strategy Table */}
+      <RoundedBox castShadow position={[0, 0.72, 0]} args={[4.3, 0.08, 2.15]} radius={0.05}>
+        <meshStandardMaterial color="#4e3727" roughness={0.42} />
       </RoundedBox>
-      {[-1.75, 1.75].map((x) => (
-        <mesh key={x} castShadow position={[x, 0.35, 0]}>
-          <boxGeometry args={[0.09, 0.7, 1.72]} />
-          <meshStandardMaterial color="#b28a55" metalness={0.62} roughness={0.28} />
-        </mesh>
-      ))}
-      {/* Architecture Blueprints & iPads on table */}
-      {[-1.4, 0, 1.4].map((x) => (
-        <group key={x} position={[x, 0.82, 0]}>
-          <mesh castShadow rotation-x={-0.12}>
-            <boxGeometry args={[0.85, 0.04, 0.6]} />
-            <meshStandardMaterial color={x === 0 ? "#d8b66f" : "#eee4cf"} />
+      <mesh position={[0, 0.67, 0]}>
+        <boxGeometry args={[4.1, 0.04, 1.95]} />
+        <meshStandardMaterial color="#322216" roughness={0.5} />
+      </mesh>
+
+      {/* Industrial Matte Black Steel Trestle Legs */}
+      {[-1.65, 1.65].map((x) => (
+        <group key={x} position={[x, 0.33, 0]}>
+          <mesh castShadow>
+            <boxGeometry args={[0.08, 0.66, 1.8]} />
+            <meshStandardMaterial color="#1f2422" metalness={0.7} roughness={0.3} />
           </mesh>
-          <mesh position={[0, 0.03, 0.02]} rotation-x={-Math.PI / 2}>
-            <planeGeometry args={[0.56, 0.035]} />
-            <meshBasicMaterial color="#6c5540" />
+          <mesh position={[0, -0.3, 0]}>
+            <boxGeometry args={[0.12, 0.06, 1.9]} />
+            <meshStandardMaterial color="#151817" metalness={0.8} />
           </mesh>
         </group>
       ))}
-      {[[-1.4, -0.7], [0, -0.7], [1.4, -0.7], [-1.4, 0.7], [0, 0.7], [1.4, 0.7]].map(([x, z], i) => (
-        <group key={i} position={[x, 0, z]}>
-          <mesh castShadow position={[0, 0.42, 0]}>
-            <cylinderGeometry args={[0.22, 0.22, 0.08, 20]} />
-            <meshStandardMaterial color="#2d3a33" roughness={0.6} />
-          </mesh>
-          <mesh position={[0, 0.2, 0]}>
-            <cylinderGeometry args={[0.03, 0.03, 0.4, 10]} />
-            <meshStandardMaterial color="#b28a55" metalness={0.7} />
-          </mesh>
+
+      {/* Rolled Architectural Blueprints & iPads */}
+      <group position={[-1.2, 0.78, 0.1]}>
+        <mesh castShadow rotation-z={Math.PI / 2} rotation-y={0.2}>
+          <cylinderGeometry args={[0.045, 0.045, 0.85, 16]} />
+          <meshStandardMaterial color="#edf2f7" roughness={0.6} />
+        </mesh>
+        <mesh position={[0.12, 0, 0.08]} rotation-z={Math.PI / 2} rotation-y={0.15}>
+          <cylinderGeometry args={[0.038, 0.038, 0.75, 16]} />
+          <meshStandardMaterial color="#e2e8f0" roughness={0.6} />
+        </mesh>
+      </group>
+
+      {/* iPad Pro & Apple Pencil on Table */}
+      <group position={[0.4, 0.77, -0.2]}>
+        <mesh castShadow>
+          <boxGeometry args={[0.36, 0.012, 0.26]} />
+          <meshStandardMaterial color="#2d3748" metalness={0.7} />
+        </mesh>
+        <mesh position={[0, 0.008, 0]}>
+          <planeGeometry args={[0.33, 0.23]} />
+          <meshBasicMaterial color="#1a202c" />
+        </mesh>
+        <mesh position={[0.22, 0.01, 0]} rotation-x={Math.PI / 2}>
+          <cylinderGeometry args={[0.006, 0.006, 0.22, 8]} />
+          <meshStandardMaterial color="#ffffff" roughness={0.2} />
+        </mesh>
+      </group>
+
+      {/* 6 Studio Cantilever Chairs */}
+      {[[-1.4, -0.75], [0, -0.75], [1.4, -0.75], [-1.4, 0.75], [0, 0.75], [1.4, 0.75]].map(([x, z], i) => (
+        <group key={i} onClick={() => { setIsSitting(true); playChime(); }}>
+          <Chair position={[x, 0, z]} />
         </group>
       ))}
     </group>
@@ -1914,40 +2031,166 @@ function Desk({ position, deskIndex }: { position: readonly [number, number, num
 
 function Lounge() {
   const setIsSitting = useOfficeStore((state) => state.setIsSitting);
+  const bookshelfTexture = useMemo(() => getBookshelfSpineTexture(), []);
 
   return (
     <group position={[5.8, 0, 3.6]}>
-      {/* Curved Moss Green Sectional Sofa */}
+      {/* Mid-Century Modern Tailored Cognac Leather Sectional Sofa */}
       <group onClick={() => { setIsSitting(true); playChime(); }}>
-        <RoundedBox castShadow position={[0, 0.38, 0]} args={[3.7, 0.66, 1.18]} radius={0.28} smoothness={5}>
-          <meshStandardMaterial color="#355244" roughness={0.82} />
-        </RoundedBox>
-        <RoundedBox castShadow position={[0, 0.88, 0.46]} args={[3.7, 0.8, 0.24]} radius={0.13}>
-          <meshStandardMaterial color="#284236" roughness={0.78} />
-        </RoundedBox>
-        {[-1.15, 0, 1.15].map((x) => (
-          <RoundedBox key={x} castShadow position={[x, 0.74, -0.08]} args={[0.94, 0.18, 0.82]} radius={0.14}>
-            <meshStandardMaterial color={x === 0 ? "#9e7446" : "#436554"} roughness={0.8} />
+        {/* Solid Walnut Plinth Base Frame */}
+        <mesh castShadow position={[0, 0.12, 0]}>
+          <boxGeometry args={[3.7, 0.1, 1.2]} />
+          <meshStandardMaterial color="#362217" roughness={0.4} />
+        </mesh>
+
+        {/* 6 Tapered Brass & Matte Black Legs */}
+        {[
+          [-1.7, -0.45], [0, -0.45], [1.7, -0.45],
+          [-1.7, 0.45], [0, 0.45], [1.7, 0.45],
+        ].map(([lx, lz], i) => (
+          <group key={i} position={[lx, 0.06, lz]}>
+            <mesh castShadow>
+              <cylinderGeometry args={[0.02, 0.012, 0.12, 10]} />
+              <meshStandardMaterial color="#1a1a1a" metalness={0.7} />
+            </mesh>
+            <mesh position={[0, -0.045, 0]}>
+              <cylinderGeometry args={[0.015, 0.012, 0.03, 10]} />
+              <meshStandardMaterial color="#d4af37" metalness={0.85} roughness={0.2} />
+            </mesh>
+          </group>
+        ))}
+
+        {/* 3 Crisp Boxed Seat Cushions with Tailored Piping */}
+        {[-1.2, 0, 1.2].map((x) => (
+          <RoundedBox key={x} castShadow position={[x, 0.32, -0.06]} args={[1.18, 0.22, 0.94]} radius={0.05} smoothness={4}>
+            <meshStandardMaterial color="#8e502c" roughness={0.62} />
           </RoundedBox>
         ))}
+
+        {/* Tailored Upright Backrest Cushions */}
+        <RoundedBox castShadow position={[0, 0.66, 0.44]} args={[3.65, 0.52, 0.22]} radius={0.06} smoothness={4}>
+          <meshStandardMaterial color="#7a4223" roughness={0.65} />
+        </RoundedBox>
+
+        {/* Sleek Walnut Low Armrests */}
+        {[-1.82, 1.82].map((ax) => (
+          <mesh key={ax} castShadow position={[ax, 0.42, 0]}>
+            <boxGeometry args={[0.08, 0.44, 1.1]} />
+            <meshStandardMaterial color="#362217" roughness={0.4} />
+          </mesh>
+        ))}
+
+        {/* Decorative Throw Pillows */}
+        {/* Left Warm Cream Pillow */}
+        <mesh position={[-1.45, 0.48, 0.3]} rotation={[0.2, 0.35, -0.15]}>
+          <boxGeometry args={[0.36, 0.36, 0.12]} />
+          <meshStandardMaterial color="#ede4d4" roughness={0.8} />
+        </mesh>
+        {/* Right Terracotta Pillow */}
+        <mesh position={[1.45, 0.48, 0.3]} rotation={[0.2, -0.35, 0.15]}>
+          <boxGeometry args={[0.36, 0.36, 0.12]} />
+          <meshStandardMaterial color="#2d4a3b" roughness={0.75} />
+        </mesh>
       </group>
-      {/* Low Marble Cocktail Coffee Table */}
-      <mesh castShadow position={[0, 0.3, -1.36]}>
-        <cylinderGeometry args={[0.76, 0.82, 0.18, 32]} />
-        <meshStandardMaterial color="#352820" roughness={0.36} />
-      </mesh>
-      <mesh position={[0, 0.41, -1.36]}>
-        <cylinderGeometry args={[0.64, 0.64, 0.04, 32]} />
-        <meshStandardMaterial color="#dbd0be" roughness={0.26} />
-      </mesh>
+
+      {/* Architectural Low Rectangular Walnut & Travertine Cocktail Table */}
+      <group position={[0, 0, -1.35]}>
+        <mesh castShadow position={[0, 0.18, 0]}>
+          <boxGeometry args={[1.9, 0.05, 0.85]} />
+          <meshStandardMaterial color="#301e14" roughness={0.4} />
+        </mesh>
+        <mesh position={[0, 0.21, 0]}>
+          <boxGeometry args={[1.75, 0.015, 0.72]} />
+          <meshStandardMaterial color="#dcd2c2" roughness={0.25} />
+        </mesh>
+        {/* 4 Table Legs */}
+        {[
+          [-0.85, -0.35], [0.85, -0.35],
+          [-0.85, 0.35], [0.85, 0.35],
+        ].map(([lx, lz], i) => (
+          <mesh key={i} position={[lx, 0.09, lz]}>
+            <cylinderGeometry args={[0.018, 0.018, 0.18, 8]} />
+            <meshStandardMaterial color="#1a1a1a" metalness={0.7} />
+          </mesh>
+        ))}
+
+        {/* Ceramic Mugs & Architecture Book on Table */}
+        <mesh position={[-0.45, 0.26, 0.08]} castShadow>
+          <cylinderGeometry args={[0.045, 0.038, 0.08, 14]} />
+          <meshStandardMaterial color="#f7f4ed" roughness={0.3} />
+        </mesh>
+        <mesh position={[-0.32, 0.26, -0.06]} castShadow>
+          <cylinderGeometry args={[0.042, 0.035, 0.075, 14]} />
+          <meshStandardMaterial color="#e8af78" roughness={0.4} />
+        </mesh>
+        <mesh position={[0.4, 0.23, 0]} castShadow>
+          <boxGeometry args={[0.42, 0.02, 0.32]} />
+          <meshStandardMaterial color="#2a3a32" roughness={0.6} />
+        </mesh>
+        {/* Miniature Table Succulent in Ceramic Dish */}
+        <mesh position={[0, 0.24, 0.15]}>
+          <cylinderGeometry args={[0.06, 0.045, 0.04, 16]} />
+          <meshStandardMaterial color="#ffffff" roughness={0.2} />
+        </mesh>
+        <mesh position={[0, 0.28, 0.15]}>
+          <sphereGeometry args={[0.04, 8, 8]} />
+          <meshStandardMaterial color="#3b694d" roughness={0.7} />
+        </mesh>
+      </group>
+
+      {/* Retro Office Water Cooler (Signature Gather.town Detail) */}
+      <group position={[-2.35, 0, 0.3]}>
+        {/* Stand Base */}
+        <mesh castShadow position={[0, 0.44, 0]}>
+          <cylinderGeometry args={[0.2, 0.22, 0.88, 20]} />
+          <meshStandardMaterial color="#e8e8e8" metalness={0.3} roughness={0.3} />
+        </mesh>
+        {/* Drip Tray & Taps */}
+        <mesh position={[0, 0.72, 0.16]}>
+          <boxGeometry args={[0.18, 0.04, 0.12]} />
+          <meshStandardMaterial color="#333333" />
+        </mesh>
+        <mesh position={[-0.04, 0.77, 0.16]}>
+          <cylinderGeometry args={[0.012, 0.012, 0.04, 8]} />
+          <meshStandardMaterial color="#3884ff" />
+        </mesh>
+        <mesh position={[0.04, 0.77, 0.16]}>
+          <cylinderGeometry args={[0.012, 0.012, 0.04, 8]} />
+          <meshStandardMaterial color="#e54848" />
+        </mesh>
+        {/* Inverted Translucent Cyan Water Jug */}
+        <mesh position={[0, 1.15, 0]}>
+          <cylinderGeometry args={[0.18, 0.18, 0.44, 24]} />
+          <meshPhysicalMaterial color="#5cd0ff" transparent opacity={0.65} transmission={0.75} roughness={0.15} />
+        </mesh>
+        <mesh position={[0, 0.91, 0]}>
+          <cylinderGeometry args={[0.08, 0.12, 0.06, 16]} />
+          <meshStandardMaterial color="#2d77b8" />
+        </mesh>
+      </group>
+
+      {/* Tall Scandinavian Oak Library Bookshelf with Real Book Spines */}
+      <group position={[0, 0, 2.05]}>
+        {/* Outer Wooden Shell */}
+        <mesh castShadow position={[0, 1.15, 0]}>
+          <boxGeometry args={[2.5, 2.2, 0.38]} />
+          <meshStandardMaterial color="#382417" roughness={0.5} />
+        </mesh>
+        {/* Inner Shelves Front with Texture */}
+        <mesh position={[0, 1.15, 0.18]}>
+          <planeGeometry args={[2.38, 2.08]} />
+          <meshBasicMaterial map={bookshelfTexture} />
+        </mesh>
+      </group>
+
       {/* Designer Arched Brass Floor Lamp */}
       <mesh castShadow position={[2.2, 0.95, 0.4]}>
-        <cylinderGeometry args={[0.03, 0.03, 1.8, 12]} />
+        <cylinderGeometry args={[0.02, 0.02, 1.8, 12]} />
         <meshStandardMaterial color="#bd955d" metalness={0.8} />
       </mesh>
       <mesh position={[2.2, 1.82, 0.4]}>
-        <coneGeometry args={[0.38, 0.45, 32, 1, true]} />
-        <meshStandardMaterial color="#f0debe" side={THREE.DoubleSide} emissive="#e4b56d" emissiveIntensity={0.3} />
+        <coneGeometry args={[0.34, 0.42, 28, 1, true]} />
+        <meshStandardMaterial color="#f0debe" side={THREE.DoubleSide} emissive="#e4b56d" emissiveIntensity={0.35} />
       </mesh>
     </group>
   );

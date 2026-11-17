@@ -93,24 +93,24 @@ export function AvatarModel({
 
   return (
     <group ref={root}>
-      {/* Gather.town Style Proximity Audio Radar Ring (Hearing range) */}
+      {/* Gather.town Style Proximity Audio Radar Wave (Hearing range) */}
       {showProximityRing && (
-        <group position={[0, 0.015, 0]}>
+        <group position={[0, 0.012, 0]}>
           <mesh rotation-x={-Math.PI / 2}>
-            <ringGeometry args={[2.85, 2.95, 48]} />
-            <meshBasicMaterial color="#c8f560" transparent opacity={0.35} />
+            <ringGeometry args={[2.94, 2.98, 64]} />
+            <meshBasicMaterial color="#c8f560" transparent opacity={0.22} />
           </mesh>
           <mesh rotation-x={-Math.PI / 2}>
-            <circleGeometry args={[2.85, 48]} />
-            <meshBasicMaterial color="#c8f560" transparent opacity={0.04} />
+            <circleGeometry args={[2.94, 48]} />
+            <meshBasicMaterial color="#c8f560" transparent opacity={0.025} />
           </mesh>
         </group>
       )}
 
-      {/* Realistic Soft Contact Shadow */}
-      <mesh position={[0, 0.02, 0]} rotation-x={-Math.PI / 2}>
-        <ringGeometry args={[0.18, 0.38, 24]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.28} />
+      {/* Realistic Soft Ambient Contact Shadow Disc */}
+      <mesh position={[0, 0.018, 0]} rotation-x={-Math.PI / 2}>
+        <circleGeometry args={[0.26, 24]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.24} />
       </mesh>
 
       {/* Main Human Body Group */}

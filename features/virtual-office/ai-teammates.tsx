@@ -123,12 +123,12 @@ function AITeammateAvatar({ config }: { config: AITeammateConfig }) {
       onPointerOut={() => setHovered(false)}
     >
       {/* Ground Aura Marker */}
-      <mesh ref={auraRef} position={[0, 0.02, 0]} rotation-x={-Math.PI / 2}>
-        <ringGeometry args={[0.3, 0.52, 24]} />
+      <mesh ref={auraRef} position={[0, 0.015, 0]} rotation-x={-Math.PI / 2}>
+        <circleGeometry args={[0.34, 24]} />
         <meshBasicMaterial
           color={config.accent}
           transparent
-          opacity={isSelected ? 0.9 : hovered ? 0.6 : 0.25}
+          opacity={isSelected ? 0.35 : hovered ? 0.25 : 0.12}
         />
       </mesh>
 
