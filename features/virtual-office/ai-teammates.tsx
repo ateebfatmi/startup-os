@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { useOfficeStore } from "./store";
 import { playChime } from "./audio";
 import { AvatarModel } from "./avatar-model";
-import { SpriteLabel } from "./office-canvas";
+import { SpriteLabel } from "./sprite-label";
 
 export type AITeammateId = "dev" | "design" | "finance";
 
@@ -29,11 +29,11 @@ export const AI_TEAMMATES: Record<AITeammateId, AITeammateConfig> = {
     id: "dev",
     name: "Alex",
     role: "Lead Systems Architect",
-    department: "Engineering Pod",
+    department: "Workstation Hub",
     status: "Reviewing pull requests",
     color: "#2a4365",
     accent: "#5cd0ff",
-    position: [4.8, 0, -4.7],
+    position: [1.0, 0, -1.9],
     rotation: 0,
     systemPrompt: "You are Alex, Lead Systems Architect at CrewVilla (Startup OS). You are deeply technical, pragmatic, and specialize in distributed WebRTC, Next.js, Three.js, and high-performance TypeScript infrastructure. Keep responses concise, actionable, and formatted with code snippets when relevant.",
     suggestedQuestions: [
@@ -47,11 +47,11 @@ export const AI_TEAMMATES: Record<AITeammateId, AITeammateConfig> = {
     id: "design",
     name: "Maya",
     role: "Principal Product Designer",
-    department: "Strategy Wall",
+    department: "Product / Project Room",
     status: "Sketching UX wireframes",
     color: "#234e52",
     accent: "#c8f560",
-    position: [-3.8, 0, 2.2],
+    position: [7.5, 0, 0.2],
     rotation: Math.PI / 4,
     systemPrompt: "You are Maya, Principal Product Designer at CrewVilla (Startup OS). You are obsessed with craftsmanship, Scandinavian minimalism, keyboard-first navigation, and delightful spatial UX. You provide constructive design critiques and user experience insights.",
     suggestedQuestions: [
@@ -65,12 +65,12 @@ export const AI_TEAMMATES: Record<AITeammateId, AITeammateConfig> = {
     id: "finance",
     name: "Marcus",
     role: "Head of Finance & Growth",
-    department: "Executive Boardroom",
+    department: "Director Cabin",
     status: "Analyzing runway & burn rate",
     color: "#3d2a1d",
     accent: "#ffaa55",
-    position: [-4.2, 0, -2.8],
-    rotation: -Math.PI / 3,
+    position: [-1.5, 0, -7.2],
+    rotation: 0,
     systemPrompt: "You are Marcus, Head of Finance & Venture Growth at CrewVilla (Startup OS). You are sharp, analytical, and experienced with Y Combinator seed benchmarks, SaaS unit economics, cap table math, and investor updates. You communicate with crisp numbers and high clarity.",
     suggestedQuestions: [
       "Analyze our 18.4 month runway with $14.5k/mo burn",

@@ -14,6 +14,7 @@ import { OFFICE_THEME_PALETTES } from "./office-design";
 import { OFFICE_OBJECT_CATALOG, officeObjectCollider, type OfficeObject } from "./office-object-catalog";
 import { AvatarModel } from "./avatar-model";
 import { hasSupabaseConfig } from "@/lib/supabase/client";
+import { SpriteLabel } from "./sprite-label";
 import {
   getWoodFloorTexture,
   getTravertinePromenadeTexture,
@@ -224,58 +225,6 @@ function TouchControls() {
 
 function TouchButton({ label, icon: Icon, ...events }: { label: string; icon: typeof ArrowUp; onPointerDown: React.PointerEventHandler<HTMLButtonElement>; onPointerUp: React.PointerEventHandler<HTMLButtonElement>; onPointerCancel: React.PointerEventHandler<HTMLButtonElement> }) {
   return <button aria-label={label} className="grid h-11 w-11 touch-none place-items-center rounded-xl bg-white text-[#173f2b] shadow-sm active:bg-[#c8f560]" {...events}><Icon size={19} /></button>;
-}
-
-export function SpriteLabel({
-  text,
-  position = [0, 0, 0],
-  background = "rgba(23, 33, 27, 0.94)",
-  color = "#ffffff",
-  width = 2.1,
-}: {
-  text: string;
-  position?: [number, number, number];
-  background?: string;
-  color?: string;
-  width?: number;
-}) {
-  const texture = useMemo(() => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 512;
-    canvas.height = 128;
-    const context = canvas.getContext("2d");
-    if (!context) return null;
-
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = background;
-    context.beginPath();
-    context.roundRect(8, 8, canvas.width - 16, canvas.height - 16, 54);
-    context.fill();
-    context.strokeStyle = "rgba(255,255,255,0.2)";
-    context.lineWidth = 4;
-    context.stroke();
-    context.fillStyle = color;
-    context.font = "700 46px ui-sans-serif, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
-    context.textAlign = "center";
-    context.textBaseline = "middle";
-    context.fillText(text, canvas.width / 2, canvas.height / 2 + 1, canvas.width - 48);
-
-    const nextTexture = new THREE.CanvasTexture(canvas);
-    nextTexture.colorSpace = THREE.SRGBColorSpace;
-    nextTexture.minFilter = THREE.LinearFilter;
-    nextTexture.magFilter = THREE.LinearFilter;
-    nextTexture.needsUpdate = true;
-    return nextTexture;
-  }, [background, color, text]);
-
-  useEffect(() => () => texture?.dispose(), [texture]);
-  if (!texture) return null;
-
-  return (
-    <sprite position={position} scale={[width, 0.5, 1]} renderOrder={1000}>
-      <spriteMaterial map={texture} transparent depthTest={false} depthWrite={false} toneMapped={false} />
-    </sprite>
-  );
 }
 
 function CameraRig() {
@@ -817,7 +766,6 @@ function AudioConnectionBeam({
 }
 
 function OfficeEnvironment() {
-  const deskPositions = useMemo(() => [[4.8, -4.7], [7, -4.7], [4.8, -2.2], [7, -2.2]] as const, []);
   const activeNearby = useOfficeStore((state) => state.nearbyAction);
   const design = useOfficeStore((state) => state.officeDesign);
   const palette = OFFICE_THEME_PALETTES[design.theme];
@@ -830,27 +778,49 @@ function OfficeEnvironment() {
       <ProximityAudioBeams />
       <EmoteParticleManager />
 
-      {/* Zone Carpets & Inlays */}
-      <RoomRug position={[-6.8, 0.045, -4.1]} variant="navy" color={palette.rug} trim={design.accentColor} size={[8.2, 5.8]} />
-      <RoomRug position={[-6.8, 0.045, 3.8]} variant="green" color={palette.rug} trim={design.accentColor} size={[8.2, 5.6]} />
-      <RoomRug position={[6.8, 0.045, 3.8]} variant="tile" color={design.theme === "midnight" ? "#352735" : "#56382b"} trim={design.accentColor} size={[8.2, 5.6]} />
-      <RoomRug position={[6.8, 0.045, -4.1]} variant="warm" color={design.theme === "biophilic" ? "#294b3b" : "#222b30"} trim={design.accentColor} size={[8.2, 5.8]} />
+      {/* 12 Zone Carpets & Inlays matching 40ft x 30ft Architectural Blueprint */}
+      {/* 1. Meeting / Conference Room */}
+      <RoomRug position={[-7.75, 0.045, -6.0]} variant="navy" color={palette.rug} trim={design.accentColor} size={[8.0, 5.6]} />
+      {/* 2. Director / Founder Cabin */}
+      <RoomRug position={[-1.5, 0.045, -6.0]} variant="warm" color={palette.rug} trim={design.accentColor} size={[3.8, 5.6]} />
+      {/* 3. Manager Cabin */}
+      <RoomRug position={[2.5, 0.045, -6.0]} variant="navy" color={palette.rug} trim={design.accentColor} size={[3.8, 5.6]} />
+      {/* 4. Pantry / Break Area */}
+      <RoomRug position={[6.5, 0.045, -6.0]} variant="tile" color={palette.rug} trim={design.accentColor} size={[3.8, 5.6]} />
+      {/* 5. 2 Washrooms */}
+      <RoomRug position={[10.25, 0.045, -5.75]} variant="tile" color={palette.rug} trim={design.accentColor} size={[3.3, 6.1]} />
+      {/* 6. Collaboration / Discussion Area */}
+      <RoomRug position={[-8.25, 0.045, 0]} variant="warm" color={palette.rug} trim={design.accentColor} size={[7.2, 5.6]} />
+      {/* 7. Workstations Area */}
+      <RoomRug position={[0, 0.045, 0]} variant="navy" color={palette.rug} trim={design.accentColor} size={[8.4, 4.8]} />
+      {/* 8. Product / Project Room */}
+      <RoomRug position={[8.25, 0.045, 0.25]} variant="green" color={palette.rug} trim={design.accentColor} size={[7.2, 5.1]} />
+      {/* 9. Server / IT Room */}
+      <RoomRug position={[-9.25, 0.045, 6.0]} variant="navy" color={palette.rug} trim={design.accentColor} size={[5.2, 5.6]} />
+      {/* 10. Storage / Utility */}
+      <RoomRug position={[-5.0, 0.045, 6.0]} variant="warm" color={palette.rug} trim={design.accentColor} size={[2.8, 5.6]} />
+      {/* 11. Reception Promenade */}
+      {/* 12. Waiting Area */}
+      <RoomRug position={[7.75, 0.045, 6.0]} variant="warm" color={palette.rug} trim={design.accentColor} size={[8.0, 5.6]} />
 
       <Walls />
       <GlassPartitions />
-      <Reception />
+
+      {/* 12 Architectural Room Environments */}
       <MeetingTable />
       <BoardroomScreen />
-      <ProjectTable />
-      {deskPositions.map(([x, z], i) => <Desk key={`${x}-${z}`} position={[x, 0, z]} deskIndex={i} />)}
-      <Lounge />
-      <EspressoStation />
-      <VinylLofiPlayer />
-      <PhoneBooth />
-      <WaterCooler />
-      <Whiteboard />
-      <LibraryWall />
-      <AIPod />
+      <FounderCabin />
+      <ManagerCabin />
+      <PantryArea />
+      <WashroomRooms />
+      <CollaborationArea />
+      <WorkstationsArea />
+      <ProductRoom />
+      <ServerRoom />
+      <StorageUtilityRoom />
+      <Reception />
+      <WaitingArea />
+
       <LightingDetails />
       {design.plantsEnabled && <Plants />}
       <RoomWayfinding />
@@ -1190,38 +1160,65 @@ function RoomRug({
 function Walls() {
   return (
     <group>
-      {/* North Wall: Modern Floor-to-Ceiling Panoramic Glass Curtain Wall & Walnut Mullions */}
-      <Wall position={[0, 1.25, -9.55]} size={[30, 2.5, 0.25]} />
-      <mesh position={[0, 0.65, -9.38]}>
-        <boxGeometry args={[29.6, 1.3, 0.06]} />
-        <meshStandardMaterial color="#2d3f37" roughness={0.7} />
+      {/* Exterior Perimeter Walls (24m x 18m) */}
+      <Wall position={[0, 1.1, -9.0]} size={[24.0, 2.2, 0.25]} />
+      {/* South Wall with Center Entrance double-door portal at x = 0 */}
+      <Wall position={[-7.2, 1.1, 9.0]} size={[9.6, 2.2, 0.25]} />
+      <Wall position={[7.2, 1.1, 9.0]} size={[9.6, 2.2, 0.25]} />
+      <mesh position={[0, 2.1, 9.0]}>
+        <boxGeometry args={[4.8, 0.2, 0.25]} />
+        <meshStandardMaterial color="#ede7dc" />
       </mesh>
-      <mesh position={[0, 1.32, -9.34]}>
-        <boxGeometry args={[29.6, 0.06, 0.07]} />
-        <meshStandardMaterial color="#c9a562" metalness={0.75} roughness={0.25} />
-      </mesh>
+      {/* West Wall */}
+      <Wall position={[-12.0, 1.1, 0]} size={[0.25, 2.2, 18.0]} />
+      {/* East Wall */}
+      <Wall position={[12.0, 1.1, 0]} size={[0.25, 2.2, 18.0]} />
 
-      {/* South Wall Interior Divider with Center Terrace Entrance Portal */}
-      <Wall position={[-8.6, 0.28, 9.55]} size={[12.8, 0.56, 0.3]} />
-      <Wall position={[8.6, 0.28, 9.55]} size={[12.8, 0.56, 0.3]} />
-      {/* Center Open Threshold to Terrace */}
-      <mesh position={[0, 0.015, 9.55]}>
-        <boxGeometry args={[4.4, 0.03, 0.3]} />
-        <meshBasicMaterial color="#c9a562" />
-      </mesh>
+      {/* Interior Divider Walls (1.4m height for Gather 2.5D clarity) */}
+      {/* North Row Horizontal Divider (z = -3.0) with door openings */}
+      <InteriorWall position={[-9.0, 0.7, -3.0]} size={[6.0, 1.4, 0.16]} />
+      <InteriorWall position={[-3.0, 0.7, -3.0]} size={[1.0, 1.4, 0.16]} />
+      <InteriorWall position={[1.0, 0.7, -3.0]} size={[1.0, 1.4, 0.16]} />
+      <InteriorWall position={[4.8, 0.7, -3.0]} size={[0.6, 1.4, 0.16]} />
+      <InteriorWall position={[10.2, 0.7, -3.0]} size={[3.6, 1.4, 0.16]} />
 
-      {/* West Wall (Left) */}
-      <Wall position={[-14.95, 0.65, 0]} size={[0.3, 1.3, 19.2]} />
-      <mesh position={[-14.78, 0.25, 0]}>
-        <boxGeometry args={[0.06, 0.5, 18.8]} />
-        <meshStandardMaterial color="#2d3f37" roughness={0.7} />
-      </mesh>
+      {/* North Row Vertical Walls */}
+      <InteriorWall position={[-3.5, 0.7, -6.0]} size={[0.16, 1.4, 6.0]} />
+      <InteriorWall position={[0.5, 0.7, -6.0]} size={[0.16, 1.4, 6.0]} />
+      <InteriorWall position={[4.5, 0.7, -6.0]} size={[0.16, 1.4, 6.0]} />
+      <InteriorWall position={[8.5, 0.7, -6.0]} size={[0.16, 1.4, 6.0]} />
+      <InteriorWall position={[10.2, 0.7, -5.8]} size={[3.4, 1.4, 0.16]} />
 
-      {/* East Wall (Right) */}
-      <Wall position={[14.95, 0.65, 0]} size={[0.3, 1.3, 19.2]} />
-      <mesh position={[14.78, 0.25, 0]}>
-        <boxGeometry args={[0.06, 0.5, 18.8]} />
-        <meshStandardMaterial color="#2d3f37" roughness={0.7} />
+      {/* Product / Project Room Walls (Middle Right) */}
+      <InteriorWall position={[8.25, 0.7, -2.5]} size={[7.5, 1.4, 0.16]} />
+      <InteriorWall position={[8.25, 0.7, 3.0]} size={[7.5, 1.4, 0.16]} />
+      <InteriorWall position={[4.5, 0.7, -1.6]} size={[0.16, 1.4, 1.8]} />
+      <InteriorWall position={[4.5, 0.7, 2.0]} size={[0.16, 1.4, 2.0]} />
+
+      {/* South Row Walls */}
+      <InteriorWall position={[-9.25, 0.7, 3.0]} size={[5.5, 1.4, 0.16]} />
+      <InteriorWall position={[-6.5, 0.7, 6.8]} size={[0.16, 1.4, 4.4]} />
+      <InteriorWall position={[-3.5, 0.7, 6.8]} size={[0.16, 1.4, 4.4]} />
+    </group>
+  );
+}
+
+function InteriorWall({ position, size }: { position: [number, number, number]; size: [number, number, number] }) {
+  return (
+    <group position={position}>
+      <mesh castShadow receiveShadow>
+        <boxGeometry args={size} />
+        <meshStandardMaterial color="#f0ece4" roughness={0.65} />
+      </mesh>
+      {/* Cap Railing */}
+      <mesh position={[0, size[1] / 2 + 0.02, 0]}>
+        <boxGeometry args={[size[0] + 0.02, 0.04, size[2] + 0.02]} />
+        <meshStandardMaterial color="#4a3225" roughness={0.4} />
+      </mesh>
+      {/* Baseboard */}
+      <mesh position={[0, -size[1] / 2 + 0.05, 0]}>
+        <boxGeometry args={[size[0] + 0.01, 0.1, size[2] + 0.01]} />
+        <meshStandardMaterial color="#2d1f17" roughness={0.5} />
       </mesh>
     </group>
   );
@@ -1239,20 +1236,10 @@ function Wall({ position, size }: { position: [number, number, number]; size: [n
 function GlassPartitions() {
   return (
     <group>
-      {[-2.65, 2.65].map((x) => (
-        <group key={x}>
-          <GlassPanel position={[x, 0.75, -5.55]} depth={3.1} />
-          <GlassPanel position={[x, 0.75, -1.85]} depth={2.3} />
-          <mesh position={[x, 1.52, -3.95]}>
-            <boxGeometry args={[0.08, 0.06, 6.5]} />
-            <meshStandardMaterial color="#a78555" metalness={0.72} roughness={0.25} />
-          </mesh>
-        </group>
-      ))}
-      <mesh position={[0, 1.5, -0.7]}>
-        <boxGeometry args={[5.4, 0.06, 0.06]} />
-        <meshStandardMaterial color="#a78555" metalness={0.75} roughness={0.22} />
-      </mesh>
+      {/* Collaboration Area Divider */}
+      <GlassPanel position={[-4.5, 0.75, 0]} depth={3.8} />
+      {/* Waiting Area Divider */}
+      <GlassPanel position={[4.5, 0.75, 6.0]} depth={4.8} />
     </group>
   );
 }
@@ -1678,6 +1665,493 @@ function BoardroomScreen() {
           <meshBasicMaterial color="#c8f560" transparent opacity={0.08} />
         </mesh>
       )}
+    </group>
+  );
+}
+
+function FounderCabin() {
+  const setIsSitting = useOfficeStore((state) => state.setIsSitting);
+
+  return (
+    <group position={[-1.5, 0, -6.0]}>
+      {/* Executive Desk */}
+      <RoundedBox castShadow position={[0, 0.74, 0]} args={[2.4, 0.08, 1.1]} radius={0.04}>
+        <meshStandardMaterial color="#3d281a" roughness={0.35} />
+      </RoundedBox>
+      <mesh position={[0, 0.35, -0.45]}>
+        <boxGeometry args={[2.2, 0.68, 0.05]} />
+        <meshStandardMaterial color="#2d1d13" roughness={0.4} />
+      </mesh>
+      {[-1.05, 1.05].map((x) => (
+        <mesh key={x} position={[x, 0.35, 0]}>
+          <boxGeometry args={[0.08, 0.7, 1.0]} />
+          <meshStandardMaterial color="#23170f" roughness={0.4} />
+        </mesh>
+      ))}
+      {/* Dark Leather Writing Pad */}
+      <mesh position={[0, 0.785, 0.05]}>
+        <boxGeometry args={[1.2, 0.01, 0.65]} />
+        <meshStandardMaterial color="#1a1c1d" roughness={0.7} />
+      </mesh>
+      {/* Modern Executive Laptop */}
+      <group position={[0, 0.795, 0.05]}>
+        <mesh castShadow>
+          <boxGeometry args={[0.34, 0.015, 0.24]} />
+          <meshStandardMaterial color="#c0c5c8" metalness={0.8} roughness={0.2} />
+        </mesh>
+        <mesh position={[0, 0.12, -0.11]} rotation-x={-0.3}>
+          <boxGeometry args={[0.34, 0.22, 0.012]} />
+          <meshStandardMaterial color="#101416" />
+        </mesh>
+        <mesh position={[0, 0.12, -0.104]} rotation-x={-0.3}>
+          <planeGeometry args={[0.31, 0.19]} />
+          <meshBasicMaterial color="#152620" />
+        </mesh>
+      </group>
+      {/* Brass Desk Lamp */}
+      <mesh position={[-0.85, 0.95, -0.2]}>
+        <cylinderGeometry args={[0.015, 0.02, 0.35, 8]} />
+        <meshStandardMaterial color="#c8a555" metalness={0.85} roughness={0.2} />
+      </mesh>
+      {/* Founder Executive Chair */}
+      <group position={[0, 0, -0.8]} onClick={() => { setIsSitting(true); playChime(); }}>
+        <Chair position={[0, 0, 0]} />
+      </group>
+      {/* 2 Visitor Chairs in front of desk */}
+      {[-0.65, 0.65].map((vx) => (
+        <group key={vx} position={[vx, 0, 0.8]} rotation-y={Math.PI} onClick={() => { setIsSitting(true); playChime(); }}>
+          <Chair position={[0, 0, 0]} />
+        </group>
+      ))}
+      {/* Executive Credenza / Trophy Display behind desk */}
+      <group position={[0, 0, -2.4]}>
+        <RoundedBox castShadow position={[0, 0.5, 0]} args={[2.8, 0.95, 0.5]} radius={0.04}>
+          <meshStandardMaterial color="#2d1d13" roughness={0.4} />
+        </RoundedBox>
+        <mesh position={[-0.6, 1.05, 0]}>
+          <boxGeometry args={[0.4, 0.25, 0.25]} />
+          <meshStandardMaterial color="#884433" roughness={0.6} />
+        </mesh>
+        <mesh position={[0.5, 1.08, 0]}>
+          <cylinderGeometry args={[0.04, 0.06, 0.2, 12]} />
+          <meshStandardMaterial color="#d4af37" metalness={0.9} roughness={0.15} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+function ManagerCabin() {
+  const setIsSitting = useOfficeStore((state) => state.setIsSitting);
+
+  return (
+    <group position={[2.5, 0, -6.0]}>
+      {/* Manager Desk */}
+      <RoundedBox castShadow position={[0, 0.74, 0]} args={[2.2, 0.08, 1.05]} radius={0.04}>
+        <meshStandardMaterial color="#423024" roughness={0.4} />
+      </RoundedBox>
+      {[-0.95, 0.95].map((x) => (
+        <mesh key={x} position={[x, 0.35, 0]}>
+          <boxGeometry args={[0.06, 0.7, 0.9]} />
+          <meshStandardMaterial color="#1a1c1d" metalness={0.7} roughness={0.3} />
+        </mesh>
+      ))}
+      {/* Ultra-Wide Workstation Monitor */}
+      <group position={[0, 0.78, -0.2]}>
+        <mesh position={[0, 0.22, 0]}>
+          <boxGeometry args={[0.7, 0.42, 0.03]} />
+          <meshStandardMaterial color="#15191d" metalness={0.5} roughness={0.3} />
+        </mesh>
+        <mesh position={[0, 0.22, 0.016]}>
+          <planeGeometry args={[0.66, 0.38]} />
+          <meshBasicMaterial color="#0f1f18" />
+        </mesh>
+        <mesh position={[0, 0.05, 0]}>
+          <cylinderGeometry args={[0.018, 0.018, 0.14, 8]} />
+          <meshStandardMaterial color="#c0c5c8" metalness={0.8} />
+        </mesh>
+      </group>
+      {/* Manager Task Chair */}
+      <group position={[0, 0, -0.75]} onClick={() => { setIsSitting(true); playChime(); }}>
+        <Chair position={[0, 0, 0]} />
+      </group>
+      {/* 2 Visitor Chairs */}
+      {[-0.6, 0.6].map((vx) => (
+        <group key={vx} position={[vx, 0, 0.75]} rotation-y={Math.PI} onClick={() => { setIsSitting(true); playChime(); }}>
+          <Chair position={[0, 0, 0]} />
+        </group>
+      ))}
+      {/* Filing Credenza along North Wall */}
+      <RoundedBox castShadow position={[0, 0.45, -2.4]} args={[2.0, 0.85, 0.45]} radius={0.03}>
+        <meshStandardMaterial color="#2d1f17" roughness={0.45} />
+      </RoundedBox>
+    </group>
+  );
+}
+
+function PantryArea() {
+  const setIsSitting = useOfficeStore((state) => state.setIsSitting);
+
+  return (
+    <group position={[6.5, 0, -6.0]}>
+      {/* Kitchen Counter along North Wall */}
+      <group position={[0, 0, -2.35]}>
+        <RoundedBox castShadow position={[0, 0.45, 0]} args={[3.4, 0.9, 0.65]} radius={0.04}>
+          <meshStandardMaterial color="#e8e2d8" roughness={0.3} />
+        </RoundedBox>
+        <mesh position={[0, 0.91, 0]}>
+          <boxGeometry args={[3.45, 0.04, 0.7]} />
+          <meshStandardMaterial color="#f8f6f0" roughness={0.2} metalness={0.05} />
+        </mesh>
+        {/* Sink & Faucet */}
+        <mesh position={[-0.9, 0.92, 0]}>
+          <boxGeometry args={[0.55, 0.01, 0.4]} />
+          <meshStandardMaterial color="#88929a" metalness={0.85} roughness={0.2} />
+        </mesh>
+        <mesh position={[-0.9, 1.08, -0.15]}>
+          <cylinderGeometry args={[0.012, 0.012, 0.28, 8]} />
+          <meshStandardMaterial color="#b0b8c0" metalness={0.9} roughness={0.1} />
+        </mesh>
+        {/* Espresso Machine */}
+        <group position={[0.7, 0.93, 0]}>
+          <RoundedBox args={[0.42, 0.38, 0.32]} radius={0.03}>
+            <meshStandardMaterial color="#1a1c1e" metalness={0.8} roughness={0.25} />
+          </RoundedBox>
+          <mesh position={[0, 0.1, 0.17]}>
+            <boxGeometry args={[0.18, 0.06, 0.05]} />
+            <meshStandardMaterial color="#d4af37" metalness={0.8} />
+          </mesh>
+        </group>
+        {/* Upper Wall Cabinets */}
+        <RoundedBox position={[0, 1.85, -0.1]} args={[3.2, 0.65, 0.4]} radius={0.03}>
+          <meshStandardMaterial color="#423024" roughness={0.5} />
+        </RoundedBox>
+      </group>
+
+      {/* Bistro Round Dining Table in Center */}
+      <group position={[0, 0, 0.5]}>
+        <mesh castShadow position={[0, 0.72, 0]}>
+          <cylinderGeometry args={[0.85, 0.85, 0.05, 32]} />
+          <meshStandardMaterial color="#4d3525" roughness={0.4} />
+        </mesh>
+        <mesh position={[0, 0.36, 0]}>
+          <cylinderGeometry args={[0.05, 0.05, 0.68, 12]} />
+          <meshStandardMaterial color="#1f2326" metalness={0.7} />
+        </mesh>
+        <mesh position={[0, 0.02, 0]}>
+          <cylinderGeometry args={[0.42, 0.42, 0.04, 24]} />
+          <meshStandardMaterial color="#1f2326" metalness={0.7} />
+        </mesh>
+        {/* 4 Bistro Dining Chairs */}
+        {[0, 1, 2, 3].map((ci) => {
+          const angle = (ci * Math.PI) / 2 + Math.PI / 4;
+          const cx = Math.sin(angle) * 1.15;
+          const cz = Math.cos(angle) * 1.15;
+          return (
+            <group key={`bistro-${ci}`} position={[cx, 0, cz]} rotation-y={angle + Math.PI} onClick={() => { setIsSitting(true); playChime(); }}>
+              <mesh castShadow position={[0, 0.42, 0]}>
+                <cylinderGeometry args={[0.22, 0.22, 0.04, 16]} />
+                <meshStandardMaterial color="#7a4223" roughness={0.6} />
+              </mesh>
+              <mesh position={[0, 0.21, 0]}>
+                <cylinderGeometry args={[0.02, 0.02, 0.4, 8]} />
+                <meshStandardMaterial color="#1f2326" metalness={0.7} />
+              </mesh>
+              <mesh position={[0, 0.68, 0.18]}>
+                <boxGeometry args={[0.38, 0.28, 0.03]} />
+                <meshStandardMaterial color="#553018" roughness={0.5} />
+              </mesh>
+            </group>
+          );
+        })}
+      </group>
+
+      {/* Water Cooler Dispenser */}
+      <group position={[-1.4, 0, 1.8]}>
+        <WaterCooler />
+      </group>
+    </group>
+  );
+}
+
+function WashroomRooms() {
+  return (
+    <group position={[10.25, 0, -5.75]}>
+      {/* Washroom 1 (North: z = -1.4) */}
+      <group position={[0, 0, -1.4]}>
+        <RoundedBox castShadow position={[0.7, 0.38, -0.9]} args={[0.42, 0.38, 0.58]} radius={0.06}>
+          <meshStandardMaterial color="#f7f9fa" roughness={0.15} />
+        </RoundedBox>
+        <mesh position={[0.7, 0.85, -1.2]}>
+          <boxGeometry args={[0.24, 0.15, 0.02]} />
+          <meshStandardMaterial color="#c0c5c8" metalness={0.9} roughness={0.1} />
+        </mesh>
+        <RoundedBox castShadow position={[-0.7, 0.42, 0.7]} args={[0.65, 0.8, 0.45]} radius={0.04}>
+          <meshStandardMaterial color="#e0dbd1" roughness={0.3} />
+        </RoundedBox>
+        <mesh position={[-0.7, 1.25, 0.92]}>
+          <boxGeometry args={[0.55, 0.65, 0.02]} />
+          <meshStandardMaterial color="#d8e8f0" metalness={0.95} roughness={0.05} />
+        </mesh>
+      </group>
+
+      {/* Washroom 2 (South: z = 1.4) */}
+      <group position={[0, 0, 1.4]}>
+        <RoundedBox castShadow position={[0.7, 0.38, -0.9]} args={[0.42, 0.38, 0.58]} radius={0.06}>
+          <meshStandardMaterial color="#f7f9fa" roughness={0.15} />
+        </RoundedBox>
+        <mesh position={[0.7, 0.85, -1.2]}>
+          <boxGeometry args={[0.24, 0.15, 0.02]} />
+          <meshStandardMaterial color="#c0c5c8" metalness={0.9} roughness={0.1} />
+        </mesh>
+        <RoundedBox castShadow position={[-0.7, 0.42, 0.7]} args={[0.65, 0.8, 0.45]} radius={0.04}>
+          <meshStandardMaterial color="#e0dbd1" roughness={0.3} />
+        </RoundedBox>
+        <mesh position={[-0.7, 1.25, 0.92]}>
+          <boxGeometry args={[0.55, 0.65, 0.02]} />
+          <meshStandardMaterial color="#d8e8f0" metalness={0.95} roughness={0.05} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+function CollaborationArea() {
+  const setIsSitting = useOfficeStore((state) => state.setIsSitting);
+
+  return (
+    <group position={[-8.25, 0, 0]}>
+      {/* Round Solid Oak Discussion Table */}
+      <mesh castShadow position={[0, 0.68, 0]}>
+        <cylinderGeometry args={[1.2, 1.2, 0.06, 32]} />
+        <meshStandardMaterial color="#4a3525" roughness={0.4} />
+      </mesh>
+      <mesh position={[0, 0.34, 0]}>
+        <cylinderGeometry args={[0.08, 0.08, 0.64, 16]} />
+        <meshStandardMaterial color="#1a1c1d" metalness={0.7} />
+      </mesh>
+      <mesh position={[0, 0.02, 0]}>
+        <cylinderGeometry args={[0.55, 0.55, 0.04, 24]} />
+        <meshStandardMaterial color="#1a1c1d" metalness={0.7} />
+      </mesh>
+      {/* 4 Comfy Lounge Club Armchairs */}
+      {[0, 1, 2, 3].map((i) => {
+        const angle = (i * Math.PI) / 2 + Math.PI / 4;
+        const cx = Math.sin(angle) * 1.7;
+        const cz = Math.cos(angle) * 1.7;
+        return (
+          <group key={`collab-chair-${i}`} position={[cx, 0, cz]} rotation-y={angle + Math.PI} onClick={() => { setIsSitting(true); playChime(); }}>
+            <RoundedBox castShadow position={[0, 0.32, 0]} args={[0.75, 0.24, 0.7]} radius={0.08}>
+              <meshStandardMaterial color="#563b2a" roughness={0.65} />
+            </RoundedBox>
+            <RoundedBox castShadow position={[0, 0.62, 0.3]} args={[0.72, 0.44, 0.16]} radius={0.06}>
+              <meshStandardMaterial color="#472f20" roughness={0.65} />
+            </RoundedBox>
+            {[-0.35, 0.35].map((ax) => (
+              <RoundedBox key={ax} position={[ax, 0.45, 0]} args={[0.1, 0.28, 0.65]} radius={0.04}>
+                <meshStandardMaterial color="#3b271a" roughness={0.6} />
+              </RoundedBox>
+            ))}
+          </group>
+        );
+      })}
+      {/* Mobile Glass Whiteboard */}
+      <group position={[2.8, 0, 0]} rotation-y={-Math.PI / 2}>
+        <Whiteboard />
+      </group>
+    </group>
+  );
+}
+
+function WorkstationsArea() {
+  const topRowX = [-3.0, -1.0, 1.0, 3.0] as const;
+  const bottomRowX = [-3.0, -1.0, 1.0, 3.0] as const;
+
+  return (
+    <group position={[0, 0, 0]}>
+      {topRowX.map((x, idx) => (
+        <Desk key={`work-top-${idx}`} position={[x, 0, -1.15]} deskIndex={idx} />
+      ))}
+      {bottomRowX.map((x, idx) => (
+        <Desk key={`work-bottom-${idx}`} position={[x, 0, 1.15]} deskIndex={idx + 4} />
+      ))}
+    </group>
+  );
+}
+
+function ProductRoom() {
+  const setIsSitting = useOfficeStore((state) => state.setIsSitting);
+
+  return (
+    <group position={[8.25, 0, 0.25]}>
+      {/* Oak Drafting / Product Strategy Table */}
+      <RoundedBox castShadow position={[0, 0.72, 0]} args={[3.8, 0.08, 1.8]} radius={0.05}>
+        <meshStandardMaterial color="#4a3424" roughness={0.42} />
+      </RoundedBox>
+      {[-1.5, 1.5].map((x) => (
+        <mesh key={x} position={[x, 0.35, 0]}>
+          <boxGeometry args={[0.08, 0.68, 1.5]} />
+          <meshStandardMaterial color="#1f2422" metalness={0.7} roughness={0.3} />
+        </mesh>
+      ))}
+      {/* Rolled Product Blueprints and Tablets */}
+      <group position={[-0.8, 0.78, 0]}>
+        <mesh castShadow rotation-z={Math.PI / 2} rotation-y={0.2}>
+          <cylinderGeometry args={[0.045, 0.045, 0.85, 16]} />
+          <meshStandardMaterial color="#edf2f7" roughness={0.6} />
+        </mesh>
+      </group>
+      {/* 6 Chairs: 3 north, 3 south */}
+      {[-1.2, 0, 1.2].map((x, i) => (
+        <group key={`product-n-${i}`} position={[x, 0, -1.15]} onClick={() => { setIsSitting(true); playChime(); }}>
+          <Chair position={[0, 0, 0]} />
+        </group>
+      ))}
+      {[-1.2, 0, 1.2].map((x, i) => (
+        <group key={`product-s-${i}`} position={[x, 0, 1.15]} rotation-y={Math.PI} onClick={() => { setIsSitting(true); playChime(); }}>
+          <Chair position={[0, 0, 0]} />
+        </group>
+      ))}
+    </group>
+  );
+}
+
+function ServerRoom() {
+  return (
+    <group position={[-9.25, 0, 6.0]}>
+      {/* 3 High-Density 42U Server Racks against west wall */}
+      {[-1.2, 0, 1.2].map((z, i) => (
+        <group key={`rack-${i}`} position={[-1.7, 0, z]}>
+          <RoundedBox castShadow position={[0, 1.0, 0]} args={[0.7, 2.0, 0.75]} radius={0.04}>
+            <meshStandardMaterial color="#121517" metalness={0.6} roughness={0.35} />
+          </RoundedBox>
+          <mesh position={[0.36, 1.0, 0]}>
+            <boxGeometry args={[0.02, 1.9, 0.68]} />
+            <meshStandardMaterial color="#0c0e10" roughness={0.3} />
+          </mesh>
+          {[0.4, 0.7, 1.0, 1.3, 1.6].map((ly, lidx) => (
+            <mesh key={`led-${lidx}`} position={[0.375, ly, 0.15]}>
+              <boxGeometry args={[0.015, 0.04, 0.12]} />
+              <meshBasicMaterial color={lidx % 2 === 0 ? "#5cd0ff" : "#50fa7b"} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+      {/* IT Admin Console Terminal */}
+      <group position={[0.5, 0, 0]}>
+        <mesh position={[0, 0.72, 0]}>
+          <boxGeometry args={[1.2, 0.06, 0.6]} />
+          <meshStandardMaterial color="#2d3748" />
+        </mesh>
+        <mesh position={[0, 0.35, 0]}>
+          <boxGeometry args={[1.1, 0.68, 0.5]} />
+          <meshStandardMaterial color="#1a202c" />
+        </mesh>
+        <mesh position={[0, 1.05, -0.15]}>
+          <boxGeometry args={[0.6, 0.4, 0.03]} />
+          <meshStandardMaterial color="#0d1117" />
+        </mesh>
+        <mesh position={[0, 1.05, -0.13]}>
+          <planeGeometry args={[0.56, 0.36]} />
+          <meshBasicMaterial color="#00ff66" />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+function StorageUtilityRoom() {
+  return (
+    <group position={[-5.0, 0, 6.0]}>
+      {/* Heavy Duty Industrial Steel Shelving Racks */}
+      <group position={[-0.8, 0, 0]}>
+        <mesh position={[0, 1.0, 0]}>
+          <boxGeometry args={[0.55, 2.0, 2.2]} />
+          <meshStandardMaterial color="#4a5568" metalness={0.8} roughness={0.3} />
+        </mesh>
+        {[-0.6, 0, 0.6].map((bz, bidx) => (
+          <RoundedBox key={`box-${bidx}`} position={[0, 1.1, bz]} args={[0.45, 0.32, 0.45]} radius={0.02}>
+            <meshStandardMaterial color="#d69e2e" roughness={0.7} />
+          </RoundedBox>
+        ))}
+        {[-0.5, 0.5].map((bz, bidx) => (
+          <RoundedBox key={`low-${bidx}`} position={[0, 0.45, bz]} args={[0.48, 0.35, 0.5]} radius={0.02}>
+            <meshStandardMaterial color="#718096" roughness={0.5} />
+          </RoundedBox>
+        ))}
+      </group>
+    </group>
+  );
+}
+
+function WaitingArea() {
+  const setIsSitting = useOfficeStore((state) => state.setIsSitting);
+
+  return (
+    <group position={[7.75, 0, 6.0]}>
+      {/* 3-Seater Sofa along North Wall */}
+      <group position={[0, 0, -1.8]} onClick={() => { setIsSitting(true); playChime(); }}>
+        <RoundedBox castShadow position={[0, 0.28, 0]} args={[2.8, 0.36, 0.95]} radius={0.08}>
+          <meshStandardMaterial color="#3b4d42" roughness={0.7} />
+        </RoundedBox>
+        <RoundedBox castShadow position={[0, 0.65, -0.36]} args={[2.75, 0.48, 0.22]} radius={0.06}>
+          <meshStandardMaterial color="#2f3e35" roughness={0.7} />
+        </RoundedBox>
+        {[-1.35, 1.35].map((ax) => (
+          <RoundedBox key={`sofa-arm-${ax}`} position={[ax, 0.45, 0]} args={[0.15, 0.35, 0.9]} radius={0.04}>
+            <meshStandardMaterial color="#243029" roughness={0.7} />
+          </RoundedBox>
+        ))}
+      </group>
+
+      {/* 2-Seater Loveseat along South Wall */}
+      <group position={[0, 0, 1.8]} rotation-y={Math.PI} onClick={() => { setIsSitting(true); playChime(); }}>
+        <RoundedBox castShadow position={[0, 0.28, 0]} args={[2.0, 0.36, 0.9]} radius={0.08}>
+          <meshStandardMaterial color="#3b4d42" roughness={0.7} />
+        </RoundedBox>
+        <RoundedBox castShadow position={[0, 0.65, -0.34]} args={[1.95, 0.48, 0.22]} radius={0.06}>
+          <meshStandardMaterial color="#2f3e35" roughness={0.7} />
+        </RoundedBox>
+      </group>
+
+      {/* Round Walnut / Travertine Cocktail Table */}
+      <group position={[0, 0, 0]}>
+        <mesh castShadow position={[0, 0.22, 0]}>
+          <cylinderGeometry args={[0.75, 0.75, 0.05, 32]} />
+          <meshStandardMaterial color="#4a3525" roughness={0.4} />
+        </mesh>
+        <mesh position={[0, 0.11, 0]}>
+          <cylinderGeometry args={[0.04, 0.04, 0.22, 12]} />
+          <meshStandardMaterial color="#1a1c1d" metalness={0.8} />
+        </mesh>
+        <mesh position={[0, 0.015, 0]}>
+          <cylinderGeometry args={[0.4, 0.4, 0.03, 20]} />
+          <meshStandardMaterial color="#1a1c1d" metalness={0.8} />
+        </mesh>
+      </group>
+
+      {/* 2 Modern Accent Club Chairs */}
+      <group position={[-2.4, 0, 0.8]} rotation-y={Math.PI / 4} onClick={() => { setIsSitting(true); playChime(); }}>
+        <RoundedBox castShadow position={[0, 0.3, 0]} args={[0.75, 0.26, 0.7]} radius={0.06}>
+          <meshStandardMaterial color="#6a4c37" roughness={0.65} />
+        </RoundedBox>
+        <RoundedBox castShadow position={[0, 0.6, -0.28]} args={[0.72, 0.42, 0.16]} radius={0.05}>
+          <meshStandardMaterial color="#553d2c" roughness={0.65} />
+        </RoundedBox>
+      </group>
+      <group position={[2.4, 0, 0.8]} rotation-y={-Math.PI / 4} onClick={() => { setIsSitting(true); playChime(); }}>
+        <RoundedBox castShadow position={[0, 0.3, 0]} args={[0.75, 0.26, 0.7]} radius={0.06}>
+          <meshStandardMaterial color="#6a4c37" roughness={0.65} />
+        </RoundedBox>
+        <RoundedBox castShadow position={[0, 0.6, -0.28]} args={[0.72, 0.42, 0.16]} radius={0.05}>
+          <meshStandardMaterial color="#553d2c" roughness={0.65} />
+        </RoundedBox>
+      </group>
+
+      {/* Vinyl Record Credenza */}
+      <group position={[3.2, 0, -1.8]}>
+        <VinylLofiPlayer />
+      </group>
     </group>
   );
 }
@@ -2673,12 +3147,18 @@ function LightingDetails() {
 function Plants() {
   const plantSpots = useMemo(
     () => [
-      [-10, -6.4],
-      [9.8, -6.35],
-      [-9.9, 6.35],
-      [9.75, 6.15],
-      [-2.1, 6.3],
-      [2.1, 6.3],
+      [-11.2, -8.2],
+      [-3.0, -8.2],
+      [4.0, -8.2],
+      [-11.2, -2.2],
+      [-5.2, 2.2],
+      [11.2, -1.8],
+      [11.2, 2.2],
+      [-3.0, 7.8],
+      [3.0, 7.8],
+      [1.8, 6.6],
+      [11.2, 6.8],
+      [11.2, 8.2],
     ] as const,
     []
   );

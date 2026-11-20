@@ -30,10 +30,10 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
   // Gather.town Spatial Room & Audio Perimeter Detection
   const currentRoom = getOfficeRoomAt(player.x, player.z);
   const inPhoneBooth = Math.hypot(player.x - 2.4, player.z - (-6.4)) <= 1.4;
-  const isPrivateSpace = inPhoneBooth || (currentRoom ? ["boardroom", "team-studio", "strategy", "social"].includes(currentRoom.id) : false);
+  const isPrivateSpace = inPhoneBooth || (currentRoom ? ["conference-room", "founder-cabin", "manager-cabin", "project-room", "server-room"].includes(currentRoom.id) : false);
 
-  // Check proximity to Boardroom: x: [-8.5, -3.8], z: [-5.8, -1.8]
-  const inBoardroom = Math.hypot(player.x - (-6.2), player.z - (-3.7)) < 3.8;
+  // Check proximity to Conference Room
+  const inBoardroom = currentRoom?.id === "conference-room";
 
   const executeInteraction = () => {
     if (!nearbyAction) return;

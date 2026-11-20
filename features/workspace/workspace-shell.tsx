@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, AudioLines, BarChart3, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, CreditCard, DoorOpen, Files, FolderKanban, Gauge, Headphones, LayoutGrid, Loader2, LogOut, Map, MapPin, Maximize2, Menu, Mic, MicOff, Minimize2, MonitorUp, Moon, Music, Palette, PanelLeftClose, PanelLeftOpen, PenTool, PhoneOff, Plug, Plus, Radio, Search, Smile, Sparkles, Sun, Sunset, Target, User, Users, Video, VideoOff, VolumeX, Wifi, X } from "lucide-react";
+import { Activity, AudioLines, BarChart3, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, CreditCard, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Map, MapPin, Maximize2, Menu, Mic, MicOff, Minimize2, MonitorUp, Moon, Music, Palette, PanelLeftClose, PanelLeftOpen, PenTool, PhoneOff, Plug, Plus, Radio, Search, Smile, Sparkles, Sun, Sunset, Target, Users, Video, VideoOff, VolumeX, Wifi, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Logo } from "@/components/logo";
 import { initialsFor } from "@/features/auth/auth-utils";
-import { OfficeCanvas } from "@/features/virtual-office/office-canvas";
+import { OfficeMap2D } from "@/features/virtual-office/office-map-2d";
 import { useOfficeStore } from "@/features/virtual-office/store";
 import { startScreenShare, stopScreenShare } from "@/features/virtual-office/screen-share";
 import { playChime } from "@/features/virtual-office/audio";
@@ -247,7 +247,7 @@ function WorkspaceContent({ identity, workspaces, selectWorkspace }: { identity:
           {data.error && <div role="alert" className="absolute left-4 top-2 z-30 rounded-xl bg-red-50 p-3 text-sm text-red-800">{data.error}</div>}
           {view === "office" ? (
             <>
-              <div className="absolute inset-0 z-0"><OfficeCanvas /></div>
+              <div className="absolute inset-0 z-0"><OfficeMap2D /></div>
               <OfficeHud
                 rightRail={rightRail}
                 onToggleRail={() => setRightRail((value) => !value)}
@@ -307,7 +307,7 @@ function Sidebar({ view, setView, mobileNav, onClose, taskCount, workspaceName, 
       </button>
       {workspaceMenu && <div className="mb-3 mt-1 rounded-2xl border border-white/10 bg-[#214d38] p-1.5 shadow-xl">{workspaces.map((workspace) => <button key={workspace.id} onClick={() => { onSelectWorkspace(workspace); setWorkspaceMenu(false); }} className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm ${workspace.id === workspaceId ? "bg-[#c8f560] text-[#173f2b]" : "text-white/75 hover:bg-white/10"}`}><span className="min-w-0 flex-1 truncate font-semibold">{workspace.name}</span><span className="text-[10px] uppercase opacity-60">{workspace.role}</span></button>)}</div>}
 
-      <nav className="scrollbar-none mt-3 min-h-0 flex-1 overflow-y-auto pr-0.5" aria-label="Workspace">
+      <nav className="mt-3 min-h-0 flex-1 overflow-y-auto pr-0.5" aria-label="Workspace">
         {navGroups.map((group) => <div key={group} className="mb-3">
           {!isCollapsed && <div className="mb-1 px-3 text-[9px] font-extrabold uppercase tracking-[.19em] text-white/30">{group}</div>}
           {nav.filter((item) => item.group === group).map((item) => <button key={item.id} aria-current={view === item.id ? "page" : undefined} title={item.label} onClick={() => { setView(item.id); onClose(); }} className={`group relative flex h-10 w-full items-center rounded-xl text-sm font-semibold transition-all ${isCollapsed ? "justify-center px-0" : "gap-3 px-3"} ${view === item.id ? "bg-[#c8f560] text-[#173f2b] shadow-[0_8px_22px_rgba(0,0,0,.12)]" : "text-white/62 hover:bg-white/[.07] hover:text-white"}`}><item.icon size={17} strokeWidth={view === item.id ? 2.4 : 2} className="shrink-0" />{!isCollapsed && <span>{item.label}</span>}{!isCollapsed && item.id === "tasks" && taskCount > 0 && <span className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold ${view === item.id ? "bg-[#173f2b]/10" : "bg-white/10"}`}>{taskCount}</span>}{isCollapsed && item.id === "tasks" && taskCount > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#c8f560]" />}</button>)}
@@ -390,9 +390,6 @@ function OfficeHud({
   const isCaffeinated = useOfficeStore((state) => state.isCaffeinated);
   const isSitting = useOfficeStore((state) => state.isSitting);
   const setIsSitting = useOfficeStore((state) => state.setIsSitting);
-  const qualityMode = useOfficeStore((state) => state.qualityMode);
-  const setQualityMode = useOfficeStore((state) => state.setQualityMode);
-  const measuredFps = useOfficeStore((state) => state.measuredFps);
   const onlineCount = Object.keys(remotePlayers).length + 1;
 
   return (
@@ -454,16 +451,7 @@ function OfficeHud({
           >
             <Radio size={14} className={lofiPlaying ? "animate-pulse text-[#c8f560]" : ""} />
           </button>
-          <button
-            onClick={() => setQualityMode(qualityMode === "high" ? "reduced" : "high")}
-            aria-label="Toggle rendering quality"
-            className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#173f2b] hover:bg-black/5 transition cursor-pointer"
-            title="Toggle high and reduced rendering modes"
-          >
-            <Gauge size={12} className={measuredFps && measuredFps < 45 ? "text-amber-600" : "text-emerald-600"} />
-            <span className="hidden sm:inline">{qualityMode === "high" ? "High" : "Reduced"} · </span>
-            <span>{measuredFps ? Math.round(measuredFps) : "—"} FPS</span>
-          </button>
+          <span className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#173f2b]" title="Interactive 2D office plan"><Map size={12} className="text-[#397455]" />2D plan</span>
         </div>
 
         <p className="hidden text-xs text-[#68736b]/80 xl:block ml-2">Move with WASD or arrow keys · Click floor to walk · Press E to interact</p>
@@ -560,7 +548,6 @@ function GatherBottomDock({
   onToggleMinimap: () => void;
 }) {
   const isScreenSharing = useOfficeStore((state) => state.isScreenSharing);
-  const cameraMode = useOfficeStore((state) => state.cameraMode);
   const zoomLevel = useOfficeStore((state) => state.zoomLevel);
   const zoomIn = useOfficeStore((state) => state.zoomIn);
   const zoomOut = useOfficeStore((state) => state.zoomOut);
@@ -732,36 +719,6 @@ function GatherBottomDock({
         <Users size={16} />
         <span className="rounded-full bg-black/5 px-1.5 py-0.2 text-[10px]">{onlineCount}</span>
       </button>
-
-      <div className="mx-1 h-6 w-px bg-black/10" />
-
-      {/* Camera View Mode */}
-      <div className="flex items-center rounded-xl border border-black/10 bg-white/60 p-0.5 shadow-xs">
-        <button
-          onClick={() => useOfficeStore.getState().setCameraMode("follow")}
-          className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition cursor-pointer ${
-            cameraMode === "follow"
-              ? "bg-[#173f2b] text-[#c8f560] shadow-xs"
-              : "text-[#68736b] hover:text-[#173f2b] hover:bg-black/5"
-          }`}
-          title="Follow Avatar (Press V)"
-        >
-          <User size={13} />
-          <span className="hidden sm:inline">Follow</span>
-        </button>
-        <button
-          onClick={() => useOfficeStore.getState().setCameraMode("top")}
-          className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition cursor-pointer ${
-            cameraMode === "top"
-              ? "bg-[#173f2b] text-[#c8f560] shadow-xs"
-              : "text-[#68736b] hover:text-[#173f2b] hover:bg-black/5"
-          }`}
-          title="Overview Mode (Press V)"
-        >
-          <Maximize2 size={13} />
-          <span className="hidden sm:inline">Overview</span>
-        </button>
-      </div>
 
       {/* Zoom Controls */}
       <div className="hidden sm:flex items-center rounded-xl border border-black/10 bg-white/60 shadow-xs">

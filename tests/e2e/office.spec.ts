@@ -14,16 +14,15 @@ test("creates a personalized local workspace and exits the demo", async ({ page 
   await expect(page).toHaveURL(/\/login$/);
 });
 
-test("opens the 3D office shell", async ({ page }) => {
+test("opens the interactive 2D office", async ({ page }) => {
   await page.goto("/office");
   await expect(page.getByRole("heading", { name: "Office", exact: true })).toBeVisible();
   await expect(page.getByText("Move with WASD or arrow keys")).toBeVisible();
   await expect(page.getByRole("button", { name: "Start huddle" })).toBeVisible();
-  await expect(page.getByText("Animated GLTF avatar ready")).toBeAttached();
-  const avatar = await page.request.get("/models/crewvilla-avatar.gltf");
-  expect(avatar.ok()).toBe(true);
-  expect(((await avatar.json()).animations as Array<{ name: string }>).map((clip) => clip.name)).toEqual(["Idle", "Walk"]);
-  await expect.poll(async () => page.getByText("You", { exact: true }).last().evaluate((label) => label.getBoundingClientRect().width)).toBeLessThan(100);
+  await expect(page.getByRole("application", { name: /CrewVilla office floor plan/ })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Office destinations" })).toBeVisible();
+  await expect(page.getByText("CONFERENCE", { exact: true })).toBeVisible();
+  await expect(page.getByText("WORKSTATIONS", { exact: true })).toBeVisible();
   const ice = await page.request.get("/api/realtime/ice");
   expect(ice.ok()).toBe(true);
   expect((await ice.json()).iceServers.length).toBeGreaterThan(0);
@@ -33,9 +32,9 @@ test("navigates the office with a live room map", async ({ page }) => {
   await page.goto("/office");
   await page.getByRole("button", { name: "Expand office map" }).click();
   await expect(page.getByRole("button", { name: "Collapse office map" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Walk to Executive Boardroom" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Walk to Sky Terrace" })).toBeVisible();
-  await page.getByRole("button", { name: "Walk to Sky Terrace" }).click();
+  await expect(page.getByRole("button", { name: "Walk to Meeting / Conference Room" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Walk to Waiting Area" })).toBeVisible();
+  await page.getByRole("button", { name: "Walk to Waiting Area" }).click();
   await expect(page.getByRole("button", { name: "Collapse office map" })).toBeVisible();
 });
 
@@ -71,34 +70,22 @@ test("generates a grounded professional PRD and requires task review", async ({ 
   await expect(copilot.getByText("Added 2 reviewed tasks to My tasks.")).toBeVisible();
 });
 
-test("moves the avatar with accessible touch controls", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+test("moves the avatar with keyboard controls", async ({ page }) => {
   await page.goto("/office");
   const position = page.getByLabel("Player position");
   await expect(position).toBeVisible();
   const before = Number(await position.getAttribute("data-x"));
-  const right = page.getByRole("button", { name: "Move right" });
-  await right.dispatchEvent("pointerdown", { pointerId: 1, pointerType: "touch", isPrimary: true, button: 0 });
-  await page.waitForTimeout(1_200);
-  await right.dispatchEvent("pointerup", { pointerId: 1, pointerType: "touch", isPrimary: true, button: 0 });
+  await page.keyboard.down("d");
+  await page.waitForTimeout(600);
+  await page.keyboard.up("d");
   await expect.poll(async () => Number(await position.getAttribute("data-x"))).toBeGreaterThan(before + 0.1);
 });
 
-test("measures 3D performance and supports reduced rendering", async ({ page }) => {
+test("supports office zoom controls", async ({ page }) => {
   await page.goto("/office");
-  const metric = page.getByLabel("3D frame rate");
-  await expect.poll(async () => metric.getAttribute("data-renderer-class"), { timeout: 15_000 }).not.toBe("unknown");
-  await expect.poll(async () => Number(await metric.getAttribute("data-fps")), { timeout: 15_000 }).toBeGreaterThan(0);
-  const rendererClass = await metric.getAttribute("data-renderer-class");
-  const measured = Number(await metric.getAttribute("data-fps"));
-  if (rendererClass === "hardware") expect(measured).toBeGreaterThan(45);
-  else {
-    expect(rendererClass).toBe("software");
-    await expect(page.getByRole("button", { name: "Toggle rendering quality" })).toContainText("Reduced");
-  }
-  const before = await page.getByRole("button", { name: "Toggle rendering quality" }).textContent();
-  await page.getByRole("button", { name: "Toggle rendering quality" }).click();
-  await expect(page.getByRole("button", { name: "Toggle rendering quality" })).toContainText(before?.includes("Reduced") ? "High" : "Reduced");
+  await expect(page.getByText("100%", { exact: true })).toBeVisible();
+  await page.getByTitle("Zoom In").click();
+  await expect(page.getByText("115%", { exact: true })).toBeVisible();
 });
 
 test("creates a local task", async ({ page }) => {

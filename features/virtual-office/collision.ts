@@ -1,25 +1,55 @@
 import type { Collider, Vec2 } from "./types";
 
-export const OFFICE_BOUNDS = { minX: -14.2, maxX: 14.2, minZ: -8.6, maxZ: 14.0 };
+export const OFFICE_BOUNDS = { minX: -11.5, maxX: 11.5, minZ: -8.5, maxZ: 8.5 };
 export const PLAYER_RADIUS = 0.38;
 
 export const COLLIDERS: Collider[] = [
-  { id: "meeting-table", x: -6.2, z: -3.7, width: 4.2, depth: 2.3 },
-  { id: "focus-desk-a", x: 5.9, z: -4.7, width: 3.5, depth: 1.4 },
-  { id: "focus-desk-b", x: 5.9, z: -2.2, width: 3.5, depth: 1.4 },
-  { id: "project-table", x: -5.8, z: 3.4, width: 4.3, depth: 2.2 },
-  { id: "lounge-sofa", x: 5.8, z: 3.7, width: 3.7, depth: 1.2 },
-  { id: "divider", x: 0, z: -5.4, width: 0.35, depth: 3.1 },
-  { id: "reception", x: 0, z: 5.9, width: 3.2, depth: 0.8 },
-  { id: "standup-nook", x: 0, z: -1.7, width: 1.65, depth: 1.65 },
-  { id: "left-glass-north", x: -2.65, z: -5.55, width: 0.12, depth: 3.1 },
-  { id: "left-glass-south", x: -2.65, z: -1.85, width: 0.12, depth: 2.3 },
-  { id: "right-glass-north", x: 2.65, z: -5.55, width: 0.12, depth: 3.1 },
-  { id: "right-glass-south", x: 2.65, z: -1.85, width: 0.12, depth: 2.3 },
-  // Outdoor terrace perimeter railings (expanded)
-  { id: "terrace-south-rail", x: 0, z: 14.45, width: 30, depth: 0.2 },
-  { id: "terrace-west-rail", x: -14.9, z: 12.0, width: 0.2, depth: 4.9 },
-  { id: "terrace-east-rail", x: 14.9, z: 12.0, width: 0.2, depth: 4.9 },
+  // North row room dividers (z = -3.0) with door openings
+  { id: "wall-north-conf-w", x: -9.0, z: -3.0, width: 6.0, depth: 0.2 },
+  { id: "wall-north-founder-w", x: -3.0, z: -3.0, width: 1.2, depth: 0.2 },
+  { id: "wall-north-mgr-w", x: 1.0, z: -3.0, width: 1.2, depth: 0.2 },
+  { id: "wall-north-pantry-w", x: 4.8, z: -3.0, width: 0.8, depth: 0.2 },
+  { id: "wall-north-wash-w", x: 10.2, z: -3.0, width: 3.6, depth: 0.2 },
+
+  // Vertical dividing walls in North row
+  { id: "wall-conf-founder", x: -3.5, z: -6.0, width: 0.2, depth: 6.0 },
+  { id: "wall-founder-mgr", x: 0.5, z: -6.0, width: 0.2, depth: 6.0 },
+  { id: "wall-mgr-pantry", x: 4.5, z: -6.0, width: 0.2, depth: 6.0 },
+  { id: "wall-pantry-wash", x: 8.5, z: -6.0, width: 0.2, depth: 6.0 },
+  { id: "wall-wash-divider", x: 10.2, z: -5.8, width: 3.6, depth: 0.2 },
+
+  // Product / Project Room (Middle Right)
+  { id: "wall-project-north", x: 8.2, z: -2.5, width: 7.6, depth: 0.2 },
+  { id: "wall-project-south", x: 8.2, z: 3.0, width: 7.6, depth: 0.2 },
+  { id: "wall-project-west-top", x: 4.5, z: -1.6, width: 0.2, depth: 1.6 },
+  { id: "wall-project-west-bot", x: 4.5, z: 2.0, width: 0.2, depth: 1.8 },
+
+  // Collaboration Glass Divider (Middle Left)
+  { id: "divider-collab", x: -4.5, z: 0, width: 0.15, depth: 3.8 },
+
+  // South row dividers
+  // Server room
+  { id: "wall-server-north", x: -9.2, z: 3.0, width: 5.6, depth: 0.2 },
+  { id: "wall-server-east", x: -6.5, z: 6.8, width: 0.2, depth: 4.2 },
+  // Storage room
+  { id: "wall-storage-east", x: -3.5, z: 6.8, width: 0.2, depth: 4.2 },
+  // Waiting area glass partition
+  { id: "divider-waiting", x: 4.5, z: 6.5, width: 0.15, depth: 4.8 },
+
+  // Key Furniture Colliders
+  { id: "meeting-table", x: -7.5, z: -6.0, width: 4.2, depth: 2.1 },
+  { id: "founder-desk", x: -1.5, z: -6.8, width: 2.2, depth: 1.1 },
+  { id: "manager-desk", x: 2.5, z: -6.8, width: 2.2, depth: 1.1 },
+  { id: "pantry-counter", x: 6.5, z: -8.6, width: 3.6, depth: 0.8 },
+  { id: "pantry-table", x: 6.5, z: -5.5, width: 1.5, depth: 1.5 },
+  { id: "focus-desk-a", x: 0, z: -1.2, width: 7.6, depth: 1.1 },
+  { id: "focus-desk-b", x: 0, z: 1.2, width: 7.6, depth: 1.1 },
+  { id: "project-table", x: 8.2, z: 0.2, width: 3.8, depth: 1.8 },
+  { id: "collab-table", x: -8.5, z: 0, width: 1.8, depth: 1.8 },
+  { id: "server-racks", x: -11.2, z: 6.0, width: 0.9, depth: 4.8 },
+  { id: "storage-cabinets", x: -5.8, z: 6.0, width: 0.8, depth: 4.5 },
+  { id: "reception", x: 0, z: 6.2, width: 3.2, depth: 0.9 },
+  { id: "lounge-sofa", x: 8.2, z: 4.5, width: 3.2, depth: 1.1 },
 ];
 
 function collides(point: Vec2, collider: Collider) {

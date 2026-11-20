@@ -80,7 +80,7 @@ type OfficeState = {
 };
 
 export const useOfficeStore = create<OfficeState>((set) => ({
-  player: { id: "local", name: "You", x: 0, z: 1.6, rotation: Math.PI, updatedAt: Date.now(), color: "#ff8a4c", status: "available" },
+  player: { id: "local", name: "You", x: 0, z: 4.8, rotation: Math.PI, updatedAt: Date.now(), color: "#ff8a4c", status: "available", roomId: "reception" },
   remotePlayers: {},
   connectionState: "connecting",
   transportLabel: "Local network",
