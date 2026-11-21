@@ -4,8 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { INTERACTION_ZONES, OFFICE_ROOMS, getOfficeRoomAt } from "./office-data";
 import { OFFICE_BOUNDS, resolveMovement } from "./collision";
 import { useOfficeStore } from "./store";
-import { AI_TEAMMATES } from "./ai-teammates";
-import { hasSupabaseConfig } from "@/lib/supabase/client";
 import { playChime, playCoffeeSound, playSlideClick } from "./audio";
 import type { PlayerSnapshot } from "./types";
 
@@ -114,73 +112,104 @@ function useOfficeMovement() {
   }, []);
 }
 
-function Chair({ x, y, rotate = 0, color = "#26483b" }: { x: number | string; y: number | string; rotate?: number; color?: string }) {
+// Sophisticated architectural office chair with caster base, padded seat, and contoured backrest
+function OfficeChair({ x, y, rotate = 0, color = "#23282c" }: { x: number | string; y: number | string; rotate?: number; color?: string }) {
+  const numX = Number(x);
+  const numY = Number(y);
   return (
-    <g transform={`translate(${x} ${y}) rotate(${rotate})`}>
-      <ellipse cy="2" rx="14" ry="12" fill="#131e19" opacity=".18" />
-      <rect x="-13" y="-12" width="26" height="24" rx="8" fill={color} stroke="#17241e" strokeWidth="2.5" />
-      <path d="M-11 3h22v9h-22z" rx="4.5" fill="#182d24" />
-      <path d="M-12 -6q12 -4 24 0" stroke="#487561" strokeWidth="2" strokeLinecap="round" fill="none" opacity=".8" />
-      <rect x="-14" y="-3" width="3" height="12" rx="1.5" fill="#16221c" />
-      <rect x="11" y="-3" width="3" height="12" rx="1.5" fill="#16221c" />
+    <g transform={`translate(${numX} ${numY}) rotate(${rotate})`} filter="url(#furnShadow)">
+      {/* 5-Star Swivel Base with Casters */}
+      <circle r="14" fill="none" stroke="#60666d" strokeWidth="1.2" opacity=".4" />
+      <line x1="-12" y1="0" x2="12" y2="0" stroke="#4a5056" strokeWidth="2.5" strokeLinecap="round" />
+      <line x1="0" y1="-12" x2="0" y2="12" stroke="#4a5056" strokeWidth="2.5" strokeLinecap="round" />
+      <line x1="-9" y1="-9" x2="9" y2="9" stroke="#4a5056" strokeWidth="2" strokeLinecap="round" />
+      {/* Contoured Foam Seat Cushion */}
+      <rect x="-13" y="-12" width="26" height="24" rx="8" fill={color} stroke="#14181a" strokeWidth="1.8" />
+      <rect x="-10" y="-9" width="20" height="18" rx="6" fill="#32383e" opacity=".7" />
+      {/* Ergonomic Curved Lumbar Backrest */}
+      <path d="M -13 5 C -7 9 7 9 13 5 L 12 11 C 6 14 -6 14 -12 11 Z" fill="#1c2024" stroke="#0e1114" strokeWidth="1.5" />
+      {/* Left and Right Armrests */}
+      <rect x="-15" y="-5" width="3.5" height="14" rx="1.7" fill="#181c20" />
+      <rect x="11.5" y="-5" width="3.5" height="14" rx="1.7" fill="#181c20" />
     </g>
   );
 }
 
-function Armchair({ x, y, rotate = 0, color = "#3d6451" }: { x: number | string; y: number | string; rotate?: number; color?: string }) {
+// Deep, comfortable upholstered lounge armchair with plush cushions
+function LoungeArmchair({ x, y, rotate = 0, color = "#47525d" }: { x: number | string; y: number | string; rotate?: number; color?: string }) {
+  const numX = Number(x);
+  const numY = Number(y);
   return (
-    <g transform={`translate(${x} ${y}) rotate(${rotate})`}>
-      <ellipse cy="4" rx="20" ry="16" fill="#131e19" opacity=".2" />
-      <rect x="-18" y="-18" width="36" height="36" rx="10" fill={color} stroke="#192a22" strokeWidth="3" />
-      <rect x="-13" y="-10" width="26" height="24" rx="7" fill="#4d7c65" stroke="#1d3529" strokeWidth="1.5" />
-      <rect x="-17" y="-15" width="34" height="9" rx="4.5" fill="#2d4a3c" />
-      <rect x="-19" y="-8" width="5.5" height="24" rx="2.5" fill="#2d4a3c" />
-      <rect x="13.5" y="-8" width="5.5" height="24" rx="2.5" fill="#2d4a3c" />
+    <g transform={`translate(${numX} ${numY}) rotate(${rotate})`} filter="url(#sofaShadow)">
+      {/* Armchair Base Body */}
+      <rect x="-20" y="-19" width="40" height="38" rx="10" fill={color} stroke="#1b2126" strokeWidth="2" />
+      {/* Deep Cushion with Inset Piping */}
+      <rect x="-14" y="-12" width="28" height="26" rx="7" fill="#586673" stroke="#2a333c" strokeWidth="1.2" />
+      {/* Backrest Cushion */}
+      <rect x="-18" y="-16" width="36" height="9" rx="4.5" fill="#363f47" />
+      {/* Padded Left and Right Armrests */}
+      <rect x="-21" y="-8" width="6" height="25" rx="3" fill="#363f47" />
+      <rect x="15" y="-8" width="6" height="25" rx="3" fill="#363f47" />
     </g>
   );
 }
 
-function Plant({ x, y, scale = 1 }: { x: number | string; y: number | string; scale?: number }) {
+// Lush architectural indoor plant with realistic ceramic planter, dark soil, and layered green foliage
+function ArchitecturalPlant({ x, y, scale = 1 }: { x: number | string; y: number | string; scale?: number }) {
+  const numX = Number(x);
+  const numY = Number(y);
   return (
-    <g transform={`translate(${x} ${y}) scale(${scale})`}>
-      <ellipse cy="14" rx="16" ry="9" fill="#131e19" opacity=".25" />
-      <circle r="15" fill="#c48a58" stroke="#7a4f2c" strokeWidth="3" />
-      <circle r="12" fill="#5c381e" />
-      {/* Lush Gather.town leafy foliage */}
-      <path d="M0 -3 C-7 -18 -24 -16 -20 -3 C-18 6 -6 4 0 -3 Z" fill="#3f7547" stroke="#234a2a" strokeWidth="1.5" />
-      <path d="M0 -3 C7 -18 24 -16 20 -3 C18 6 6 4 0 -3 Z" fill="#4e8c58" stroke="#234a2a" strokeWidth="1.5" />
-      <path d="M0 -3 C-16 -7 -25 10 -12 18 C-4 16 0 5 0 -3 Z" fill="#396b3f" stroke="#234a2a" strokeWidth="1.5" />
-      <path d="M0 -3 C16 -7 25 10 12 18 C4 16 0 5 0 -3 Z" fill="#46804f" stroke="#234a2a" strokeWidth="1.5" />
-      <path d="M0 -3 C-4 -25 4 -25 0 -3 Z" fill="#589e64" stroke="#2a5832" strokeWidth="1.5" />
-      <circle r="4" fill="#6cb87a" />
+    <g transform={`translate(${numX} ${numY}) scale(${scale})`} filter="url(#furnShadow)">
+      {/* Terracotta / Ceramic Planter Pot */}
+      <circle r="16" fill="url(#planterPot)" stroke="#744a2c" strokeWidth="2" />
+      {/* Rich Potting Soil */}
+      <circle r="12.5" fill="#321e12" />
+      {/* Layer 1: Dark Outer Leaves */}
+      <path d="M0 0 C-12 -22 -26 -16 -20 -3 C-17 6 -6 3 0 0 Z" fill="#2d583b" opacity=".95" />
+      <path d="M0 0 C12 -22 26 -16 20 -3 C17 6 6 3 0 0 Z" fill="#316242" opacity=".95" />
+      <path d="M0 0 C-22 -8 -26 12 -12 18 C-4 15 0 5 0 0 Z" fill="#285035" opacity=".95" />
+      <path d="M0 0 C22 -8 26 12 12 18 C4 15 0 5 0 0 Z" fill="#2f5c3e" opacity=".95" />
+      {/* Layer 2: Medium Leaves */}
+      <path d="M0 0 C-6 -24 6 -24 0 0 Z" fill="#447e56" />
+      <path d="M0 0 C-18 -15 -15 -2 0 0 Z" fill="#4c8d60" />
+      <path d="M0 0 C18 -15 15 -2 0 0 Z" fill="#4c8d60" />
+      <path d="M0 0 C-14 12 0 20 0 0 Z" fill="#3a704c" />
+      <path d="M0 0 C14 12 0 20 0 0 Z" fill="#3a704c" />
+      {/* Layer 3: Fresh Bright Center Highlights */}
+      <circle cx="-1" cy="-2" r="5" fill="#6db884" />
+      <circle cx="2" cy="1" r="3.5" fill="#88cb9c" />
     </g>
   );
 }
 
-function Window({ x, y, w, h, vertical = false }: { x: number | string; y: number | string; w: number | string; h: number | string; vertical?: boolean }) {
+// Crisp double-glazed exterior window with aluminum mullions and glass shine
+function ExteriorWindow({ x, y, w, h, vertical = false }: { x: number | string; y: number | string; w: number | string; h: number | string; vertical?: boolean }) {
   const numX = Number(x);
   const numY = Number(y);
   const numW = Number(w);
   const numH = Number(h);
   return (
     <g className="pointer-events-none">
-      <rect x={numX} y={numY} width={numW} height={numH} fill="#edf7fc" stroke="#68a9cc" strokeWidth="2.5" />
+      <rect x={numX} y={numY} width={numW} height={numH} fill="url(#windowGlass)" stroke="#6ba8c7" strokeWidth="2" />
       {vertical ? (
         <>
-          <line x1={numX + numW / 2} y1={numY} x2={numX + numW / 2} y2={numY + numH} stroke="#388ebd" strokeWidth="2" />
-          <line x1={numX} y1={numY + numH / 2} x2={numX + numW} y2={numY + numH / 2} stroke="#388ebd" strokeWidth="2" />
+          <line x1={numX + numW / 2} y1={numY} x2={numX + numW / 2} y2={numY + numH} stroke="#3b88b0" strokeWidth="1.8" />
+          <line x1={numX} y1={numY + numH / 2} x2={numX + numW} y2={numY + numH / 2} stroke="#3b88b0" strokeWidth="1.8" />
+          <line x1={numX + 3} y1={numY + 4} x2={numX + numW - 3} y2={numY + numH - 4} stroke="#ffffff" strokeWidth="1" opacity=".5" />
         </>
       ) : (
         <>
-          <line x1={numX} y1={numY + numH / 2} x2={numX + numW} y2={numY + numH / 2} stroke="#388ebd" strokeWidth="2" />
-          <line x1={numX + numW / 2} y1={numY} x2={numX + numW / 2} y2={numY + numH} stroke="#388ebd" strokeWidth="2" />
+          <line x1={numX} y1={numY + numH / 2} x2={numX + numW} y2={numY + numH / 2} stroke="#3b88b0" strokeWidth="1.8" />
+          <line x1={numX + numW / 2} y1={numY} x2={numX + numW / 2} y2={numY + numH} stroke="#3b88b0" strokeWidth="1.8" />
+          <line x1={numX + 4} y1={numY + 3} x2={numX + numW - 4} y2={numY + numH - 3} stroke="#ffffff" strokeWidth="1" opacity=".5" />
         </>
       )}
     </g>
   );
 }
 
-function DoorSwing({ x, y, radius = 42, startAngle = 0, sweepAngle = 90 }: { x: number | string; y: number | string; radius?: number; startAngle?: number; sweepAngle?: number }) {
+// Delicate architectural door swing arc and door leaf
+function CadDoorSwing({ x, y, radius = 42, startAngle = 0, sweepAngle = 90 }: { x: number | string; y: number | string; radius?: number; startAngle?: number; sweepAngle?: number }) {
   const numX = Number(x);
   const numY = Number(y);
   const rad1 = (startAngle * Math.PI) / 180;
@@ -190,66 +219,94 @@ function DoorSwing({ x, y, radius = 42, startAngle = 0, sweepAngle = 90 }: { x: 
   const x2 = numX + Math.cos(rad2) * radius;
   const y2 = numY + Math.sin(rad2) * radius;
   return (
-    <g className="pointer-events-none opacity-45">
-      <line x1={numX} y1={numY} x2={x1} y2={y1} stroke="#3e5a4d" strokeWidth="2.5" />
-      <path d={`M ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2}`} fill="none" stroke="#3e5a4d" strokeWidth="1.5" strokeDasharray="4 3" />
+    <g className="pointer-events-none opacity-50">
+      <line x1={numX} y1={numY} x2={x1} y2={y1} stroke="#524335" strokeWidth="2.5" strokeLinecap="round" />
+      <path d={`M ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2}`} fill="none" stroke="#6b5947" strokeWidth="1.5" strokeDasharray="4 3" />
     </g>
   );
 }
 
-function RoomLabel({ x, y, title, detail }: { x: number | string; y: number | string; title: string; detail: string }) {
+// Clean room badge label
+function RoomBadge({ x, y, title, subtitle }: { x: number | string; y: number | string; title: string; subtitle: string }) {
   const numX = Number(x);
   const numY = Number(y);
   return (
     <g className="pointer-events-none">
-      <rect x={numX - 84} y={numY - 17} width="168" height="34" rx="10" fill="#fffdf7" opacity=".92" stroke="#162b23" strokeWidth="1.5" filter="url(#badgeShadow)" />
-      <text x={numX} y={numY - 2} textAnchor="middle" className="fill-[#142d22] text-[12px] font-black tracking-[.04em]">{title}</text>
-      <text x={numX} y={numY + 11} textAnchor="middle" className="fill-[#536b5f] text-[8.5px] font-bold">{detail}</text>
+      <rect
+        x={numX - 90}
+        y={numY - 17}
+        width="180"
+        height="34"
+        rx="10"
+        fill="#fffdf9"
+        opacity=".95"
+        stroke="#222b27"
+        strokeWidth="1.5"
+        filter="url(#badgeShadow)"
+      />
+      <text x={numX} y={numY - 2} textAnchor="middle" className="fill-[#13221b] text-[11px] font-black tracking-[.06em]">
+        {title}
+      </text>
+      <text x={numX} y={numY + 11} textAnchor="middle" className="fill-[#53655c] text-[8.5px] font-semibold">
+        {subtitle}
+      </text>
     </g>
   );
 }
 
-function Avatar({ player, local = false, isCaffeinated = false }: { player: PlayerSnapshot; local?: boolean; isCaffeinated?: boolean }) {
+// Sophisticated Gather.town style avatar with directional posture and voice huddle proximity circle
+function GatherAvatar({ player, local = false, isCaffeinated = false }: { player: PlayerSnapshot; local?: boolean; isCaffeinated?: boolean }) {
   const x = mapX(player.x);
   const y = mapY(player.z);
-  const initials = player.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "YOU";
   const rotDeg = ((player.rotation || 0) * 180) / Math.PI;
+  const initials = player.name.split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase() || "YOU";
 
   return (
     <g transform={`translate(${x} ${y})`} className="pointer-events-none" filter="url(#avatarShadow)">
-      {/* Audio Proximity Range Ring (Gather.town 3m voice huddle radius) */}
+      {/* Voice Huddle Audio Proximity Zone (Gather.town 3m boundary) */}
       {local && (
         <g>
-          <circle r="92" fill="#c8f560" fillOpacity=".07" stroke="#c8f560" strokeWidth="1.8" strokeDasharray="6 6" />
-          <circle r="90" fill="none" stroke="#234a36" strokeWidth="0.8" opacity=".35" />
+          <circle r="96" fill="#c8f560" fillOpacity=".08" stroke="#c8f560" strokeWidth="2" strokeDasharray="6 6" />
+          <circle r="94" fill="none" stroke="#1d402b" strokeWidth="1" opacity=".4" />
         </g>
       )}
 
-      {/* Avatar shadow */}
-      <ellipse cy="19" rx="19" ry="8.5" fill="#12241b" opacity=".35" />
+      {/* Realistic Avatar Ground Shadow */}
+      <ellipse cy="20" rx="19" ry="8.5" fill="#0c1811" opacity=".38" />
 
-      {/* Heading Pointer Arrow */}
+      {/* Directional Indicator Pointer Arrow */}
       <g transform={`rotate(${rotDeg})`}>
-        <polygon points="0,-29 -6,-20 6,-20" fill={local ? "#c8f560" : "#ffffff"} stroke="#173f2b" strokeWidth="1.5" />
+        <polygon points="0,-30 -6.5,-20 6.5,-20" fill={local ? "#c8f560" : "#ffffff"} stroke="#142c1e" strokeWidth="1.6" />
       </g>
 
-      {/* Outer base badge circle */}
-      <circle r={local ? 23 : 21} fill="#fffdf7" stroke={local ? "#c8f560" : "#ffffff"} strokeWidth={local ? 5.5 : 3.5} />
-      {/* Avatar body color fill */}
-      <circle r="17.5" fill={player.color} />
+      {/* Outer Glow Halo Ring */}
+      <circle r={local ? 23.5 : 21} fill="#ffffff" stroke={local ? "#c8f560" : "#173f2b"} strokeWidth={local ? 5.5 : 3.5} />
 
-      {/* Top-down humanoid avatar head & shoulders */}
-      <ellipse cy="-1" rx="8" ry="7" fill="#f7d3ba" />
-      {/* Hair */}
-      <path d="M-8 -3 Q0 -10 8 -3 Q6 -8 -6 -8 Z" fill="#2d1f18" />
+      {/* Avatar Clothing / Color */}
+      <circle r="18" fill={player.color} />
 
-      {/* Availability Status Indicator Dot */}
-      <circle cx="16" cy="15" r="6" fill="#3bb76f" stroke="#fffdf7" strokeWidth="2.5" />
+      {/* Top-down Humanoid Avatar Silhouette (Shoulders & Head) */}
+      <ellipse cy="1" rx="12" ry="7.5" fill="#1b2420" opacity=".6" />
+      <circle cy="-1" r="8" fill="#f5cfb5" />
+      {/* Hair styling */}
+      <path d="M -8 -3 C -7 -11 7 -11 8 -3 C 6 -8 -6 -8 -8 -3 Z" fill="#2d1c13" />
+
+      {/* Online Status Dot */}
+      <circle cx="15.5" cy="14.5" r="5.5" fill="#22c55e" stroke="#ffffff" strokeWidth="2" />
 
       {/* Floating Name Badge */}
-      <g transform="translate(0 -38)">
-        <rect x="-42" y="-12" width="84" height="24" rx="9" fill={local ? "#163826" : "#ffffff"} stroke={local ? "#c8f560" : "#163826"} strokeWidth="1.5" />
-        <text y="4" textAnchor="middle" className={`${local ? "fill-[#c8f560]" : "fill-[#142d22]"} text-[9.5px] font-black`}>
+      <g transform="translate(0 -40)">
+        <rect
+          x="-44"
+          y="-13"
+          width="88"
+          height="25"
+          rx="10"
+          fill={local ? "#122a1d" : "#ffffff"}
+          stroke={local ? "#c8f560" : "#163424"}
+          strokeWidth="1.6"
+        />
+        <text y="4" textAnchor="middle" className={`${local ? "fill-[#c8f560]" : "fill-[#122a1d]"} text-[10px] font-black`}>
           {local ? (isCaffeinated ? "You ☕" : "You") : player.name.slice(0, 14)}
         </text>
       </g>
@@ -257,211 +314,261 @@ function Avatar({ player, local = false, isCaffeinated = false }: { player: Play
   );
 }
 
-function ArchitecturalFloorPlanFurnishings() {
+// Master component containing all 12 rooms rendered with rich architectural finishes matching media_1795281102875_7cf75968.jpg
+function ArchitecturalFurnishings() {
   return (
     <>
       {/* ========================================================
           1. MEETING / CONFERENCE ROOM (14' x 10') - TOP LEFT
           ======================================================== */}
-      <g id="conference-room-furniture" aria-label="Meeting and conference room furniture">
-        {/* Conference Room Rug Inlay */}
-        <rect x="36" y="36" width="382" height="258" rx="8" fill="#e7eee9" stroke="#b4cab9" strokeWidth="2.5" />
-        {/* Large Wooden Conference Table */}
-        <rect x="110" y="98" width="235" height="116" rx="16" fill="#8f5739" stroke="#482b1c" strokeWidth="4.5" />
-        <rect x="122" y="110" width="211" height="92" rx="10" fill="#a86a46" />
-        {/* Table Bevel & Center Speakerphone Puck */}
-        <rect x="135" y="122" width="185" height="68" rx="6" fill="#995f3e" stroke="#cfa17b" strokeWidth="1.5" />
-        <circle cx="227" cy="156" r="14" fill="#203038" stroke="#0f191d" strokeWidth="2" />
-        <circle cx="227" cy="156" r="5" fill="#48b0a9" />
+      <g id="room-conference" aria-label="Meeting / Conference Room">
+        {/* Soft Olive Green Inlay Rug with Tailored Border */}
+        <rect x="36" y="36" width="382" height="258" rx="8" fill="url(#confCarpet)" stroke="#9fb8a5" strokeWidth="2.5" />
+
+        {/* Solid Natural Oak Conference Table with Soft Rounded Corners */}
+        <g filter="url(#furnShadow)">
+          <rect x="108" y="96" width="242" height="120" rx="18" fill="url(#oakWood)" stroke="#5c3b24" strokeWidth="4" />
+          {/* Beveled Top Inset Surface */}
+          <rect x="120" y="108" width="218" height="96" rx="12" fill="#ba8054" stroke="#dcb48e" strokeWidth="1.5" />
+          {/* Recessed Cable Management & Speakerphone Hub */}
+          <rect x="180" y="146" width="98" height="20" rx="6" fill="#232b30" stroke="#48535b" strokeWidth="1.5" />
+          <circle cx="229" cy="156" r="6" fill="#38bdf8" />
+        </g>
+
         {/* 10 Conference Chairs (4 Top, 4 Bottom, 1 Left, 1 Right) */}
-        {[135, 195, 255, 315].map((x) => (
-          <Chair key={`top-${x}`} x={x} y={74} rotate={0} />
+        {[136, 198, 260, 322].map((x) => (
+          <OfficeChair key={`conf-top-${x}`} x={x} y={72} rotate={0} />
         ))}
-        {[135, 195, 255, 315].map((x) => (
-          <Chair key={`bot-${x}`} x={x} y={238} rotate={180} />
+        {[136, 198, 260, 322].map((x) => (
+          <OfficeChair key={`conf-bot-${x}`} x={x} y={240} rotate={180} />
         ))}
-        <Chair x={84} y={156} rotate={-90} />
-        <Chair x={370} y={156} rotate={90} />
-        {/* Presentation TV Display on Left (West) Wall */}
-        <rect x="30" y="105" width="14" height="102" rx="3.5" fill="#132025" stroke="#0a1215" strokeWidth="2" />
-        <rect x="34" y="112" width="6" height="88" rx="1.5" fill="#3bb4d8" />
-        {/* Corner Plant */}
-        <Plant x="65" y="65" scale={1.15} />
+        <OfficeChair x={80} y={156} rotate={-90} />
+        <OfficeChair x={378} y={156} rotate={90} />
+
+        {/* Ultra-Slim Wall-Mounted 85" Presentation Display on West Wall */}
+        <rect x="30" y="102" width="14" height="108" rx="3.5" fill="#13191c" stroke="#080c0e" strokeWidth="2" filter="url(#furnShadow)" />
+        <rect x="34" y="110" width="6" height="92" rx="1.5" fill="url(#screenGradient)" />
+
+        {/* Potted Indoor Monstera in Top-Left Corner */}
+        <ArchitecturalPlant x={65} y={65} scale={1.2} />
       </g>
 
       {/* ========================================================
           2. DIRECTOR / FOUNDER CABIN (10' x 12') - TOP CENTER-LEFT
           ======================================================== */}
-      <g id="founder-cabin-furniture" aria-label="Director and founder cabin furniture">
-        {/* Executive Hardwood Inlay */}
-        <rect x="424" y="36" width="194" height="258" rx="8" fill="#f2e8dc" stroke="#d5beaa" strokeWidth="2" />
+      <g id="room-founder-cabin" aria-label="Director / Founder Cabin">
+        {/* Warm Walnut Parquet Floor Inlay */}
+        <rect x="424" y="36" width="194" height="258" rx="8" fill="url(#walnutWood)" stroke="#c4a58b" strokeWidth="2" />
+
         {/* Executive Director Desk */}
-        <rect x="462" y="120" width="128" height="58" rx="7" fill="#694027" stroke="#3d2315" strokeWidth="4" />
-        <rect x="472" y="128" width="108" height="42" rx="4" fill="#7d4f33" />
-        {/* Leather Writing Blotter & Laptop */}
-        <rect x="498" y="132" width="56" height="34" rx="3" fill="#1d2224" />
-        <rect x="510" y="137" width="32" height="22" rx="2" fill="#c3c8cc" stroke="#757c80" strokeWidth="1" />
-        <rect x="514" y="140" width="24" height="14" rx="1" fill="#3ea88b" />
-        {/* High-back Executive Chair */}
-        <Chair x="526" y="86" rotate={0} color="#1b3d30" />
-        {/* 2 Visitor Chairs in front of desk */}
-        <Chair x="492" y="212" rotate={180} color="#355848" />
-        <Chair x="560" y="212" rotate={180} color="#355848" />
-        {/* Executive Credenza / Shelf along North Wall */}
-        <rect x="460" y="42" width="132" height="22" rx="4" fill="#52311d" stroke="#2d1a0e" strokeWidth="2" />
-        <circle cx="565" cy="53" r="6" fill="#f59e0b" />
-        <rect x="475" y="46" width="40" height="14" rx="2" fill="#8c3826" />
+        <g filter="url(#furnShadow)">
+          <rect x="460" y="120" width="132" height="60" rx="8" fill="url(#darkWalnut)" stroke="#422515" strokeWidth="3.5" />
+          {/* Full-grain Dark Leather Writing Pad */}
+          <rect x="496" y="130" width="60" height="40" rx="4" fill="#181d1f" stroke="#2c3438" strokeWidth="1.2" />
+          {/* Aluminum Laptop with Backlit Screen */}
+          <rect x="510" y="136" width="32" height="22" rx="2.5" fill="#c4cad0" stroke="#757e85" strokeWidth="1" />
+          <rect x="513" y="139" width="26" height="14" rx="1" fill="#10b981" opacity=".9" />
+          {/* Executive Coffee Mug */}
+          <circle cx="566" cy="142" r="4.5" fill="#ffffff" stroke="#c48a58" strokeWidth="1.5" />
+        </g>
+
+        {/* High-Back Executive Swivel Chair */}
+        <OfficeChair x={526} y={84} rotate={0} color="#152f23" />
+        {/* 2 Visitor Armchairs in Front of Desk */}
+        <OfficeChair x={492} y={214} rotate={180} color="#35483f" />
+        <OfficeChair x={560} y={214} rotate={180} color="#35483f" />
+
+        {/* North Wall Credenza & Trophy Display */}
+        <rect x="456" y="42" width="140" height="24" rx="4" fill="#4d2c18" stroke="#2c170b" strokeWidth="2" filter="url(#furnShadow)" />
+        <circle cx="568" cy="54" r="6" fill="#f59e0b" stroke="#b45309" strokeWidth="1.5" />
+        <rect x="472" y="46" width="46" height="15" rx="2" fill="#7c2d12" />
+
         {/* Corner Plant */}
-        <Plant x="450" y="60" scale={0.95} />
+        <ArchitecturalPlant x={450} y={60} scale={1.0} />
       </g>
 
       {/* ========================================================
           3. MANAGER CABIN (10' x 12') - TOP CENTER-RIGHT
           ======================================================== */}
-      <g id="manager-cabin-furniture" aria-label="Manager cabin furniture">
-        {/* Modern Slate Rug */}
-        <rect x="624" y="36" width="194" height="258" rx="8" fill="#e7edf2" stroke="#b9c9d6" strokeWidth="2" />
-        {/* Manager Desk */}
-        <rect x="662" y="120" width="124" height="56" rx="7" fill="#754b32" stroke="#432919" strokeWidth="4" />
-        <rect x="672" y="128" width="104" height="40" rx="4" fill="#8d5d40" />
-        {/* Dual Workstation Monitors */}
-        <rect x="696" y="124" width="56" height="8" rx="2" fill="#18252a" />
-        <line x1="724" y1="124" x2="724" y2="132" stroke="#c0c6c8" strokeWidth="3" />
-        <rect x="702" y="140" width="44" height="16" rx="2" fill="#1d2224" />
+      <g id="room-manager-cabin" aria-label="Manager Cabin">
+        {/* Slate Blue-Grey Management Rug */}
+        <rect x="624" y="36" width="194" height="258" rx="8" fill="#e5edf2" stroke="#b0c4d4" strokeWidth="2" />
+
+        {/* Modern Honey Oak Manager Desk */}
+        <g filter="url(#furnShadow)">
+          <rect x="660" y="120" width="128" height="58" rx="8" fill="url(#oakWood)" stroke="#54351f" strokeWidth="3.5" />
+          {/* Dual Widescreen Curved Monitors */}
+          <rect x="692" y="123" width="64" height="8" rx="2.5" fill="#172228" stroke="#35444e" strokeWidth="1" />
+          <line x1="724" y1="123" x2="724" y2="132" stroke="#9ba4ab" strokeWidth="3" strokeLinecap="round" />
+          <rect x="696" y="124" width="56" height="4" rx="1" fill="#38bdf8" opacity=".85" />
+          {/* Keyboard & Mouse */}
+          <rect x="702" y="142" width="44" height="17" rx="2" fill="#1b2126" />
+        </g>
+
         {/* Manager Task Chair */}
-        <Chair x="724" y="86" rotate={0} color="#214235" />
-        {/* 2 Visitor Chairs in front of desk */}
-        <Chair x="692" y="210" rotate={180} color="#3a5d4c" />
-        <Chair x="756" y="210" rotate={180} color="#3a5d4c" />
+        <OfficeChair x={724} y={84} rotate={0} color="#1c3b2e" />
+        {/* 2 Visitor Chairs in Front of Desk */}
+        <OfficeChair x={692} y={212} rotate={180} color="#35483f" />
+        <OfficeChair x={756} y={212} rotate={180} color="#35483f" />
+
         {/* North Wall Credenza */}
-        <rect x="660" y="42" width="128" height="22" rx="4" fill="#4d2f1d" stroke="#2a180d" strokeWidth="2" />
+        <rect x="656" y="42" width="136" height="24" rx="4" fill="#4d2c18" stroke="#2c170b" strokeWidth="2" filter="url(#furnShadow)" />
+
         {/* Corner Plant */}
-        <Plant x="795" y="60" scale={0.95} />
+        <ArchitecturalPlant x={796} y={60} scale={1.0} />
       </g>
 
       {/* ========================================================
           4. PANTRY / BREAK AREA (8' x 10') - TOP RIGHT-MIDDLE
           ======================================================== */}
-      <g id="pantry-furniture" aria-label="Pantry and break area furniture">
-        {/* Checkered Dining Tile Floor */}
-        <rect x="824" y="36" width="194" height="258" rx="8" fill="#f5ede3" stroke="#d5c6b4" strokeWidth="2" />
-        {/* Kitchen Counter along North Wall */}
-        <rect x="834" y="38" width="174" height="44" rx="5" fill="#f0ebe1" stroke="#5f432f" strokeWidth="3.5" />
-        {/* Stainless Steel Sink with Faucet */}
-        <rect x="856" y="46" width="36" height="26" rx="4" fill="#b9c9c6" stroke="#687d79" strokeWidth="2" />
-        <circle cx="874" cy="59" r="4.5" fill="#4d615d" />
-        <line x1="874" y1="42" x2="874" y2="52" stroke="#8fa6a2" strokeWidth="3" strokeLinecap="round" />
-        {/* Stove / Hotplate / Microwave */}
-        <rect x="942" y="46" width="42" height="28" rx="3" fill="#202c30" stroke="#485c64" strokeWidth="1.5" />
-        <circle cx="953" cy="60" r="5" fill="#e05338" />
-        <circle cx="972" cy="60" r="5" fill="#e05338" />
-        {/* Round Dining Table in Center */}
-        <ellipse cy="192" cx="920" rx="46" ry="46" fill="#14211a" opacity=".18" />
-        <circle cx="920" cy="188" r="44" fill="#a46944" stroke="#5c3822" strokeWidth="4" />
-        <circle cx="920" cy="188" r="38" fill="#bc8058" />
-        {/* 4 Cafe Chairs around table */}
-        <Chair x={920} y={128} rotate={0} color="#38634f" />
-        <Chair x={920} y={248} rotate={180} color="#38634f" />
-        <Chair x={860} y={188} rotate={-90} color="#38634f" />
-        <Chair x={980} y={188} rotate={90} color="#38634f" />
+      <g id="room-pantry" aria-label="Pantry / Break Area">
+        {/* Elegant Bistro Checkered Tile Floor */}
+        <rect x="824" y="36" width="194" height="258" rx="8" fill="url(#pantryTile)" stroke="#cfc0ad" strokeWidth="2" />
+
+        {/* Quartz Countertop Kitchen Island along North Wall */}
+        <g filter="url(#furnShadow)">
+          <rect x="834" y="38" width="174" height="46" rx="5" fill="url(#counterQuartz)" stroke="#523924" strokeWidth="3" />
+          {/* Undermount Double Stainless Steel Sink with Mixer Tap */}
+          <rect x="856" y="46" width="38" height="28" rx="4" fill="#b4c4c1" stroke="#5a6e6a" strokeWidth="1.8" />
+          <circle cx="875" cy="60" r="5" fill="#40534f" />
+          <line x1="875" y1="42" x2="875" y2="53" stroke="#8da39f" strokeWidth="3.5" strokeLinecap="round" />
+          {/* Induction Hotplate / Coffee Espresso Station */}
+          <rect x="940" y="46" width="46" height="30" rx="3.5" fill="#1b252a" stroke="#3b4c54" strokeWidth="1.5" />
+          <circle cx="953" cy="61" r="5.5" fill="#ef4444" />
+          <circle cx="973" cy="61" r="5.5" fill="#ef4444" />
+        </g>
+
+        {/* Round Natural Hardwood Cafe Dining Table in Center */}
+        <g filter="url(#furnShadow)">
+          <circle cx="920" cy="188" r="46" fill="url(#oakWood)" stroke="#54331c" strokeWidth="4" />
+          <circle cx="920" cy="188" r="40" fill="#ba8054" />
+          <circle cx="920" cy="188" r="16" fill="#a46b41" stroke="#dfb692" strokeWidth="1.5" />
+        </g>
+
+        {/* 4 Cafe Dining Chairs around Table */}
+        <OfficeChair x={920} y={126} rotate={0} color="#2c5341" />
+        <OfficeChair x={920} y={250} rotate={180} color="#2c5341" />
+        <OfficeChair x={858} y={188} rotate={-90} color="#2c5341" />
+        <OfficeChair x={982} y={188} rotate={90} color="#2c5341" />
       </g>
 
       {/* ========================================================
           5. 2 WASHROOMS (6' x 7' each) - TOP RIGHT
           ======================================================== */}
-      <g id="washrooms-fixtures" aria-label="Washroom facilities and fixtures">
+      <g id="room-washrooms" aria-label="Washroom Facilities">
         {/* Washroom 1 (Top) */}
-        <rect x="1024" y="36" width="144" height="124" rx="6" fill="#e2ebec" stroke="#9ab0b3" strokeWidth="2" />
-        {/* Toilet Commode 1 */}
-        <rect x="1120" y="52" width="24" height="12" rx="3" fill="#ffffff" stroke="#7e9699" strokeWidth="2" />
-        <ellipse cx="1132" cy="74" rx="11" ry="15" fill="#ffffff" stroke="#7e9699" strokeWidth="2" />
+        <rect x="1024" y="36" width="144" height="124" rx="6" fill="url(#washroomTile)" stroke="#8da1a4" strokeWidth="2" />
+        {/* Toilet Commode 1 (Tank + Oval Bowl) */}
+        <g filter="url(#furnShadow)">
+          <rect x="1118" y="52" width="26" height="13" rx="3.5" fill="#ffffff" stroke="#688083" strokeWidth="2" />
+          <ellipse cx="1131" cy="76" rx="11.5" ry="16" fill="#ffffff" stroke="#688083" strokeWidth="2" />
+          <ellipse cx="1131" cy="76" rx="7.5" ry="11" fill="#e2edf0" />
+        </g>
         {/* Vanity Sink 1 */}
-        <rect x="1120" y="112" width="28" height="24" rx="5" fill="#ffffff" stroke="#7e9699" strokeWidth="2" />
-        <ellipse cx="1134" cy="124" rx="7" ry="6" fill="#9dbec2" />
-        {/* Door 1 Opening & Arc */}
-        <DoorSwing x={1024} y={130} radius={32} startAngle={-90} sweepAngle={90} />
+        <g filter="url(#furnShadow)">
+          <rect x="1116" y="112" width="30" height="26" rx="6" fill="#ffffff" stroke="#688083" strokeWidth="2" />
+          <ellipse cx="1131" cy="125" rx="8" ry="7" fill="#8cb1b5" />
+          <circle cx="1131" cy="116" r="2.5" fill="#3b4d50" />
+        </g>
+        <CadDoorSwing x={1024} y={130} radius={32} startAngle={-90} sweepAngle={90} />
 
         {/* Washroom 2 (Bottom) */}
-        <rect x="1024" y="164" width="144" height="134" rx="6" fill="#e2ebec" stroke="#9ab0b3" strokeWidth="2" />
+        <rect x="1024" y="164" width="144" height="134" rx="6" fill="url(#washroomTile)" stroke="#8da1a4" strokeWidth="2" />
         {/* Toilet Commode 2 */}
-        <rect x="1120" y="180" width="24" height="12" rx="3" fill="#ffffff" stroke="#7e9699" strokeWidth="2" />
-        <ellipse cx="1132" cy="202" rx="11" ry="15" fill="#ffffff" stroke="#7e9699" strokeWidth="2" />
+        <g filter="url(#furnShadow)">
+          <rect x="1118" y="180" width="26" height="13" rx="3.5" fill="#ffffff" stroke="#688083" strokeWidth="2" />
+          <ellipse cx="1131" cy="204" rx="11.5" ry="16" fill="#ffffff" stroke="#688083" strokeWidth="2" />
+          <ellipse cx="1131" cy="204" rx="7.5" ry="11" fill="#e2edf0" />
+        </g>
         {/* Vanity Sink 2 */}
-        <rect x="1120" y="244" width="28" height="24" rx="5" fill="#ffffff" stroke="#7e9699" strokeWidth="2" />
-        <ellipse cx="1134" cy="256" rx="7" ry="6" fill="#9dbec2" />
-        {/* Door 2 Opening & Arc */}
-        <DoorSwing x={1024} y={265} radius={32} startAngle={-90} sweepAngle={90} />
+        <g filter="url(#furnShadow)">
+          <rect x="1116" y="244" width="30" height="26" rx="6" fill="#ffffff" stroke="#688083" strokeWidth="2" />
+          <ellipse cx="1131" cy="257" rx="8" ry="7" fill="#8cb1b5" />
+          <circle cx="1131" cy="248" r="2.5" fill="#3b4d50" />
+        </g>
+        <CadDoorSwing x={1024} y={265} radius={32} startAngle={-90} sweepAngle={90} />
       </g>
 
       {/* ========================================================
           6. COLLABORATION / DISCUSSION AREA (12' x 10') - MIDDLE LEFT
           ======================================================== */}
-      <g id="collaboration-furniture" aria-label="Collaboration and discussion area furniture">
-        {/* Conversation Area Rug */}
-        <ellipse cx="195" cy="450" rx="118" ry="118" fill="#f7f0e4" stroke="#d8c5ab" strokeWidth="2.5" />
-        {/* Round Solid Oak Coffee Table */}
-        <ellipse cy="454" cx="195" rx="42" ry="42" fill="#14211a" opacity=".18" />
-        <circle cx="195" cy="450" r="40" fill="#a66e47" stroke="#5c3822" strokeWidth="4" />
-        <circle cx="195" cy="450" r="34" fill="#c0865c" />
-        <circle cx="185" cy="442" r="4" fill="#ffffff" stroke="#355c48" strokeWidth="1.5" />
-        <circle cx="206" cy="455" r="4" fill="#ffffff" stroke="#355c48" strokeWidth="1.5" />
-        {/* 4 Angled Armchairs around Coffee Table */}
-        <Armchair x={135} y={390} rotate={-45} />
-        <Armchair x={255} y={390} rotate={45} />
-        <Armchair x={135} y={510} rotate={-135} />
-        <Armchair x={255} y={510} rotate={135} />
-        {/* Corner Plants */}
-        <Plant x="65" y="340" scale={1.05} />
-        <Plant x="65" y="560" scale={1.05} />
-        <Plant x="350" y="560" scale={1.0} />
-        {/* Glass Partition Divider on Right */}
-        <rect x="370" y="340" width="8" height="190" rx="4" fill="#d2ede7" stroke="#3a685c" strokeWidth="2" />
-        {[360, 410, 460, 510].map((y) => (
-          <circle key={`glass-${y}`} cx={374} cy={y} r="3.5" fill="#1c3d34" />
+      <g id="room-collaboration" aria-label="Collaboration / Discussion Area">
+        {/* Circular Ivory Conversation Rug */}
+        <ellipse cx="195" cy="450" rx="120" ry="120" fill="url(#carpetPattern)" stroke="#cbb9a1" strokeWidth="2.5" />
+
+        {/* Solid Oak Circular Coffee Table */}
+        <g filter="url(#furnShadow)">
+          <circle cx="195" cy="450" r="42" fill="url(#oakWood)" stroke="#54351f" strokeWidth="4" />
+          <circle cx="195" cy="450" r="36" fill="#ba8054" />
+          {/* Magazine & Coffee Cups */}
+          <rect x="180" y="438" width="18" height="24" rx="2" fill="#ffffff" stroke="#63452c" strokeWidth="1" />
+          <circle cx="214" cy="445" r="4" fill="#ffffff" stroke="#355c48" strokeWidth="1.5" />
+          <circle cx="210" cy="460" r="4" fill="#ffffff" stroke="#355c48" strokeWidth="1.5" />
+        </g>
+
+        {/* 4 Deep Upholstered Lounge Armchairs Angled at 45° around Table */}
+        <LoungeArmchair x={132} y={388} rotate={-45} color="#3d6350" />
+        <LoungeArmchair x={258} y={388} rotate={45} color="#3d6350" />
+        <LoungeArmchair x={132} y={512} rotate={-135} color="#3d6350" />
+        <LoungeArmchair x={258} y={512} rotate={135} color="#3d6350" />
+
+        {/* Glass Partition Divider on Right Side with Stainless Steel Posts */}
+        <rect x="372" y="340" width="8" height="194" rx="4" fill="url(#glassPanel)" stroke="#30584e" strokeWidth="2" filter="url(#furnShadow)" />
+        {[355, 405, 455, 505].map((y) => (
+          <circle key={`glass-post-${y}`} cx={376} cy={y} r="3.5" fill="#19372e" />
         ))}
+
+        {/* Lush Corner Plants */}
+        <ArchitecturalPlant x={65} y={340} scale={1.1} />
+        <ArchitecturalPlant x={65} y={560} scale={1.1} />
+        <ArchitecturalPlant x={350} y={560} scale={1.0} />
       </g>
 
       {/* ========================================================
           7. WORKSTATIONS (20' x 14') - CENTER (8 DESKS)
           ======================================================== */}
-      <g id="workstations-furniture" aria-label="Center workstations furniture">
-        {/* Workstations Rug Inlay */}
-        <rect x="396" y="322" width="414" height="268" rx="10" fill="#f4efe6" stroke="#cfc0ad" strokeWidth="2.5" />
+      <g id="room-workstations" aria-label="Workstations Area">
+        {/* Central Workspace Inlay Carpet */}
+        <rect x="396" y="322" width="414" height="268" rx="10" fill="#f0ebe2" stroke="#c9bba8" strokeWidth="2.5" />
 
-        {/* Central Acoustic Privacy Divider between Desk Rows */}
-        <rect x="412" y="447" width="382" height="8" rx="4" fill="#355e4b" stroke="#1d382c" strokeWidth="2" />
+        {/* Central Acoustic Felt Privacy Partition between Desk Rows */}
+        <rect x="412" y="446" width="382" height="9" rx="4.5" fill="#2d5241" stroke="#173125" strokeWidth="2" filter="url(#furnShadow)" />
 
-        {/* NORTH DESK ROW (4 Workstations facing South) */}
+        {/* NORTH WORKSTATION ROW (4 Desks facing South) */}
         {[426, 520, 614, 708].map((x, idx) => (
-          <g key={`north-desk-${idx}`}>
-            {/* Desktop */}
-            <rect x={x} y="394" width="86" height="50" rx="6" fill="#a46d47" stroke="#52331f" strokeWidth="3" />
-            <rect x={x + 6} y="400" width="74" height="38" rx="4" fill="#b9825b" />
-            {/* Widescreen Monitor */}
-            <rect x={x + 18} y="434" width="50" height="7" rx="2" fill="#19282f" />
-            <rect x={x + 22} y="435" width="42" height="4" rx="1" fill="#4fc3f7" opacity=".8" />
-            {/* Keyboard & Mousepad */}
-            <rect x={x + 24} y="408" width="38" height="15" rx="2" fill="#20272b" />
-            <rect x={x + 67} y="411" width="10" height="11" rx="2" fill="#323c42" />
-            {/* Ergonomic Swivel Chair (Facing South) */}
-            <Chair x={x + 43} y={356} rotate={0} color="#294e3e" />
+          <g key={`north-workstation-${idx}`}>
+            {/* Desktop with Natural Wood Grain */}
+            <g filter="url(#furnShadow)">
+              <rect x={x} y="394" width="86" height="50" rx="6" fill="url(#oakWood)" stroke="#523521" strokeWidth="3" />
+              <rect x={x + 6} y="400" width="74" height="38" rx="4" fill="#ba8054" />
+              {/* Ultra-Thin Widescreen Monitor */}
+              <rect x={x + 18} y="433" width="50" height="8" rx="2" fill="#141d22" stroke="#2e3b43" strokeWidth="1" />
+              <rect x={x + 22} y="434" width="42" height="4" rx="1" fill="#38bdf8" opacity=".85" />
+              {/* Backlit Keyboard & Precision Mousepad */}
+              <rect x={x + 24} y="408" width="38" height="15" rx="2" fill="#1b2226" />
+              <rect x={x + 67} y="410" width="11" height="12" rx="2" fill="#283238" />
+            </g>
+            {/* Ergonomic Office Task Chair (Facing South) */}
+            <OfficeChair x={x + 43} y={356} rotate={0} color="#214234" />
           </g>
         ))}
 
-        {/* SOUTH DESK ROW (4 Workstations facing North) */}
+        {/* SOUTH WORKSTATION ROW (4 Desks facing North) */}
         {[426, 520, 614, 708].map((x, idx) => (
-          <g key={`south-desk-${idx}`}>
+          <g key={`south-workstation-${idx}`}>
             {/* Desktop */}
-            <rect x={x} y="458" width="86" height="50" rx="6" fill="#a46d47" stroke="#52331f" strokeWidth="3" />
-            <rect x={x + 6} y="464" width="74" height="38" rx="4" fill="#b9825b" />
-            {/* Widescreen Monitor */}
-            <rect x={x + 18} y="462" width="50" height="7" rx="2" fill="#19282f" />
-            <rect x={x + 22} y="464" width="42" height="4" rx="1" fill="#4fc3f7" opacity=".8" />
-            {/* Keyboard & Mousepad */}
-            <rect x={x + 24} y="480" width="38" height="15" rx="2" fill="#20272b" />
-            <rect x={x + 67} y="482" width="10" height="11" rx="2" fill="#323c42" />
-            {/* Ergonomic Swivel Chair (Facing North) */}
-            <Chair x={x + 43} y={548} rotate={180} color="#294e3e" />
+            <g filter="url(#furnShadow)">
+              <rect x={x} y="458" width="86" height="50" rx="6" fill="url(#oakWood)" stroke="#523521" strokeWidth="3" />
+              <rect x={x + 6} y="464" width="74" height="38" rx="4" fill="#ba8054" />
+              {/* Ultra-Thin Widescreen Monitor */}
+              <rect x={x + 18} y="461" width="50" height="8" rx="2" fill="#141d22" stroke="#2e3b43" strokeWidth="1" />
+              <rect x={x + 22} y="463" width="42" height="4" rx="1" fill="#38bdf8" opacity=".85" />
+              {/* Backlit Keyboard & Mousepad */}
+              <rect x={x + 24} y="480" width="38" height="15" rx="2" fill="#1b2226" />
+              <rect x={x + 67} y="482" width="11" height="12" rx="2" fill="#283238" />
+            </g>
+            {/* Ergonomic Office Task Chair (Facing North) */}
+            <OfficeChair x={x + 43} y={548} rotate={180} color="#214234" />
           </g>
         ))}
       </g>
@@ -469,161 +576,179 @@ function ArchitecturalFloorPlanFurnishings() {
       {/* ========================================================
           8. PRODUCT / PROJECT ROOM (10' x 12') - MIDDLE RIGHT
           ======================================================== */}
-      <g id="product-room-furniture" aria-label="Product and project room furniture">
-        {/* Project Room Carpet */}
-        <rect x="824" y="324" width="344" height="268" rx="8" fill="#e8eee9" stroke="#b6cebe" strokeWidth="2.5" />
+      <g id="room-product" aria-label="Product / Project Room">
+        {/* Soft Sage Green Project Carpet */}
+        <rect x="824" y="324" width="344" height="268" rx="8" fill="url(#confCarpet)" stroke="#a8c2b0" strokeWidth="2.5" />
+
         {/* Project Conference Table */}
-        <rect x="895" y="420" width="202" height="76" rx="12" fill="#8d5638" stroke="#482b1c" strokeWidth="4" />
-        <rect x="906" y="430" width="180" height="56" rx="8" fill="#a66c48" />
-        {/* 6 Project Chairs (3 Top, 3 Bottom) */}
+        <g filter="url(#furnShadow)">
+          <rect x="895" y="420" width="202" height="76" rx="14" fill="url(#oakWood)" stroke="#523521" strokeWidth="4" />
+          <rect x="906" y="430" width="180" height="56" rx="9" fill="#ba8054" stroke="#e0ba96" strokeWidth="1.5" />
+        </g>
+
+        {/* 6 Project Team Chairs (3 Top, 3 Bottom) */}
         {[925, 995, 1065].map((x) => (
-          <Chair key={`proj-top-${x}`} x={x} y={386} rotate={0} color="#294a3c" />
+          <OfficeChair key={`proj-top-${x}`} x={x} y={386} rotate={0} color="#294a3c" />
         ))}
         {[925, 995, 1065].map((x) => (
-          <Chair key={`proj-bot-${x}`} x={x} y={530} rotate={180} color="#294a3c" />
+          <OfficeChair key={`proj-bot-${x}`} x={x} y={530} rotate={180} color="#294a3c" />
         ))}
-        {/* Wall-mounted Whiteboard / Screen on East Wall */}
-        <rect x="1156" y="390" width="12" height="135" rx="3" fill="#ffffff" stroke="#253831" strokeWidth="2" />
-        {/* Sticky Notes on Whiteboard */}
-        <rect x="1158" y="410" width="6" height="10" fill="#facc15" />
-        <rect x="1158" y="430" width="6" height="10" fill="#38bdf8" />
-        <rect x="1158" y="450" width="6" height="10" fill="#4ade80" />
+
+        {/* Interactive Sprint Whiteboard on East Wall */}
+        <rect x="1156" y="388" width="12" height="140" rx="3.5" fill="#ffffff" stroke="#1f2d27" strokeWidth="2" filter="url(#furnShadow)" />
+        {/* Sprint Sticky Notes */}
+        <rect x="1158" y="408" width="7" height="11" rx="1" fill="#facc15" />
+        <rect x="1158" y="428" width="7" height="11" rx="1" fill="#38bdf8" />
+        <rect x="1158" y="448" width="7" height="11" rx="1" fill="#4ade80" />
+        <rect x="1158" y="468" width="7" height="11" rx="1" fill="#f472b6" />
+
         {/* Corner Plants */}
-        <Plant x="1140" y="348" scale={1.0} />
-        <Plant x="1140" y="565" scale={1.0} />
+        <ArchitecturalPlant x={1140} y={348} scale={1.05} />
+        <ArchitecturalPlant x={1140} y={565} scale={1.05} />
+
         {/* Door Opening & Swing Arc */}
-        <DoorSwing x={824} y={545} radius={38} startAngle={-90} sweepAngle={90} />
+        <CadDoorSwing x={824} y={545} radius={38} startAngle={-90} sweepAngle={90} />
       </g>
 
       {/* ========================================================
           9. SERVER / IT ROOM (8' x 8') - BOTTOM LEFT
           ======================================================== */}
-      <g id="server-room-furniture" aria-label="Server and IT infrastructure furniture">
-        {/* Technical Raised Grid Floor */}
-        <rect x="36" y="608" width="242" height="258" rx="8" fill="#dbe3e8" stroke="#9bb1bd" strokeWidth="2.5" />
-        {/* 3 Heavy Server Cabinets along West Wall */}
-        <rect x="42" y="628" width="56" height="216" rx="6" fill="#152129" stroke="#081014" strokeWidth="4" />
-        {[644, 700, 756, 812].map((y) => (
-          <g key={`rack-${y}`}>
-            <rect x="48" y={y} width="44" height="42" rx="3.5" fill="#253540" stroke="#0f191f" strokeWidth="1.5" />
-            <line x1="52" y1={y + 10} x2="88" y2={y + 10} stroke="#3b5261" strokeWidth="2" />
-            <line x1="52" y1={y + 20} x2="88" y2={y + 20} stroke="#3b5261" strokeWidth="2" />
-            <line x1="52" y1={y + 30} x2="88" y2={y + 30} stroke="#3b5261" strokeWidth="2" />
-            {/* Blinking LEDs */}
-            <circle cx="82" cy={y + 8} r="2.5" fill="#4ade80" />
-            <circle cx="82" cy={y + 18} r="2.5" fill="#38bdf8" />
-            <circle cx="82" cy={y + 28} r="2.5" fill="#f59e0b" />
-          </g>
-        ))}
+      <g id="room-server" aria-label="Server / IT Room">
+        {/* Raised Computer Room Tile Floor */}
+        <rect x="36" y="608" width="242" height="258" rx="8" fill="url(#serverFloor)" stroke="#8da2b0" strokeWidth="2.5" />
+
+        {/* 3 Heavy Data Center Server Cabinets along West Wall */}
+        <g filter="url(#furnShadow)">
+          <rect x="42" y="628" width="56" height="216" rx="6" fill="#11181d" stroke="#060a0c" strokeWidth="4" />
+          {[644, 700, 756, 812].map((y) => (
+            <g key={`server-blade-${y}`}>
+              <rect x="47" y={y} width="46" height="42" rx="3.5" fill="#1e2930" stroke="#0a1014" strokeWidth="1.5" />
+              <line x1="51" y1={y + 11} x2="89" y2={y + 11} stroke="#334652" strokeWidth="2" />
+              <line x1="51" y1={y + 21} x2="89" y2={y + 21} stroke="#334652" strokeWidth="2" />
+              <line x1="51" y1={y + 31} x2="89" y2={y + 31} stroke="#334652" strokeWidth="2" />
+              {/* Blinking Data Center LED Lights */}
+              <circle cx="83" cy={y + 9} r="2.5" fill="#22c55e" filter="url(#glow)" />
+              <circle cx="83" cy={y + 19} r="2.5" fill="#06b6d4" filter="url(#glow)" />
+              <circle cx="83" cy={y + 29} r="2.5" fill="#f59e0b" filter="url(#glow)" />
+            </g>
+          ))}
+        </g>
+
         {/* Door Opening & Swing Arc */}
-        <DoorSwing x={232} y={608} radius={38} startAngle={90} sweepAngle={90} />
+        <CadDoorSwing x={232} y={608} radius={38} startAngle={90} sweepAngle={90} />
       </g>
 
       {/* ========================================================
-          10. STORAGE / UTILITY ROOM (8' x 8') - BOTTOM CENTER-LEFT
+          10. STORAGE / UTILITY (8' x 8') - BOTTOM CENTER-LEFT
           ======================================================== */}
-      <g id="storage-room-furniture" aria-label="Storage and utility furniture">
-        {/* Utility Wood Planks Floor */}
-        <rect x="282" y="608" width="144" height="258" rx="8" fill="#eddcd0" stroke="#cbb29e" strokeWidth="2.5" />
-        {/* Modular Shelving Units along West Wall */}
-        <rect x="288" y="628" width="34" height="216" rx="4" fill="#694b36" stroke="#3d2719" strokeWidth="3" />
-        {[640, 680, 720, 760, 800].map((y) => (
-          <g key={`shelf-box-${y}`}>
-            <rect x="292" y={y} width="26" height="32" rx="2" fill="#d2a983" stroke="#875b34" strokeWidth="1.5" />
-            <line x1="294" y1={y + 16} x2="316" y2={y + 16} stroke="#684221" strokeWidth="1" />
-          </g>
-        ))}
-        {/* Storage boxes along North Wall */}
-        <rect x="330" y="612" width="70" height="24" rx="3" fill="#694b36" stroke="#3d2719" strokeWidth="2" />
+      <g id="room-storage" aria-label="Storage / Utility Room">
+        {/* Utility Hardwood Flooring */}
+        <rect x="282" y="608" width="144" height="258" rx="8" fill="url(#woodPlankPattern)" stroke="#bda38f" strokeWidth="2.5" />
+
+        {/* Heavy-Duty Modular Shelving Units along West Wall */}
+        <g filter="url(#furnShadow)">
+          <rect x="288" y="628" width="34" height="216" rx="4" fill="#5c3822" stroke="#331e11" strokeWidth="3" />
+          {[640, 680, 720, 760, 800].map((y) => (
+            <g key={`archive-box-${y}`}>
+              <rect x="292" y={y} width="26" height="32" rx="2.5" fill="#d4ad88" stroke="#7e532b" strokeWidth="1.5" />
+              <line x1="294" y1={y + 16} x2="316" y2={y + 16} stroke="#5c381e" strokeWidth="1.2" />
+            </g>
+          ))}
+          {/* North Shelving */}
+          <rect x="330" y="612" width="70" height="24" rx="3.5" fill="#5c3822" stroke="#331e11" strokeWidth="2" />
+        </g>
+
         {/* Door Opening & Swing Arc */}
-        <DoorSwing x={380} y={608} radius={36} startAngle={90} sweepAngle={90} />
+        <CadDoorSwing x={380} y={608} radius={36} startAngle={90} sweepAngle={90} />
       </g>
 
       {/* ========================================================
           11. RECEPTION (12' x 8') - BOTTOM CENTER
           ======================================================== */}
-      <g id="reception-furniture" aria-label="Reception desk and entrance furniture">
-        {/* Lobby Travertine Floor Inlay */}
-        <rect x="430" y="608" width="340" height="258" rx="8" fill="#f8f4ed" stroke="#dcd3c1" strokeWidth="2" />
+      <g id="room-reception" aria-label="Reception Desk & Lobby">
+        {/* Polished Travertine Lobby Flooring */}
+        <rect x="430" y="608" width="340" height="258" rx="8" fill="#fcf9f2" stroke="#d5cbb8" strokeWidth="2" />
 
-        {/* Beautiful Modern Curved Reception Counter */}
-        {/* Counter Shadow */}
-        <path d="M 470 710 Q 600 684 730 710 L 730 748 Q 600 722 470 748 Z" fill="#132119" opacity=".2" />
-        {/* White Composite Counter Front */}
-        <path d="M 470 706 Q 600 680 730 706 L 730 742 Q 600 716 470 742 Z" fill="#ffffff" stroke="#253a30" strokeWidth="4" />
-        {/* Warm Oak Top Cap */}
-        <path d="M 480 702 Q 600 676 720 702 L 720 724 Q 600 698 480 724 Z" fill="#a46c46" stroke="#5a3821" strokeWidth="2.5" />
-        {/* Receptionist Computer Terminal */}
-        <rect x="585" y="700" width="30" height="12" rx="2" fill="#19282f" />
-        <rect x="588" y="701" width="24" height="6" rx="1" fill="#4fc3f7" opacity=".8" />
+        {/* Sculptural Modern Curved Reception Counter */}
+        <g filter="url(#sofaShadow)">
+          {/* White Composite Counter Front */}
+          <path d="M 470 706 Q 600 678 730 706 L 730 742 Q 600 714 470 742 Z" fill="#ffffff" stroke="#25352e" strokeWidth="3.5" />
+          {/* Solid Honey Oak Top Cap Countertop */}
+          <path d="M 480 702 Q 600 674 720 702 L 720 724 Q 600 696 480 724 Z" fill="url(#oakWood)" stroke="#523521" strokeWidth="2.5" />
+          {/* Receptionist Computer & Visitor Check-In Terminal */}
+          <rect x="585" y="698" width="30" height="12" rx="2.5" fill="#141d22" stroke="#2e3b43" strokeWidth="1" />
+          <rect x="588" y="699" width="24" height="6" rx="1" fill="#38bdf8" opacity=".85" />
+        </g>
 
-        {/* Receptionist Chair (Facing South) */}
-        <Chair x={600} y={660} rotate={0} color="#204434" />
+        {/* Receptionist Ergonomic Chair (Facing South) */}
+        <OfficeChair x={600} y={658} rotate={0} color="#1c3b2e" />
 
-        {/* Potted Ficus Trees flanking the desk */}
-        <Plant x={450} y={725} scale={1.15} />
-        <Plant x={750} y={725} scale={1.15} />
+        {/* 2 Statement Ficus Lyrata Trees Flanking the Reception Counter */}
+        <ArchitecturalPlant x={450} y={725} scale={1.25} />
+        <ArchitecturalPlant x={750} y={725} scale={1.25} />
 
-        {/* Entrance Welcome Mat at South Double Doors */}
-        <rect x="550" y="842" width="100" height="24" rx="4" fill="#202a24" stroke="#101814" strokeWidth="2" />
-        <text x="600" y="857" textAnchor="middle" className="fill-[#c8f560] text-[9px] font-black tracking-[.1em]">WELCOME</text>
+        {/* Custom Logo Welcome Doormat at Entrance */}
+        <rect x="548" y="842" width="104" height="25" rx="5" fill="#1b241e" stroke="#0e1410" strokeWidth="2" filter="url(#furnShadow)" />
+        <text x="600" y="858" textAnchor="middle" className="fill-[#c8f560] text-[9.5px] font-black tracking-[.14em]">
+          CREWVILLA
+        </text>
 
-        {/* Exterior Entrance Steps / Threshold */}
-        <rect x="530" y="872" width="140" height="24" rx="4" fill="#c7c3b9" stroke="#54514a" strokeWidth="2" />
-        <rect x="546" y="878" width="108" height="12" rx="2" fill="#32302b" />
+        {/* Exterior Concrete Threshold Entrance Steps */}
+        <rect x="530" y="872" width="140" height="24" rx="4" fill="#c9c4b7" stroke="#48443b" strokeWidth="2" />
+        <rect x="544" y="878" width="112" height="12" rx="2" fill="#2d2b27" />
       </g>
 
       {/* ========================================================
           12. WAITING AREA (12' x 10') - BOTTOM RIGHT
           ======================================================== */}
-      <g id="waiting-area-furniture" aria-label="Waiting area lounge furniture">
-        {/* Warm Taupe Carpet */}
-        <rect x="774" y="608" width="394" height="258" rx="8" fill="#f3eae0" stroke="#cdbaa8" strokeWidth="2.5" />
+      <g id="room-waiting" aria-label="Waiting Area Lounge">
+        {/* Warm Taupe Wool Lounge Carpet */}
+        <rect x="774" y="608" width="394" height="258" rx="8" fill="url(#carpetPattern)" stroke="#c7b6a4" strokeWidth="2.5" />
 
-        {/* 3-Seater Sofa along North Wall */}
-        <g id="waiting-sofa-top">
-          <ellipse cy="668" cx="935" rx="96" ry="24" fill="#132119" opacity=".2" />
-          <rect x="840" y="650" width="190" height="48" rx="12" fill="#3a5849" stroke="#1d3228" strokeWidth="4" />
+        {/* 3-Seater Mid-Century Modern Guest Sofa along North Wall */}
+        <g id="sofa-north" filter="url(#sofaShadow)">
+          <rect x="838" y="650" width="194" height="48" rx="12" fill="#35463f" stroke="#1b2621" strokeWidth="3.5" />
           {/* Backrest Cushion */}
-          <rect x="846" y="654" width="178" height="14" rx="6" fill="#284235" />
-          {/* 3 Seat Cushions */}
-          {[850, 908, 966].map((x) => (
-            <rect key={`sofa-seat-${x}`} x={x} y="670" width="54" height="24" rx="6" fill="#4d7260" stroke="#253e31" strokeWidth="1.5" />
+          <rect x="844" y="654" width="182" height="13" rx="6" fill="#222f2a" />
+          {/* 3 Tailored Seat Cushions */}
+          {[848, 908, 968].map((x) => (
+            <rect key={`seat-cushion-${x}`} x={x} y={670} width="56" height="24" rx="6" fill="#495f56" stroke="#222f2a" strokeWidth="1.5" />
           ))}
           {/* Armrests */}
-          <rect x="836" y="656" width="12" height="38" rx="5" fill="#284235" />
-          <rect x="1022" y="656" width="12" height="38" rx="5" fill="#284235" />
+          <rect x="834" y="656" width="12" height="38" rx="5" fill="#222f2a" />
+          <rect x="1024" y="656" width="12" height="38" rx="5" fill="#222f2a" />
         </g>
 
-        {/* 2-Seater Sofa along South Wall */}
-        <g id="waiting-sofa-bottom">
-          <ellipse cy="828" cx="935" rx="76" ry="20" fill="#132119" opacity=".2" />
-          <rect x="860" y="812" width="150" height="44" rx="10" fill="#3a5849" stroke="#1d3228" strokeWidth="3.5" />
-          <rect x="866" y="838" width="138" height="12" rx="5" fill="#284235" />
-          {[870, 938].map((x) => (
-            <rect key={`sofa2-seat-${x}`} x={x} y="816" width="62" height="20" rx="5" fill="#4d7260" stroke="#253e31" strokeWidth="1.5" />
+        {/* 2-Seater Modern Sofa along South Wall */}
+        <g id="sofa-south" filter="url(#sofaShadow)">
+          <rect x="858" y="812" width="154" height="44" rx="10" fill="#35463f" stroke="#1b2621" strokeWidth="3.5" />
+          <rect x="864" y="838" width="142" height="12" rx="5" fill="#222f2a" />
+          {[868, 938].map((x) => (
+            <rect key={`seat-cushion-s-${x}`} x={x} y="816" width="64" height="20" rx="5" fill="#495f56" stroke="#222f2a" strokeWidth="1.5" />
           ))}
-          <rect x="856" y="816" width="10" height="34" rx="4" fill="#284235" />
-          <rect x="1004" y="816" width="10" height="34" rx="4" fill="#284235" />
+          <rect x="854" y="816" width="10" height="34" rx="4" fill="#222f2a" />
+          <rect x="1006" y="816" width="10" height="34" rx="4" fill="#222f2a" />
         </g>
 
-        {/* Round Solid Oak Coffee Table in Center */}
-        <ellipse cy="754" cx="935" rx="38" ry="38" fill="#14211a" opacity=".18" />
-        <circle cx="935" cy="750" r="36" fill="#a46c46" stroke="#5a3821" strokeWidth="4" />
-        <circle cx="935" cy="750" r="30" fill="#be845c" />
-        <rect x="922" y="742" width="26" height="16" rx="2" fill="#fffdf7" stroke="#754b2b" strokeWidth="1" />
+        {/* Solid Oak Round Coffee Table in Center */}
+        <g filter="url(#furnShadow)">
+          <circle cx="935" cy="750" r="38" fill="url(#oakWood)" stroke="#54351f" strokeWidth="4" />
+          <circle cx="935" cy="750" r="32" fill="#ba8054" />
+          {/* Architectural Design Books on Coffee Table */}
+          <rect x="920" y="740" width="28" height="18" rx="2" fill="#ffffff" stroke="#6b4629" strokeWidth="1" />
+        </g>
 
-        {/* 2 Armchairs on Left and Right of Coffee Table */}
-        <Armchair x={845} y={750} rotate={-90} />
-        <Armchair x={1025} y={750} rotate={90} />
+        {/* 2 Upholstered Lounge Armchairs on Left and Right of Coffee Table */}
+        <LoungeArmchair x={845} y={750} rotate={-90} color="#35463f" />
+        <LoungeArmchair x={1025} y={750} rotate={90} color="#35463f" />
 
         {/* Glass Partition Divider on Left */}
-        <rect x="772" y="650" width="7" height="190" rx="3.5" fill="#d2ede7" stroke="#3a685c" strokeWidth="2" />
+        <rect x="772" y="650" width="7" height="190" rx="3.5" fill="url(#glassPanel)" stroke="#2d4f45" strokeWidth="2" filter="url(#furnShadow)" />
 
-        {/* Corner Plants */}
-        <Plant x="1140" y="650" scale={1.05} />
-        <Plant x="1140" y="825" scale={1.05} />
-        <Plant x="745" y="825" scale={1.05} />
+        {/* Potted Indoor Plants */}
+        <ArchitecturalPlant x={1140} y={650} scale={1.1} />
+        <ArchitecturalPlant x={1140} y={825} scale={1.1} />
+        <ArchitecturalPlant x={745} y={825} scale={1.1} />
       </g>
     </>
   );
@@ -670,7 +795,7 @@ export function OfficeMap2D() {
         {`Player position ${player.x.toFixed(2)}, ${player.z.toFixed(2)}`}
       </output>
 
-      {/* Context pill at top-left */}
+      {/* Modern Context pill at top-left */}
       <div className="office-map-context" aria-live="polite">
         <span className="office-map-context__dot" />
         <span className="font-bold">{room?.name ?? "Office Corridor"}</span>
@@ -693,42 +818,135 @@ export function OfficeMap2D() {
           onPointerDown={walkToPointer}
         >
           <defs>
-            {/* Tile pattern for hallways & circulation */}
+            {/* Natural Gaussian Drop Shadows */}
+            <filter id="blueprintShadow" x="-10%" y="-10%" width="120%" height="120%">
+              <feDropShadow dx="0" dy="16" stdDeviation="20" floodColor="#08100c" floodOpacity=".45" />
+            </filter>
+            <filter id="furnShadow" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="4" stdDeviation="4.5" floodColor="#0c1812" floodOpacity=".24" />
+            </filter>
+            <filter id="sofaShadow" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="6" stdDeviation="6.5" floodColor="#0c1812" floodOpacity=".28" />
+            </filter>
+            <filter id="avatarShadow" x="-40%" y="-40%" width="180%" height="180%">
+              <feDropShadow dx="0" dy="6" stdDeviation="5.5" floodColor="#07120a" floodOpacity=".42" />
+            </filter>
+            <filter id="badgeShadow" x="-15%" y="-15%" width="130%" height="130%">
+              <feDropShadow dx="0" dy="3.5" stdDeviation="4" floodColor="#08120c" floodOpacity=".22" />
+            </filter>
+            <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+
+            {/* Architectural Material Gradients */}
+            <linearGradient id="oakWood" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#9a623a" />
+              <stop offset="50%" stopColor="#b47b4e" />
+              <stop offset="100%" stopColor="#8a532c" />
+            </linearGradient>
+
+            <linearGradient id="darkWalnut" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#5a351d" />
+              <stop offset="50%" stopColor="#6e4226" />
+              <stop offset="100%" stopColor="#482713" />
+            </linearGradient>
+
+            <linearGradient id="counterQuartz" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="100%" stopColor="#e4ded5" />
+            </linearGradient>
+
+            <linearGradient id="planterPot" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#c88b5b" />
+              <stop offset="100%" stopColor="#8a532d" />
+            </linearGradient>
+
+            <linearGradient id="windowGlass" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#eaf5fb" />
+              <stop offset="50%" stopColor="#c5e4f3" />
+              <stop offset="100%" stopColor="#a3d2ea" />
+            </linearGradient>
+
+            <linearGradient id="glassPanel" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#cdebe5" stopOpacity=".8" />
+              <stop offset="50%" stopColor="#eaf8f5" stopOpacity=".95" />
+              <stop offset="100%" stopColor="#cdebe5" stopOpacity=".8" />
+            </linearGradient>
+
+            <linearGradient id="screenGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#0ea5e9" />
+              <stop offset="100%" stopColor="#0284c7" />
+            </linearGradient>
+
+            {/* Architectural Flooring Patterns */}
             <pattern id="archGrid" width="48" height="48" patternUnits="userSpaceOnUse">
-              <rect width="48" height="48" fill="#fcfbf7" />
-              <path d="M 48 0 L 0 0 0 48" fill="none" stroke="#ebe6d9" strokeWidth="1.2" />
+              <rect width="48" height="48" fill="#faf8f2" />
+              <path d="M 48 0 L 0 0 0 48" fill="none" stroke="#e8e2d4" strokeWidth="1" />
             </pattern>
-            <filter id="blueprintShadow" x="-5%" y="-5%" width="110%" height="110%">
-              <feDropShadow dx="0" dy="12" stdDeviation="16" floodColor="#09140e" floodOpacity=".32" />
-            </filter>
-            <filter id="avatarShadow" x="-30%" y="-30%" width="160%" height="160%">
-              <feDropShadow dx="0" dy="6" stdDeviation="5" floodColor="#09140e" floodOpacity=".38" />
-            </filter>
-            <filter id="badgeShadow" x="-10%" y="-10%" width="120%" height="120%">
-              <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#0c1d15" floodOpacity=".18" />
-            </filter>
+
+            <pattern id="confCarpet" width="24" height="24" patternUnits="userSpaceOnUse">
+              <rect width="24" height="24" fill="#e5ece7" />
+              <path d="M 0 0 L 24 24 M 24 0 L 0 24" fill="none" stroke="#d3ded6" strokeWidth="0.8" />
+            </pattern>
+
+            <pattern id="walnutWood" width="40" height="20" patternUnits="userSpaceOnUse">
+              <rect width="40" height="20" fill="#eddcd0" />
+              <path d="M 0 10 L 40 10 M 20 0 L 20 10 M 0 20 L 40 20 M 40 10 L 40 20" fill="none" stroke="#d5bea9" strokeWidth="1" />
+            </pattern>
+
+            <pattern id="pantryTile" width="32" height="32" patternUnits="userSpaceOnUse">
+              <rect width="32" height="32" fill="#f4ece2" />
+              <rect x="0" y="0" width="16" height="16" fill="#e8ddd0" />
+              <rect x="16" y="16" width="16" height="16" fill="#e8ddd0" />
+              <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#ded2c3" strokeWidth="1" />
+            </pattern>
+
+            <pattern id="washroomTile" width="24" height="24" patternUnits="userSpaceOnUse">
+              <rect width="24" height="24" fill="#e0e8ea" />
+              <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#c0d0d4" strokeWidth="1" />
+            </pattern>
+
+            <pattern id="carpetPattern" width="28" height="28" patternUnits="userSpaceOnUse">
+              <rect width="28" height="28" fill="#f5ede3" />
+              <circle cx="14" cy="14" r="1.2" fill="#d9cbba" />
+            </pattern>
+
+            <pattern id="serverFloor" width="36" height="36" patternUnits="userSpaceOnUse">
+              <rect width="36" height="36" fill="#d6e0e6" />
+              <rect x="2" y="2" width="32" height="32" fill="#c9d6dc" />
+              <path d="M 36 0 L 0 0 0 36" fill="none" stroke="#9fb3be" strokeWidth="1.2" />
+            </pattern>
+
+            <pattern id="woodPlankPattern" width="48" height="16" patternUnits="userSpaceOnUse">
+              <rect width="48" height="16" fill="#ead8ca" />
+              <path d="M 0 16 L 48 16 M 24 0 L 24 16" fill="none" stroke="#cfb6a3" strokeWidth="1" />
+            </pattern>
           </defs>
 
-          {/* Exterior Architectural Drafting Backdrop */}
-          <rect width={VIEW_W} height={VIEW_H} rx="24" fill="#18251e" />
+          {/* Exterior Architectural Drafting Canvas Backdrop */}
+          <rect width={VIEW_W} height={VIEW_H} rx="24" fill="#131c17" />
 
-          {/* Foundation Concrete Border (40ft x 30ft Architectural Blueprint) */}
+          {/* Foundation Concrete Boundary Slab (40ft x 30ft Architectural Blueprint) */}
           <rect
             x={PAD - 8}
             y={PAD - 8}
             width={MAP_W + 16}
             height={MAP_H + 16}
             rx="12"
-            fill="#d9d4c7"
-            stroke="#111c16"
-            strokeWidth="4"
+            fill="#cfc9bc"
+            stroke="#0a120e"
+            strokeWidth="3.5"
             filter="url(#blueprintShadow)"
           />
 
-          {/* Main Floor Surface with Architectural Porcelain Tiles */}
+          {/* Main Floor Surface with Large-Format Architectural Porcelain Tiles */}
           <rect x={PAD} y={PAD} width={MAP_W} height={MAP_H} rx="8" fill="url(#archGrid)" />
 
-          {/* Architectural Wall Outlines & Partitions Background */}
+          {/* Room Rug Floors */}
           {rooms.map((item) => (
             <rect
               key={item.id}
@@ -737,42 +955,39 @@ export function OfficeMap2D() {
               width={item.w}
               height={item.h}
               fill={item.color}
-              opacity=".12"
-              stroke="#22312a"
-              strokeWidth="5"
+              opacity=".08"
+              stroke="#1b2420"
+              strokeWidth="4"
             />
           ))}
 
-          {/* Doorway openings on interior walls */}
-          {/* Conference Room Door Arc */}
-          <DoorSwing x={424} y={245} radius={44} startAngle={90} sweepAngle={90} />
-          {/* Founder Cabin Door Arc */}
-          <DoorSwing x={426} y={245} radius={40} startAngle={0} sweepAngle={90} />
-          {/* Manager Cabin Door Arc */}
-          <DoorSwing x={824} y={245} radius={40} startAngle={90} sweepAngle={90} />
+          {/* Architectural Doorway Swing Arcs */}
+          <CadDoorSwing x={424} y={245} radius={44} startAngle={90} sweepAngle={90} />
+          <CadDoorSwing x={426} y={245} radius={40} startAngle={0} sweepAngle={90} />
+          <CadDoorSwing x={824} y={245} radius={40} startAngle={90} sweepAngle={90} />
 
-          {/* 12 Detailed Architectural Furnishings */}
-          <ArchitecturalFloorPlanFurnishings />
+          {/* 12 Photorealistic Architectural Furnishings */}
+          <ArchitecturalFurnishings />
 
-          {/* Exterior Inset Glass Windows (Cyan Double-lines matching blueprint) */}
+          {/* Exterior Inset Double-Glazed Windows (Matching Blueprint) */}
           {/* North Windows */}
-          <Window x={130} y={PAD - 6} w={190} h={12} />
-          <Window x={470} y={PAD - 6} w={105} h={12} />
-          <Window x={670} y={PAD - 6} w={105} h={12} />
-          <Window x={870} y={PAD - 6} w={105} h={12} />
+          <ExteriorWindow x={128} y={PAD - 6} w={196} h={12} />
+          <ExteriorWindow x={470} y={PAD - 6} w={105} h={12} />
+          <ExteriorWindow x={670} y={PAD - 6} w={105} h={12} />
+          <ExteriorWindow x={870} y={PAD - 6} w={105} h={12} />
           {/* West Windows */}
-          <Window x={PAD - 6} y={110} w={12} h={110} vertical />
-          <Window x={PAD - 6} y={390} w={12} h={110} vertical />
-          <Window x={PAD - 6} y={670} w={12} h={110} vertical />
+          <ExteriorWindow x={PAD - 6} y={108} w={12} h={116} vertical />
+          <ExteriorWindow x={PAD - 6} y={390} w={12} h={116} vertical />
+          <ExteriorWindow x={PAD - 6} y={670} w={12} h={116} vertical />
           {/* East Windows */}
-          <Window x={PAD + MAP_W - 6} y={60} w={12} h={70} vertical />
-          <Window x={PAD + MAP_W - 6} y={190} w={12} h={70} vertical />
-          <Window x={PAD + MAP_W - 6} y={400} w={12} h={110} vertical />
+          <ExteriorWindow x={PAD + MAP_W - 6} y={60} w={12} h={72} vertical />
+          <ExteriorWindow x={PAD + MAP_W - 6} y={190} w={12} h={72} vertical />
+          <ExteriorWindow x={PAD + MAP_W - 6} y={400} w={12} h={116} vertical />
           {/* South Windows */}
-          <Window x={90} y={PAD + MAP_H - 6} w={130} h={12} />
-          <Window x={850} y={PAD + MAP_H - 6} w={170} h={12} />
+          <ExteriorWindow x={90} y={PAD + MAP_H - 6} w={130} h={12} />
+          <ExteriorWindow x={850} y={PAD + MAP_H - 6} w={170} h={12} />
 
-          {/* Exterior Perimeter Walls (Heavy architectural black walls) */}
+          {/* Exterior Architectural Perimeter Walls */}
           <rect
             x={PAD}
             y={PAD}
@@ -780,52 +995,52 @@ export function OfficeMap2D() {
             height={MAP_H}
             rx="6"
             fill="none"
-            stroke="#151b1f"
+            stroke="#151b1e"
             strokeWidth="14"
             className="pointer-events-none"
           />
 
-          {/* North Row Interior Divider Walls */}
-          <line x1={PAD} y1={294} x2={424} y2={294} stroke="#1b2328" strokeWidth="8" />
-          <line x1={424} y1={294} x2={624} y2={294} stroke="#1b2328" strokeWidth="8" />
-          <line x1={624} y1={294} x2={824} y2={294} stroke="#1b2328" strokeWidth="8" />
-          <line x1={824} y1={294} x2={PAD + MAP_W} y2={294} stroke="#1b2328" strokeWidth="8" />
+          {/* North Row Interior Partition Walls */}
+          <line x1={PAD} y1={294} x2={424} y2={294} stroke="#182126" strokeWidth="8" />
+          <line x1={424} y1={294} x2={624} y2={294} stroke="#182126" strokeWidth="8" />
+          <line x1={624} y1={294} x2={824} y2={294} stroke="#182126" strokeWidth="8" />
+          <line x1={824} y1={294} x2={PAD + MAP_W} y2={294} stroke="#182126" strokeWidth="8" />
 
-          {/* Vertical Dividers in North Row */}
-          <line x1={424} y1={PAD} x2={424} y2={294} stroke="#1b2328" strokeWidth="8" />
-          <line x1={624} y1={PAD} x2={624} y2={294} stroke="#1b2328" strokeWidth="8" />
-          <line x1={824} y1={PAD} x2={824} y2={294} stroke="#1b2328" strokeWidth="8" />
-          <line x1={1024} y1={PAD} x2={1024} y2={294} stroke="#1b2328" strokeWidth="8" />
-          <line x1={1024} y1={160} x2={PAD + MAP_W} y2={160} stroke="#1b2328" strokeWidth="8" />
+          {/* Vertical Interior Walls in North Row */}
+          <line x1={424} y1={PAD} x2={424} y2={294} stroke="#182126" strokeWidth="8" />
+          <line x1={624} y1={PAD} x2={624} y2={294} stroke="#182126" strokeWidth="8" />
+          <line x1={824} y1={PAD} x2={824} y2={294} stroke="#182126" strokeWidth="8" />
+          <line x1={1024} y1={PAD} x2={1024} y2={294} stroke="#182126" strokeWidth="8" />
+          <line x1={1024} y1={160} x2={PAD + MAP_W} y2={160} stroke="#182126" strokeWidth="8" />
 
           {/* Middle Row Dividers */}
-          <line x1={824} y1={316} x2={PAD + MAP_W} y2={316} stroke="#1b2328" strokeWidth="8" />
-          <line x1={824} y1={316} x2={824} y2={592} stroke="#1b2328" strokeWidth="8" />
-          <line x1={824} y1={592} x2={PAD + MAP_W} y2={592} stroke="#1b2328" strokeWidth="8" />
+          <line x1={824} y1={316} x2={PAD + MAP_W} y2={316} stroke="#182126" strokeWidth="8" />
+          <line x1={824} y1={316} x2={824} y2={592} stroke="#182126" strokeWidth="8" />
+          <line x1={824} y1={592} x2={PAD + MAP_W} y2={592} stroke="#182126" strokeWidth="8" />
 
           {/* South Row Dividers */}
-          <line x1={PAD} y1={592} x2={426} y2={592} stroke="#1b2328" strokeWidth="8" />
-          <line x1={278} y1={592} x2={278} y2={PAD + MAP_H} stroke="#1b2328" strokeWidth="8" />
-          <line x1={426} y1={592} x2={426} y2={PAD + MAP_H} stroke="#1b2328" strokeWidth="8" />
+          <line x1={PAD} y1={592} x2={426} y2={592} stroke="#182126" strokeWidth="8" />
+          <line x1={278} y1={592} x2={278} y2={PAD + MAP_H} stroke="#182126" strokeWidth="8" />
+          <line x1={426} y1={592} x2={426} y2={PAD + MAP_H} stroke="#182126" strokeWidth="8" />
 
           {/* Entrance Door Opening Gap at South Center */}
-          <line x1={545} y1={PAD + MAP_H} x2={655} y2={PAD + MAP_H} stroke="#fcfbf7" strokeWidth="18" />
+          <line x1={545} y1={PAD + MAP_H} x2={655} y2={PAD + MAP_H} stroke="#faf8f2" strokeWidth="18" />
 
           {/* Elegant Architectural Room Badges */}
-          <RoomLabel x={227} y={270} title="CONFERENCE" detail="Client & Team Meetings (14' x 10')" />
-          <RoomLabel x={524} y={270} title="FOUNDER CABIN" detail="Private Office (10' x 12')" />
-          <RoomLabel x={724} y={270} title="MANAGER CABIN" detail="Workspace (10' x 12')" />
-          <RoomLabel x={920} y={270} title="PANTRY" detail="Coffee & Breaks (8' x 10')" />
-          <RoomLabel x={1094} y={275} title="WASHROOMS" detail="Separate Facilities (6' x 7')" />
+          <RoomBadge x={227} y={270} title="CONFERENCE" subtitle="Client & Team Meetings (14' x 10')" />
+          <RoomBadge x={524} y={270} title="FOUNDER CABIN" subtitle="Private Office (10' x 12')" />
+          <RoomBadge x={724} y={270} title="MANAGER CABIN" subtitle="Workspace (10' x 12')" />
+          <RoomBadge x={920} y={270} title="PANTRY" subtitle="Coffee & Breaks (8' x 10')" />
+          <RoomBadge x={1094} y={275} title="WASHROOMS" subtitle="Separate Facilities (6' x 7')" />
 
-          <RoomLabel x={195} y={560} title="COLLABORATION" detail="Brainstorming (12' x 10')" />
-          <RoomLabel x={603} y={568} title="WORKSTATIONS" detail="8 Focus Desks (20' x 14')" />
-          <RoomLabel x={996} y={566} title="PROJECT ROOM" detail="Plan & Launch (10' x 12')" />
+          <RoomBadge x={195} y={560} title="COLLABORATION" subtitle="Brainstorming (12' x 10')" />
+          <RoomBadge x={603} y={568} title="WORKSTATIONS" subtitle="8 Focus Desks (20' x 14')" />
+          <RoomBadge x={996} y={566} title="PROJECT ROOM" subtitle="Plan & Launch (10' x 12')" />
 
-          <RoomLabel x={157} y={845} title="SERVER / IT" detail="Infrastructure (8' x 8')" />
-          <RoomLabel x={354} y={845} title="STORAGE" detail="Supplies & Utility (8' x 8')" />
-          <RoomLabel x={600} y={830} title="RECEPTION" detail="Visitor Check-In (12' x 8')" />
-          <RoomLabel x={970} y={845} title="WAITING AREA" detail="Guest Seating (12' x 10')" />
+          <RoomBadge x={157} y={845} title="SERVER / IT" subtitle="Infrastructure (8' x 8')" />
+          <RoomBadge x={354} y={845} title="STORAGE" subtitle="Supplies & Utility (8' x 8')" />
+          <RoomBadge x={600} y={830} title="RECEPTION" subtitle="Visitor Check-In (12' x 8')" />
+          <RoomBadge x={970} y={845} title="WAITING AREA" subtitle="Guest Seating (12' x 10')" />
 
           {/* Interactive Zone Pulsing Rings */}
           {INTERACTION_ZONES.map((zone) => {
@@ -865,11 +1080,11 @@ export function OfficeMap2D() {
 
           {/* Remote Players */}
           {Object.values(remotePlayers).map((remote) => (
-            <Avatar key={remote.id} player={remote} />
+            <GatherAvatar key={remote.id} player={remote} />
           ))}
 
           {/* Local Player */}
-          <Avatar player={player} local isCaffeinated={isCaffeinated} />
+          <GatherAvatar player={player} local isCaffeinated={isCaffeinated} />
         </svg>
       </div>
 
