@@ -1,4 +1,5 @@
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { io, Socket } from "socket.io-client";
 import { createSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase/client";
 import type { ConnectionState, PlayerSnapshot } from "@/features/virtual-office/types";
 import { isPlayerSnapshot, normalizeSnapshot } from "./protocol";
@@ -134,6 +135,87 @@ export class SupabaseRealtimeTransport implements MultiplayerTransport {
   }
 }
 
+export class SocketIOMultiplayerTransport implements MultiplayerTransport {
+  private socket: Socket | null = null;
+  private events: MultiplayerEvents | null = null;
+  private latest: PlayerSnapshot | null = null;
+
+  constructor(
+    private readonly workspaceId: string,
+    private readonly playerId: string,
+    private readonly serverUrl: string = process.env.NEXT_PUBLIC_REALTIME_URL || "http://localhost:4001"
+  ) {}
+
+  async connect(events: MultiplayerEvents) {
+    this.events = events;
+    events.onState("connecting", "Socket.IO Multiplayer");
+
+    this.socket = io(this.serverUrl, {
+      query: {
+        workspaceId: this.workspaceId,
+        userId: this.playerId,
+      },
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 5000,
+    });
+
+    this.socket.on("connect", () => {
+      this.events?.onState("connected", "Socket.IO Multiplayer");
+      if (this.latest) {
+        this.socket?.emit("player:move", this.latest);
+      }
+    });
+
+    this.socket.on("room:players", (players: PlayerSnapshot[]) => {
+      for (const p of players) {
+        if (p.id !== this.playerId && isPlayerSnapshot(p)) {
+          this.events?.onPlayer(normalizeSnapshot(p));
+        }
+      }
+    });
+
+    this.socket.on("player:joined", (player: PlayerSnapshot) => {
+      if (player.id !== this.playerId && isPlayerSnapshot(player)) {
+        this.events?.onPlayer(normalizeSnapshot(player));
+      }
+    });
+
+    this.socket.on("player:moved", (player: PlayerSnapshot) => {
+      if (player.id !== this.playerId && isPlayerSnapshot(player)) {
+        this.events?.onPlayer(normalizeSnapshot(player));
+      }
+    });
+
+    this.socket.on("player:left", (playerId: string) => {
+      this.events?.onLeave(playerId);
+    });
+
+    this.socket.on("connect_error", () => {
+      this.events?.onState("reconnecting", "Socket.IO Multiplayer");
+    });
+
+    this.socket.on("disconnect", () => {
+      this.events?.onState("offline", "Socket.IO Multiplayer");
+    });
+  }
+
+  async publish(snapshot: PlayerSnapshot) {
+    this.latest = normalizeSnapshot(snapshot);
+    if (!this.socket?.connected) return;
+    this.socket.emit("player:move", this.latest);
+  }
+
+  async disconnect() {
+    this.socket?.disconnect();
+    this.socket = null;
+    this.events?.onState("offline", "Socket.IO Multiplayer");
+  }
+}
+
 export function createTransport(workspaceId: string, playerId: string): MultiplayerTransport {
+  if (process.env.NEXT_PUBLIC_REALTIME_URL) {
+    return new SocketIOMultiplayerTransport(workspaceId, playerId);
+  }
   return hasSupabaseConfig ? new SupabaseRealtimeTransport(workspaceId, playerId) : new BrowserChannelTransport(workspaceId);
 }
