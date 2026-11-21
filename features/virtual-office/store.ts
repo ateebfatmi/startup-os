@@ -13,6 +13,7 @@ type OfficeState = {
   transportLabel: string;
   nearbyAction: { kind: InteractionKind; label: string; special?: string; teammateId?: "dev" | "design" | "finance" } | null;
   activePanel: InteractionKind | null;
+  viewMode: "3d" | "2d";
   cameraMode: "top" | "follow";
   clickTarget: { x: number; z: number } | null;
   lightingMode: "day" | "sunset" | "night";
@@ -47,6 +48,8 @@ type OfficeState = {
   setNearbyAction: (action: OfficeState["nearbyAction"]) => void;
   openPanel: (panel: InteractionKind) => void;
   closePanel: () => void;
+  setViewMode: (mode: "3d" | "2d") => void;
+  toggleViewMode: () => void;
   setCameraMode: (mode: "top" | "follow") => void;
   toggleCameraMode: () => void;
   setClickTarget: (target: { x: number; z: number } | null) => void;
@@ -86,6 +89,7 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   transportLabel: "Local network",
   nearbyAction: null,
   activePanel: null,
+  viewMode: "3d",
   cameraMode: "follow",
   clickTarget: null,
   lightingMode: "day",
@@ -124,6 +128,8 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   setNearbyAction: (nearbyAction) => set({ nearbyAction }),
   openPanel: (activePanel) => set({ activePanel }),
   closePanel: () => set({ activePanel: null }),
+  setViewMode: (viewMode) => set({ viewMode }),
+  toggleViewMode: () => set((state) => ({ viewMode: state.viewMode === "3d" ? "2d" : "3d" })),
   setCameraMode: (cameraMode) => set({ cameraMode }),
   toggleCameraMode: () => set((state) => ({ cameraMode: state.cameraMode === "top" ? "follow" : "top" })),
   setClickTarget: (clickTarget) => set({ clickTarget }),

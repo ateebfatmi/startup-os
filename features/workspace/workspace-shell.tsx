@@ -11,6 +11,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Logo } from "@/components/logo";
 import { initialsFor } from "@/features/auth/auth-utils";
 import { OfficeMap2D } from "@/features/virtual-office/office-map-2d";
+import { OfficeCanvas } from "@/features/virtual-office/office-canvas";
 import { useOfficeStore } from "@/features/virtual-office/store";
 import { startScreenShare, stopScreenShare } from "@/features/virtual-office/screen-share";
 import { playChime } from "@/features/virtual-office/audio";
@@ -198,6 +199,8 @@ function WorkspaceContent({ identity, workspaces, selectWorkspace }: { identity:
   const activePanel = useOfficeStore((state) => state.activePanel);
   const openPanel = useOfficeStore((state) => state.openPanel);
   const closePanel = useOfficeStore((state) => state.closePanel);
+  const viewMode = useOfficeStore((state) => state.viewMode);
+  const toggleViewMode = useOfficeStore((state) => state.toggleViewMode);
   const data = useWorkspaceData();
   const localParticipant = Object.values(huddle.participants).find((participant) => participant.isLocal);
   const inCall = huddle.status === "connected";
@@ -256,7 +259,9 @@ function WorkspaceContent({ identity, workspaces, selectWorkspace }: { identity:
           {data.error && <div role="alert" className="absolute left-4 top-2 z-30 rounded-xl bg-red-50 p-3 text-sm text-red-800">{data.error}</div>}
           {view === "office" ? (
             <>
-              <div className="absolute inset-0 z-0"><OfficeMap2D /></div>
+              <div className="absolute inset-0 z-0">
+                {viewMode === "3d" ? <OfficeCanvas /> : <OfficeMap2D />}
+              </div>
               <OfficeHud
                 rightRail={rightRail}
                 onToggleRail={() => setRightRail((value) => !value)}
@@ -560,6 +565,8 @@ function GatherBottomDock({
   const zoomLevel = useOfficeStore((state) => state.zoomLevel);
   const zoomIn = useOfficeStore((state) => state.zoomIn);
   const zoomOut = useOfficeStore((state) => state.zoomOut);
+  const viewMode = useOfficeStore((state) => state.viewMode);
+  const toggleViewMode = useOfficeStore((state) => state.toggleViewMode);
   const triggerEmote = useOfficeStore((state) => state.triggerEmote);
   const remotePlayers = useOfficeStore((state) => state.remotePlayers);
   const onlineCount = Object.keys(remotePlayers).length + 1;
@@ -702,6 +709,20 @@ function GatherBottomDock({
           </div>
         )}
       </div>
+
+      {/* 3D vs 2D Toggle */}
+      <button
+        onClick={toggleViewMode}
+        className={`flex h-10 items-center gap-1.5 rounded-xl border px-3 text-xs font-bold transition shadow-xs cursor-pointer ${
+          viewMode === "3d"
+            ? "border-[#173f2b] bg-[#173f2b] text-[#c8f560]"
+            : "border-black/10 bg-white/80 text-[#173f2b] hover:bg-black/5"
+        }`}
+        title={viewMode === "3d" ? "Switch to 2D Blueprint Map" : "Switch to 3D Virtual Office"}
+      >
+        <LayoutGrid size={16} />
+        <span>{viewMode === "3d" ? "3D Office" : "2D Blueprint"}</span>
+      </button>
 
       {/* Minimap Toggle */}
       <button
