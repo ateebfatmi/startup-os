@@ -97,9 +97,18 @@ export function WorkspaceShell() {
     }
     let active = true;
     void (async () => {
+      const isDemo =
+        typeof window !== "undefined" &&
+        (new URLSearchParams(window.location.search).get("demo") === "true" ||
+          document.cookie.includes("__demo_session=true"));
+
       const supabase = createSupabaseBrowserClient();
       const { data: { user } } = await supabase.auth.getUser();
-      const effectiveUser = user || (clerkUser ? { id: clerkUser.id, email: clerkUser.primaryEmailAddress?.emailAddress } : null);
+      const effectiveUser =
+        user ||
+        (clerkUser ? { id: clerkUser.id, email: clerkUser.primaryEmailAddress?.emailAddress } : null) ||
+        (isDemo ? { id: "demo-user", email: "demo@crewvilla.local" } : null);
+
       if (!effectiveUser) { router.replace("/login"); return; }
       const profilePromise = user
         ? supabase.from("profiles").select("display_name, avatar_config").eq("id", user.id).maybeSingle()

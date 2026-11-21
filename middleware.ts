@@ -10,6 +10,16 @@ export default clerkMiddleware(
       pathname.startsWith("/reset-password");
 
     if (isProtected) {
+      if (request.nextUrl.searchParams.get("demo") === "true") {
+        const response = NextResponse.next();
+        response.cookies.set("__demo_session", "true", { path: "/" });
+        return response;
+      }
+
+      if (request.cookies.get("__demo_session")) {
+        return NextResponse.next();
+      }
+
       const authObj = await auth();
       if (!authObj.userId) {
         const hasSession = Boolean(

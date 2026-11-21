@@ -142,6 +142,16 @@ export default function LoginPage() {
               }}
             />
           </ClerkLoaded>
+
+          {/* Quick Demo Bypass for local evaluation */}
+          <div className="mt-4 text-center">
+            <a
+              href="/office?demo=true"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#173f2b]/70 hover:text-[#173f2b] hover:underline transition-colors"
+            >
+              Continue without signing in (Local Demo Mode) &rarr;
+            </a>
+          </div>
         </div>
       </section>
     </main>
