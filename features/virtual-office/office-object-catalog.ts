@@ -1,6 +1,15 @@
 import type { Collider, InteractionKind } from "./types";
 
-export type OfficeAssetKey = "planter" | "floor_lamp" | "lounge_bench" | "whiteboard" | "focus_pod";
+export type OfficeAssetKey =
+  | "planter"
+  | "floor_lamp"
+  | "lounge_bench"
+  | "whiteboard"
+  | "focus_pod"
+  | "standing_desk"
+  | "conference_table"
+  | "coffee_machine"
+  | "bookshelf";
 export type OfficeObjectTransform = { x: number; y: number; z: number; rotationY: number; scale: number };
 export type OfficeObject = { id: string; assetKey: OfficeAssetKey; transform: OfficeObjectTransform; interaction: { kind: InteractionKind; label: string } | null };
 
@@ -10,6 +19,10 @@ export const OFFICE_OBJECT_CATALOG: Record<OfficeAssetKey, { label: string; widt
   lounge_bench: { label: "Tailored lounge bench", width: 2.4, depth: 0.9 },
   whiteboard: { label: "Collaboration whiteboard", width: 2.4, depth: 0.45, interaction: { kind: "whiteboard", label: "Open collaborative whiteboard" } },
   focus_pod: { label: "Acoustic focus pod", width: 1.5, depth: 1.5, interaction: { kind: "focus", label: "Start a focus session" } },
+  standing_desk: { label: "Ergonomic standing desk", width: 1.8, depth: 0.9 },
+  conference_table: { label: "Executive conference table", width: 3.2, depth: 1.4, interaction: { kind: "meeting", label: "Join conference meeting" } },
+  coffee_machine: { label: "Espresso coffee station", width: 1.1, depth: 0.8 },
+  bookshelf: { label: "Walnut design library", width: 2.0, depth: 0.6 },
 };
 
 export const OFFICE_ASSET_KEYS = Object.keys(OFFICE_OBJECT_CATALOG) as OfficeAssetKey[];

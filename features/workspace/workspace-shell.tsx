@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, AudioLines, BarChart3, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, CreditCard, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Map, MapPin, Maximize2, Menu, Mic, MicOff, Minimize2, MonitorUp, Moon, Music, Palette, PanelLeftClose, PanelLeftOpen, PenTool, PhoneOff, Plug, Plus, Radio, Search, Smile, Sparkles, Sun, Sunset, Target, Users, Video, VideoOff, VolumeX, Wifi, X } from "lucide-react";
+import { Activity, AudioLines, BarChart3, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, CreditCard, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Map, MapPin, Maximize2, Menu, MessageSquare, Mic, MicOff, Minimize2, MonitorUp, Moon, Music, Palette, PanelLeftClose, PanelLeftOpen, PenTool, PhoneOff, Plug, Plus, Radio, Search, Smile, Sparkles, Sun, Sunset, Target, Users, Video, VideoOff, VolumeX, Wifi, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -27,8 +27,10 @@ import { ProjectsView } from "./projects-view";
 import { KanbanView } from "./kanban-view";
 import { AIAssistantPanel } from "./ai-assistant-panel";
 import { WhiteboardPanel } from "./whiteboard-panel";
+import { ChatView } from "./chat-view";
 import { SpatialOverlays } from "@/features/virtual-office/spatial-overlays";
 import { AITeammateDialog } from "@/features/virtual-office/ai-teammate-dialog";
+import { AvatarCustomizationDialog } from "@/features/virtual-office/avatar-customization-dialog";
 import type { Availability } from "@/features/virtual-office/types";
 import { ActivityView } from "./activity-view";
 import { DocumentsView } from "./documents-view";
@@ -55,6 +57,7 @@ const nav = [
   { id: "goals", label: "Goals", icon: Target, group: "Plan & ship" },
   { id: "analytics", label: "Analytics", icon: BarChart3, group: "Plan & ship" },
   { id: "meetings", label: "Meetings", icon: CalendarDays, group: "Collaborate" },
+  { id: "chat", label: "Messages", icon: MessageSquare, group: "Collaborate" },
   { id: "files", label: "Files", icon: Files, group: "Collaborate" },
   { id: "whiteboard", label: "Whiteboard", icon: PenTool, group: "Collaborate" },
   { id: "activity", label: "Activity", icon: Activity, group: "Collaborate" },
@@ -184,6 +187,7 @@ function WorkspaceContent({ identity, workspaces, selectWorkspace }: { identity:
   const [helpOpen, setHelpOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [fullOfficeView, setFullOfficeView] = useState(false);
+  const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -274,6 +278,11 @@ function WorkspaceContent({ identity, workspaces, selectWorkspace }: { identity:
               />
               <SpatialOverlays displayName={identity.displayName} />
               {!hasSupabaseConfig && <AITeammateDialog />}
+              <AvatarCustomizationDialog
+                open={avatarDialogOpen}
+                onClose={() => setAvatarDialogOpen(false)}
+                displayName={identity.displayName}
+              />
               <GatherBottomDock
                 huddle={huddle}
                 proximity={proximity}
@@ -283,6 +292,7 @@ function WorkspaceContent({ identity, workspaces, selectWorkspace }: { identity:
                 onToggleRail={() => setRightRail((value) => !value)}
                 showMinimap={showMinimap}
                 onToggleMinimap={() => setShowMinimap((v) => !v)}
+                onOpenAvatarCustomizer={() => setAvatarDialogOpen(true)}
               />
             </>
           ) : <DashboardView view={view} {...data} workspaceId={identity.workspaceId} workspaceRole={identity.workspaceRole} displayName={identity.displayName} workspaceName={identity.workspaceName} />}
@@ -551,6 +561,7 @@ function GatherBottomDock({
   onToggleRail,
   showMinimap,
   onToggleMinimap,
+  onOpenAvatarCustomizer,
 }: {
   huddle: HuddleController;
   proximity: ProximityAudioController;
@@ -560,6 +571,7 @@ function GatherBottomDock({
   onToggleRail: () => void;
   showMinimap: boolean;
   onToggleMinimap: () => void;
+  onOpenAvatarCustomizer?: () => void;
 }) {
   const isScreenSharing = useOfficeStore((state) => state.isScreenSharing);
   const zoomLevel = useOfficeStore((state) => state.zoomLevel);
@@ -736,6 +748,18 @@ function GatherBottomDock({
         <Map size={16} />
       </button>
 
+      {/* Avatar Customization */}
+      {onOpenAvatarCustomizer && (
+        <button
+          onClick={onOpenAvatarCustomizer}
+          aria-label="Customize Avatar"
+          className="grid h-10 w-10 place-items-center rounded-xl border border-black/10 bg-white/80 text-[#173f2b] hover:bg-black/5 text-xs font-bold transition shadow-xs cursor-pointer"
+          title="Customize 3D Avatar (Outfit, Hair, Status)"
+        >
+          <Palette size={16} />
+        </button>
+      )}
+
       {/* People Toggle */}
       <button
         onClick={onToggleRail}
@@ -850,6 +874,7 @@ function DashboardView({ view, tasks, moveTask, addTask, workspaceId, workspaceR
   if (view === "analytics") return <div className="h-full overflow-auto"><AnalyticsView workspaceId={workspaceId} /></div>;
   if (view === "meetings") return <div className="h-full overflow-auto"><MeetingsView workspaceId={workspaceId} /></div>;
   if (view === "files") return <div className="h-full overflow-auto"><DocumentsView workspaceId={workspaceId} /></div>;
+  if (view === "chat") return <div className="h-full overflow-hidden"><ChatView workspaceId={workspaceId} displayName={displayName} /></div>;
   if (view === "whiteboard") return <div className="h-full overflow-auto"><div className="mx-auto max-w-6xl space-y-5 p-4 md:p-7"><div><div className="text-xs font-bold tracking-[.18em] text-[#4b7a5e]">LIVE CANVAS</div><h2 className="mt-2 text-3xl font-bold">Whiteboard</h2><p className="mt-1 text-sm text-[#68736b]">Sketch, arrange ideas, and merge teammates’ changes in real time.</p></div><WhiteboardPanel workspaceId={workspaceId} /></div></div>;
   if (view === "activity") return <div className="h-full overflow-auto"><ActivityView workspaceId={workspaceId} /></div>;
   if (view === "design") return <div className="h-full overflow-auto"><OfficeDesignView workspaceId={workspaceId} canEdit={workspaceRole === "owner" || workspaceRole === "admin"} /></div>;
