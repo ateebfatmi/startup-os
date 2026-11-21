@@ -31,6 +31,7 @@ import { ChatView } from "./chat-view";
 import { SpatialOverlays } from "@/features/virtual-office/spatial-overlays";
 import { AITeammateDialog } from "@/features/virtual-office/ai-teammate-dialog";
 import { AvatarCustomizationDialog } from "@/features/virtual-office/avatar-customization-dialog";
+import { MediaDeviceSettingsDialog } from "@/features/communication/media-device-settings-dialog";
 import type { Availability } from "@/features/virtual-office/types";
 import { ActivityView } from "./activity-view";
 import { DocumentsView } from "./documents-view";
@@ -188,6 +189,7 @@ function WorkspaceContent({ identity, workspaces, selectWorkspace }: { identity:
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [fullOfficeView, setFullOfficeView] = useState(false);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
+  const [deviceDialogOpen, setDeviceDialogOpen] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -283,6 +285,10 @@ function WorkspaceContent({ identity, workspaces, selectWorkspace }: { identity:
                 onClose={() => setAvatarDialogOpen(false)}
                 displayName={identity.displayName}
               />
+              <MediaDeviceSettingsDialog
+                open={deviceDialogOpen}
+                onClose={() => setDeviceDialogOpen(false)}
+              />
               <GatherBottomDock
                 huddle={huddle}
                 proximity={proximity}
@@ -293,6 +299,7 @@ function WorkspaceContent({ identity, workspaces, selectWorkspace }: { identity:
                 showMinimap={showMinimap}
                 onToggleMinimap={() => setShowMinimap((v) => !v)}
                 onOpenAvatarCustomizer={() => setAvatarDialogOpen(true)}
+                onOpenDeviceSettings={() => setDeviceDialogOpen(true)}
               />
             </>
           ) : <DashboardView view={view} {...data} workspaceId={identity.workspaceId} workspaceRole={identity.workspaceRole} displayName={identity.displayName} workspaceName={identity.workspaceName} />}
@@ -562,6 +569,7 @@ function GatherBottomDock({
   showMinimap,
   onToggleMinimap,
   onOpenAvatarCustomizer,
+  onOpenDeviceSettings,
 }: {
   huddle: HuddleController;
   proximity: ProximityAudioController;
@@ -572,6 +580,7 @@ function GatherBottomDock({
   showMinimap: boolean;
   onToggleMinimap: () => void;
   onOpenAvatarCustomizer?: () => void;
+  onOpenDeviceSettings?: () => void;
 }) {
   const isScreenSharing = useOfficeStore((state) => state.isScreenSharing);
   const zoomLevel = useOfficeStore((state) => state.zoomLevel);
@@ -757,6 +766,18 @@ function GatherBottomDock({
           title="Customize 3D Avatar (Outfit, Hair, Status)"
         >
           <Palette size={16} />
+        </button>
+      )}
+
+      {/* Media Device Settings */}
+      {onOpenDeviceSettings && (
+        <button
+          onClick={onOpenDeviceSettings}
+          aria-label="Media Device Settings"
+          className="grid h-10 w-10 place-items-center rounded-xl border border-black/10 bg-white/80 text-[#173f2b] hover:bg-black/5 text-xs font-bold transition shadow-xs cursor-pointer"
+          title="Media Settings (Microphone, Speaker, Camera Devices)"
+        >
+          <Headphones size={16} />
         </button>
       )}
 
