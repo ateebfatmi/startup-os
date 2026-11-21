@@ -125,13 +125,13 @@ export function OfficeCanvas() {
       <color attach="background" args={[lighting.canvasBg]} />
       <OrthographicCamera
         makeDefault
-        position={[0, 18, 14.5]}
+        position={[0, 42, 0]}
         zoom={32}
         near={0.1}
         far={160}
         onUpdate={(camera) => {
-          camera.up.set(0, 1, 0);
-          camera.lookAt(0, 0.85, 1.5);
+          camera.up.set(0, 0, -1);
+          camera.lookAt(0, 0, 0);
         }}
       />
       <CameraRig />
@@ -164,12 +164,9 @@ export function OfficeCanvas() {
         </>
       )}
 
-      {/* City Skyline Silhouette Backdrop */}
-      {qualityMode === "high" && <CitySkyline skylineConfig={lighting.skyline} />}
-
       <OfficeEnvironment />
       <CustomOfficeObjects />
-      {qualityMode === "high" && <ContactShadows position={[0, 0.05, 1.8]} opacity={lightingMode === "night" ? 0.48 : 0.35} scale={36} blur={2.0} far={8} frames={1} />}
+      {qualityMode === "high" && <ContactShadows position={[0, 0.05, 0]} opacity={lightingMode === "night" ? 0.35 : 0.25} scale={32} blur={1.5} far={6} frames={1} />}
       <FloorClickSurface />
       <ClickTargetMarker />
       <LocalPlayer />
@@ -247,36 +244,35 @@ function CameraRig() {
   }, [gl]);
 
   useFrame(({ camera }, delta) => {
-    // Gather.town authentic 2.5D perspective with Y-up:
-    // Characters, desks, monitors, plants, and rooms render with full 2.5D upright depth
-    camera.up.set(0, 1, 0);
+    // Gather.town authentic 2D top-down perspective with -Z up (North) and +X right (East)
+    camera.up.set(0, 0, -1);
 
     if (cameraMode === "top") {
-      // Gather.town 2.5D full-office overview floor plan
-      const desiredPos = new THREE.Vector3(0, 36, 28);
-      const desiredLook = new THREE.Vector3(0, 0, 2.0);
+      // Gather.town 2D full-office overview floor plan
+      const desiredPos = new THREE.Vector3(0, 42, 0);
+      const desiredLook = new THREE.Vector3(0, 0, 0);
       camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 6));
       camera.lookAt(desiredLook);
 
-      const baseZoom = Math.min((size.width - 40) / 34, (size.height - 40) / 26);
+      const baseZoom = Math.min((size.width - 40) / 26, (size.height - 40) / 20);
       const targetZoom = baseZoom * zoomLevel;
       if ("zoom" in camera) {
         camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 6));
         camera.updateProjectionMatrix();
       }
     } else {
-      // Gather.town authentic 2.5D follow camera: smoothly tracks avatar across the office
+      // Gather.town 2D follow camera: smoothly tracks avatar across the office from straight above
       const posX = localAvatarPosition.x || player.x;
       const posZ = localAvatarPosition.y || player.z;
       const targetX = THREE.MathUtils.clamp(posX, OFFICE_BOUNDS.minX, OFFICE_BOUNDS.maxX);
       const targetZ = THREE.MathUtils.clamp(posZ, OFFICE_BOUNDS.minZ, OFFICE_BOUNDS.maxZ);
-      const desiredPos = new THREE.Vector3(targetX, 17, targetZ + 12.8);
-      const desiredLook = new THREE.Vector3(targetX, 0.85, targetZ);
+      const desiredPos = new THREE.Vector3(targetX, 42, targetZ);
+      const desiredLook = new THREE.Vector3(targetX, 0, targetZ);
       camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 9));
       camera.lookAt(desiredLook);
 
-      // Room-level focus: shows ~14m x ~10.5m around avatar so rooms and characters appear large and detailed
-      const baseZoom = Math.min((size.width - 32) / 14, (size.height - 32) / 10.5);
+      // Room-level focus in 2D
+      const baseZoom = Math.min((size.width - 32) / 13, (size.height - 32) / 9.5);
       const targetZoom = baseZoom * zoomLevel;
       if ("zoom" in camera) {
         camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 6));
