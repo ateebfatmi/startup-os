@@ -93,16 +93,37 @@ export class SupabaseRealtimeTransport implements MultiplayerTransport {
   private channel: RealtimeChannel | null = null;
   private events: MultiplayerEvents | null = null;
   private latest: PlayerSnapshot | null = null;
+  private supabase = createSupabaseBrowserClient();
 
   constructor(private readonly workspaceId: string, private readonly playerId: string) {}
 
   async connect(events: MultiplayerEvents) {
     this.events = events;
     events.onState("connecting", "Supabase Realtime");
-    const supabase = createSupabaseBrowserClient();
-    this.channel = supabase.channel(`workspace:${this.workspaceId}`, {
+
+    // Clean up any existing channel with the same topic before subscribing
+    const topic = `workspace:${this.workspaceId}`;
+    if (this.channel) {
+      await this.channel.untrack();
+      await this.channel.unsubscribe();
+      await this.supabase.removeChannel(this.channel);
+      this.channel = null;
+    }
+
+    // Also remove any existing channel on the client with the same topic
+    const existingChannels = this.supabase.getChannels();
+    for (const c of existingChannels) {
+      if (c.topic === topic || c.topic === `realtime:${topic}`) {
+        await c.untrack();
+        await c.unsubscribe();
+        await this.supabase.removeChannel(c);
+      }
+    }
+
+    this.channel = this.supabase.channel(topic, {
       config: { private: true, presence: { key: this.playerId }, broadcast: { self: false, ack: false } },
     });
+
     this.channel
       .on("broadcast", { event: "player-transform" }, ({ payload }) => {
         if (isPlayerSnapshot(payload)) events.onPlayer(normalizeSnapshot(payload));
@@ -128,9 +149,12 @@ export class SupabaseRealtimeTransport implements MultiplayerTransport {
   }
 
   async disconnect() {
-    await this.channel?.untrack();
-    await this.channel?.unsubscribe();
-    this.channel = null;
+    if (this.channel) {
+      await this.channel.untrack();
+      await this.channel.unsubscribe();
+      await this.supabase.removeChannel(this.channel);
+      this.channel = null;
+    }
     this.events?.onState("offline", "Supabase Realtime");
   }
 }
