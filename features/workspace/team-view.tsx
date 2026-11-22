@@ -31,6 +31,7 @@ import { useWorkspaceMembers } from "./use-workspace-members";
 const ROLE_BADGES: Record<WorkspaceRole, { label: string; style: string; icon: typeof Crown }> = {
   owner: { label: "Owner", style: "bg-[#173f2b] text-[#c8f560] font-bold", icon: Crown },
   admin: { label: "Admin", style: "bg-[#e2eafc] text-[#1d3557] font-semibold", icon: Shield },
+  manager: { label: "Manager", style: "bg-[#d8f3dc] text-[#2d6a4f] font-semibold", icon: ShieldAlert },
   member: { label: "Member", style: "bg-black/5 text-[#4a5568]", icon: Users },
   guest: { label: "Guest", style: "bg-[#fff3bf] text-[#8f6b00]", icon: UserCheck },
 };

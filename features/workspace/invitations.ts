@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { z } from "zod";
 
-export type WorkspaceRole = "owner" | "admin" | "member" | "guest";
+export type WorkspaceRole = "owner" | "admin" | "manager" | "member" | "guest";
 
 export type InvitationStatus = "pending" | "accepted" | "expired";
 
@@ -32,13 +32,13 @@ export type WorkspaceInvitation = {
 export const CreateInvitationSchema = z.object({
   workspaceId: z.string().min(1, "Workspace ID is required"),
   email: z.string().email("Please enter a valid email address"),
-  role: z.enum(["owner", "admin", "member", "guest"]),
+  role: z.enum(["owner", "admin", "manager", "member", "guest"]),
 });
 
 export const UpdateMemberRoleSchema = z.object({
   workspaceId: z.string().min(1, "Workspace ID is required"),
   userId: z.string().min(1, "User ID is required"),
-  role: z.enum(["owner", "admin", "member", "guest"]),
+  role: z.enum(["owner", "admin", "manager", "member", "guest"]),
 });
 
 export const RemoveMemberSchema = z.object({
