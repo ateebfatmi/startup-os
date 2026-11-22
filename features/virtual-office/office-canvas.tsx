@@ -37,6 +37,8 @@ export function OfficeCanvas() {
   const rendererClass = useOfficeStore((state) => state.rendererClass);
   const activePanel = useOfficeStore((state) => state.activePanel);
 
+  const player = useOfficeStore((state) => state.player);
+
   // Dynamic Lighting Themes
   const lighting = useMemo(() => {
     switch (lightingMode) {
@@ -113,6 +115,9 @@ export function OfficeCanvas() {
   return (
     <div className="relative h-full w-full">
       <span className="sr-only">You</span>
+      <output className="sr-only" aria-label="Player position" data-x={player.x} data-z={player.z}>
+        {`Player position ${player.x.toFixed(2)}, ${player.z.toFixed(2)}`}
+      </output>
       {avatarAssetReady && <span className="sr-only">Animated GLTF avatar ready</span>}
       <output aria-label="3D frame rate" data-fps={measuredFps.toFixed(1)} data-renderer-class={rendererClass} className="sr-only">{measuredFps.toFixed(1)} FPS</output>
       <Canvas
