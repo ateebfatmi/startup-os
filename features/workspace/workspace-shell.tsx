@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, AudioLines, BarChart3, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, CreditCard, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Map, MapPin, Maximize2, Menu, MessageSquare, Mic, MicOff, Minimize2, MonitorUp, Moon, Music, Palette, PanelLeftClose, PanelLeftOpen, PenTool, PhoneOff, Plug, Plus, Radio, Search, Smile, Sparkles, Sun, Sunset, Target, Users, Video, VideoOff, VolumeX, Wifi, X } from "lucide-react";
+import { Activity, AudioLines, BarChart3, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, Compass, CreditCard, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Map, MapPin, Maximize2, Menu, MessageSquare, Mic, MicOff, Minimize2, MonitorUp, Moon, Music, Palette, PanelLeftClose, PanelLeftOpen, PenTool, PhoneOff, Plug, Plus, Radio, Search, Smile, Sparkles, Sun, Sunset, Target, Users, Video, VideoOff, VolumeX, Wifi, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -588,6 +588,8 @@ function GatherBottomDock({
   const zoomOut = useOfficeStore((state) => state.zoomOut);
   const viewMode = useOfficeStore((state) => state.viewMode);
   const toggleViewMode = useOfficeStore((state) => state.toggleViewMode);
+  const cameraMode = useOfficeStore((state) => state.cameraMode);
+  const toggleCameraMode = useOfficeStore((state) => state.toggleCameraMode);
   const triggerEmote = useOfficeStore((state) => state.triggerEmote);
   const remotePlayers = useOfficeStore((state) => state.remotePlayers);
   const onlineCount = Object.keys(remotePlayers).length + 1;
@@ -744,6 +746,22 @@ function GatherBottomDock({
         <LayoutGrid size={16} />
         <span>{viewMode === "3d" ? "3D Office" : "2D Blueprint"}</span>
       </button>
+
+      {/* Camera Angle Toggle in 3D */}
+      {viewMode === "3d" && (
+        <button
+          onClick={toggleCameraMode}
+          className={`flex h-10 items-center gap-1.5 rounded-xl border px-2.5 text-xs font-bold transition shadow-xs cursor-pointer ${
+            cameraMode === "follow"
+              ? "border-emerald-600 bg-emerald-50 text-emerald-800"
+              : "border-black/10 bg-white/80 text-[#173f2b] hover:bg-black/5"
+          }`}
+          title={cameraMode === "follow" ? "Camera: Following Avatar (Press V to toggle Overview)" : "Camera: Full Office Overview (Press V to Follow)"}
+        >
+          <Compass size={16} />
+          <span className="hidden sm:inline">{cameraMode === "follow" ? "Follow (V)" : "Overview (V)"}</span>
+        </button>
+      )}
 
       {/* Minimap Toggle */}
       <button

@@ -27,7 +27,7 @@ import {
 
 const keys = new Set<string>();
 const demoTeammates = hasSupabaseConfig ? [] : Object.values(AI_TEAMMATES);
-export const localAvatarPosition = new THREE.Vector2(0, 1.6);
+export const localAvatarPosition = new THREE.Vector2(0, 4.8);
 
 export function OfficeCanvas() {
   const lightingMode = useOfficeStore((state) => state.lightingMode);
@@ -130,13 +130,13 @@ export function OfficeCanvas() {
       <color attach="background" args={[lighting.canvasBg]} />
       <OrthographicCamera
         makeDefault
-        position={[0, 42, 0]}
+        position={[0, 24, 25]}
         zoom={32}
         near={0.1}
         far={160}
         onUpdate={(camera) => {
-          camera.up.set(0, 0, -1);
-          camera.lookAt(0, 0, 0);
+          camera.up.set(0, 1, 0);
+          camera.lookAt(0, 0.8, 1.4);
         }}
       />
       <CameraRig />
@@ -168,6 +168,9 @@ export function OfficeCanvas() {
           <pointLight position={[2.4, 2.2, -6.4]} color={lighting.roomLights.phoneBooth} intensity={lightingMode === "night" ? 8 : 4} distance={4} />
         </>
       )}
+
+      {/* Distant Panoramic City Skyline Silhouette */}
+      {qualityMode === "high" && <CitySkyline skylineConfig={lighting.skyline} />}
 
       <OfficeEnvironment />
       <CustomOfficeObjects />
@@ -249,35 +252,35 @@ function CameraRig() {
   }, [gl]);
 
   useFrame(({ camera }, delta) => {
-    // Gather.town authentic 2D top-down perspective with -Z up (North) and +X right (East)
-    camera.up.set(0, 0, -1);
+    // 3D Isometric Architectural perspective (Y-up)
+    camera.up.set(0, 1, 0);
 
     if (cameraMode === "top") {
-      // Gather.town 2D full-office overview floor plan
-      const desiredPos = new THREE.Vector3(0, 42, 0);
-      const desiredLook = new THREE.Vector3(0, 0, 0);
+      // Panoramic Broader 45-degree isometric view framing the entire diorama & penthouse
+      const desiredPos = new THREE.Vector3(0, 26, 26);
+      const desiredLook = new THREE.Vector3(0, 0.8, 1.4);
       camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 6));
       camera.lookAt(desiredLook);
 
-      const baseZoom = Math.min((size.width - 40) / 26, (size.height - 40) / 20);
+      const baseZoom = Math.min((size.width - 40) / 32, (size.height - 40) / 22);
       const targetZoom = baseZoom * zoomLevel;
       if ("zoom" in camera) {
         camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 6));
         camera.updateProjectionMatrix();
       }
     } else {
-      // Gather.town 2D follow camera: smoothly tracks avatar across the office from straight above
+      // Follow mode: smoothly follow player from angled isometric 3rd-person perspective
       const posX = localAvatarPosition.x || player.x;
       const posZ = localAvatarPosition.y || player.z;
       const targetX = THREE.MathUtils.clamp(posX, OFFICE_BOUNDS.minX, OFFICE_BOUNDS.maxX);
       const targetZ = THREE.MathUtils.clamp(posZ, OFFICE_BOUNDS.minZ, OFFICE_BOUNDS.maxZ);
-      const desiredPos = new THREE.Vector3(targetX, 42, targetZ);
-      const desiredLook = new THREE.Vector3(targetX, 0, targetZ);
+      const desiredPos = new THREE.Vector3(targetX, 17, targetZ + 14.5);
+      const desiredLook = new THREE.Vector3(targetX, 0.85, targetZ);
       camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 9));
       camera.lookAt(desiredLook);
 
-      // Room-level focus in 2D
-      const baseZoom = Math.min((size.width - 32) / 13, (size.height - 32) / 9.5);
+      // Room-level focus in 3D Isometric
+      const baseZoom = Math.min((size.width - 32) / 14, (size.height - 32) / 10.5);
       const targetZoom = baseZoom * zoomLevel;
       if ("zoom" in camera) {
         camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 6));
@@ -339,7 +342,8 @@ function ClickTargetMarker() {
 
 function LocalPlayer() {
   const group = useRef<THREE.Group>(null);
-  const position = useRef(new THREE.Vector2(0, 1.6));
+  const initialPlayer = useOfficeStore.getState().player;
+  const position = useRef(new THREE.Vector2(initialPlayer.x, initialPlayer.z));
   const velocity = useRef(new THREE.Vector2());
   const rotation = useRef(Math.PI);
   const walkPhase = useRef(0);
@@ -364,6 +368,10 @@ function LocalPlayer() {
   // Keyboard controls
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || (activeEl as HTMLElement).isContentEditable)) {
+        return;
+      }
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(event.key)) event.preventDefault();
       keys.add(event.key.toLowerCase());
       if ((event.key.toLowerCase() === "e" || event.key.toLowerCase() === "x" || event.key === "Enter") && nearbyAction) {
