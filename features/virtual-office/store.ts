@@ -82,6 +82,17 @@ type OfficeState = {
   setRendererClass: (value: "hardware" | "software") => void;
 };
 
+const getSavedViewMode = (): "3d" | "2d" => {
+  if (typeof window === "undefined") return "2d";
+  try {
+    const saved = window.localStorage.getItem("crewvilla-view-mode");
+    if (saved === "3d" || saved === "2d") return saved;
+  } catch {
+    // Ignore storage access errors
+  }
+  return "2d";
+};
+
 export const useOfficeStore = create<OfficeState>((set) => ({
   player: { id: "local", name: "You", x: 0, z: 4.8, rotation: Math.PI, updatedAt: Date.now(), color: "#ff8a4c", status: "available", roomId: "reception" },
   remotePlayers: {},
@@ -89,7 +100,7 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   transportLabel: "Local network",
   nearbyAction: null,
   activePanel: null,
-  viewMode: "3d",
+  viewMode: getSavedViewMode(),
   cameraMode: "follow",
   clickTarget: null,
   lightingMode: "day",
@@ -128,8 +139,19 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   setNearbyAction: (nearbyAction) => set({ nearbyAction }),
   openPanel: (activePanel) => set({ activePanel }),
   closePanel: () => set({ activePanel: null }),
-  setViewMode: (viewMode) => set({ viewMode }),
-  toggleViewMode: () => set((state) => ({ viewMode: state.viewMode === "3d" ? "2d" : "3d" })),
+  setViewMode: (viewMode) => {
+    if (typeof window !== "undefined") {
+      try { window.localStorage.setItem("crewvilla-view-mode", viewMode); } catch { /* ignore */ }
+    }
+    set({ viewMode });
+  },
+  toggleViewMode: () => set((state) => {
+    const next = state.viewMode === "3d" ? "2d" : "3d";
+    if (typeof window !== "undefined") {
+      try { window.localStorage.setItem("crewvilla-view-mode", next); } catch { /* ignore */ }
+    }
+    return { viewMode: next };
+  }),
   setCameraMode: (cameraMode) => set({ cameraMode }),
   toggleCameraMode: () => set((state) => ({ cameraMode: state.cameraMode === "top" ? "follow" : "top" })),
   setClickTarget: (clickTarget) => set({ clickTarget }),
