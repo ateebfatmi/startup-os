@@ -89,7 +89,7 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   transportLabel: "Local network",
   nearbyAction: null,
   activePanel: null,
-  viewMode: "3d",
+  viewMode: "2d",
   cameraMode: "follow",
   clickTarget: null,
   lightingMode: "day",
