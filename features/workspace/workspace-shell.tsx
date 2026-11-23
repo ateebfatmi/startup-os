@@ -161,12 +161,12 @@ export function WorkspaceShell() {
         <div className="pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-[#c8f560] opacity-15 blur-[120px]" />
 
         <div className="relative z-10 flex flex-col items-center text-center px-6">
-          {/* Animated Logo & Pulsing Rings */}
+          {/* Animated Brand Icon & Pulsing Rings */}
           <div className="relative mb-6 flex items-center justify-center">
             <div className="absolute h-24 w-24 rounded-3xl bg-[#c8f560]/10 animate-ping duration-1000" />
             <div className="absolute h-20 w-20 rounded-2xl bg-[#c8f560]/15 blur-sm animate-pulse" />
-            <div className="relative grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-[#1b4b32] to-[#0f2c1e] border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.36)]">
-              <Logo size={32} />
+            <div className="relative grid h-16 w-16 place-items-center rounded-2xl bg-[#c8f560] text-[#173f2b] shadow-[0_8px_32px_rgba(200,245,96,0.3)]">
+              <Command size={32} strokeWidth={2.7} />
             </div>
           </div>
 
