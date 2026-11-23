@@ -343,6 +343,7 @@ function ClickTargetMarker() {
 function LocalPlayer() {
   const group = useRef<THREE.Group>(null);
   const initialPlayer = useOfficeStore.getState().player;
+  const [isSprinting, setIsSprinting] = useState(false);
   const position = useRef(new THREE.Vector2(initialPlayer.x, initialPlayer.z));
   const velocity = useRef(new THREE.Vector2());
   const rotation = useRef(Math.PI);
@@ -389,10 +390,14 @@ function LocalPlayer() {
           openPanel(nearbyAction.kind);
         }
       }
+      if (event.key.toLowerCase() === "shift") setIsSprinting(true);
       if (event.key.toLowerCase() === "v") toggleCameraMode();
       if (event.key.toLowerCase() === "f") setIsSitting(!isSitting);
     };
-    const up = (event: KeyboardEvent) => keys.delete(event.key.toLowerCase());
+    const up = (event: KeyboardEvent) => {
+      keys.delete(event.key.toLowerCase());
+      if (event.key.toLowerCase() === "shift") setIsSprinting(false);
+    };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
     return () => {
@@ -436,8 +441,11 @@ function LocalPlayer() {
       }
     }
 
-    // Speed boost when caffeinated (+30%)
-    const maxSpeed = isSitting ? 0 : isCaffeinated ? 5.8 : 4.5;
+    // Speed boost: Shift sprint (+45%), Caffeinated (+30%), or combined
+    const isSprinting = keys.has("shift") || keys.has("shiftleft") || keys.has("shiftright");
+    const sprintMultiplier = isSprinting ? 1.45 : 1.0;
+    const coffeeMultiplier = isCaffeinated ? 1.3 : 1.0;
+    const maxSpeed = isSitting ? 0 : 4.5 * sprintMultiplier * coffeeMultiplier;
     velocity.current.lerp(input.multiplyScalar(maxSpeed), 1 - Math.exp(-delta * 12));
     if (velocity.current.lengthSq() < 0.005) velocity.current.set(0, 0);
 
@@ -519,10 +527,10 @@ function LocalPlayer() {
       />
 
       <SpriteLabel
-        text={`● You${isCaffeinated ? "  ☕" : ""}${isSitting ? "  Seated" : ""}`}
+        text={`● You${isSprinting ? "  ⚡" : ""}${isCaffeinated ? "  ☕" : ""}${isSitting ? "  Seated" : ""}`}
         position={[0, 1.78, 0]}
         color="#ffffff"
-        width={isCaffeinated || isSitting ? 2.8 : 1.8}
+        width={isSprinting || isCaffeinated || isSitting ? 3.0 : 1.8}
       />
     </group>
   );

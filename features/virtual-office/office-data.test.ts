@@ -21,5 +21,6 @@ describe("office rooms", () => {
     expect(getOfficeRoomAt(-5.0, 5.5)?.id).toBe("storage-utility");
     expect(getOfficeRoomAt(0, 5.0)?.id).toBe("reception");
     expect(getOfficeRoomAt(7.5, 6.0)?.id).toBe("waiting-area");
+    expect(getOfficeRoomAt(0, 11.5)?.id).toBe("sky-terrace");
   });
 });

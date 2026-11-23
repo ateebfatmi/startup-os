@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { INTERACTION_ZONES, OFFICE_ROOMS, getOfficeRoomAt } from "./office-data";
-import { OFFICE_BOUNDS, resolveMovement } from "./collision";
+import { BLUEPRINT_BOUNDS, resolveMovement } from "./collision";
 import { useOfficeStore } from "./store";
 import { playChime, playCoffeeSound, playSlideClick } from "./audio";
 import type { PlayerSnapshot } from "./types";
@@ -14,19 +14,19 @@ const MAP_W = VIEW_W - PAD * 2; // 1144
 const MAP_H = VIEW_H - PAD * 2; // 844
 
 function mapX(x: number) {
-  return PAD + ((x - OFFICE_BOUNDS.minX) / (OFFICE_BOUNDS.maxX - OFFICE_BOUNDS.minX)) * MAP_W;
+  return PAD + ((x - BLUEPRINT_BOUNDS.minX) / (BLUEPRINT_BOUNDS.maxX - BLUEPRINT_BOUNDS.minX)) * MAP_W;
 }
 
 function mapY(z: number) {
-  return PAD + ((z - OFFICE_BOUNDS.minZ) / (OFFICE_BOUNDS.maxZ - OFFICE_BOUNDS.minZ)) * MAP_H;
+  return PAD + ((z - BLUEPRINT_BOUNDS.minZ) / (BLUEPRINT_BOUNDS.maxZ - BLUEPRINT_BOUNDS.minZ)) * MAP_H;
 }
 
 function worldX(x: number) {
-  return OFFICE_BOUNDS.minX + ((x - PAD) / MAP_W) * (OFFICE_BOUNDS.maxX - OFFICE_BOUNDS.minX);
+  return BLUEPRINT_BOUNDS.minX + ((x - PAD) / MAP_W) * (BLUEPRINT_BOUNDS.maxX - BLUEPRINT_BOUNDS.minX);
 }
 
 function worldZ(y: number) {
-  return OFFICE_BOUNDS.minZ + ((y - PAD) / MAP_H) * (OFFICE_BOUNDS.maxZ - OFFICE_BOUNDS.minZ);
+  return BLUEPRINT_BOUNDS.minZ + ((y - PAD) / MAP_H) * (BLUEPRINT_BOUNDS.maxZ - BLUEPRINT_BOUNDS.minZ);
 }
 
 function useOfficeMovement() {

@@ -9,6 +9,7 @@ export const INTERACTION_ZONES: InteractionZone[] = [
   { id: "whiteboard", kind: "whiteboard", label: "Collaboration Wall", hint: "Start brainstorming canvas", x: -7.0, z: 0, radius: 1.4 },
   { id: "reception", kind: "focus", label: "Front Desk Reception", hint: "Visitor check-in & workspace overview", x: 0, z: 5.0, radius: 1.4 },
   { id: "server", kind: "focus", label: "Server Rack Terminal", hint: "View infrastructure telemetry", x: -8.5, z: 5.5, radius: 1.3 },
+  { id: "terrace", kind: "focus", label: "Penthouse Sky Terrace", hint: "Panoramic city skyline viewpoint & outdoor lounge", x: 0, z: 11.5, radius: 2.2 },
 ];
 
 export const OFFICE_ROOMS: OfficeRoom[] = [
@@ -131,6 +132,16 @@ export const OFFICE_ROOMS: OfficeRoom[] = [
     bounds: { minX: 3.5, maxX: 12.0, minZ: 3.0, maxZ: 9.0 },
     destination: { x: 7.5, z: 6.0 },
     labelPosition: { x: 8.2, z: 4.2 },
+  },
+  {
+    id: "sky-terrace",
+    name: "Penthouse Sky Terrace",
+    shortName: "Sky Terrace",
+    description: "Panoramic skyline viewpoint, teak deck & outdoor loungers (30m x 5m)",
+    color: "#885e40",
+    bounds: { minX: -14.5, maxX: 14.5, minZ: 9.0, maxZ: 14.4 },
+    destination: { x: 0, z: 11.5 },
+    labelPosition: { x: 0, z: 10.0 },
   },
 ];
 

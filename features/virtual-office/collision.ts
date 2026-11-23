@@ -1,6 +1,9 @@
 import type { Collider, Vec2 } from "./types";
 
-export const OFFICE_BOUNDS = { minX: -11.5, maxX: 11.5, minZ: -8.5, maxZ: 8.5 };
+// Interior 2D blueprint bounds (used for architectural blueprint SVG mapping)
+export const BLUEPRINT_BOUNDS = { minX: -11.5, maxX: 11.5, minZ: -8.5, maxZ: 8.5 };
+// Total walkable world boundary including the 30m x 5m Penthouse Sky Terrace
+export const OFFICE_BOUNDS = { minX: -14.5, maxX: 14.5, minZ: -8.5, maxZ: 14.0 };
 export const PLAYER_RADIUS = 0.38;
 
 export const COLLIDERS: Collider[] = [
@@ -28,6 +31,18 @@ export const COLLIDERS: Collider[] = [
   { id: "divider-collab", x: -4.5, z: 0, width: 0.15, depth: 3.8 },
 
   // South row dividers
+  // Exterior south wall flanking center doorway portal (opening between x: -2.4 and 2.4)
+  { id: "wall-south-exterior-left", x: -7.2, z: 9.0, width: 9.6, depth: 0.3 },
+  { id: "wall-south-exterior-right", x: 7.2, z: 9.0, width: 9.6, depth: 0.3 },
+
+  // Sky Terrace Balustrade Perimeter Railings (z: 9.5 to 14.2)
+  { id: "terrace-south-balustrade", x: 0, z: 14.35, width: 30.0, depth: 0.2 },
+  { id: "terrace-west-balustrade", x: -14.9, z: 11.7, width: 0.2, depth: 5.2 },
+  { id: "terrace-east-balustrade", x: 14.9, z: 11.7, width: 0.2, depth: 5.2 },
+  // Main Office Exterior West and East Walls from z = 0 to 9.0
+  { id: "wall-office-west-flank", x: -12.0, z: 4.5, width: 0.3, depth: 9.0 },
+  { id: "wall-office-east-flank", x: 12.0, z: 4.5, width: 0.3, depth: 9.0 },
+
   // Server room
   { id: "wall-server-north", x: -9.2, z: 3.0, width: 5.6, depth: 0.2 },
   { id: "wall-server-east", x: -6.5, z: 6.8, width: 0.2, depth: 4.2 },
@@ -50,6 +65,11 @@ export const COLLIDERS: Collider[] = [
   { id: "storage-cabinets", x: -5.8, z: 6.0, width: 0.8, depth: 4.5 },
   { id: "reception", x: 0, z: 6.2, width: 3.2, depth: 0.9 },
   { id: "lounge-sofa", x: 8.2, z: 4.5, width: 3.2, depth: 1.1 },
+
+  // Terrace Furniture Obstacles
+  { id: "terrace-loungers", x: -4.8, z: 12.15, width: 5.6, depth: 1.8 },
+  { id: "terrace-bistro-table", x: 5.4, z: 12.15, width: 1.8, depth: 1.8 },
+  { id: "terrace-telescope", x: 9.2, z: 13.35, width: 1.0, depth: 1.0 },
 ];
 
 function collides(point: Vec2, collider: Collider) {
