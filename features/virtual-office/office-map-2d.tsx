@@ -519,11 +519,14 @@ function ArchitecturalFurnishings() {
         <LoungeArmchair x={132} y={512} rotate={-135} color="#3d6350" />
         <LoungeArmchair x={258} y={512} rotate={135} color="#3d6350" />
 
-        {/* Glass Partition Divider on Right Side with Stainless Steel Posts */}
-        <rect x="372" y="340" width="8" height="194" rx="4" fill="url(#glassPanel)" stroke="#30584e" strokeWidth="2" filter="url(#furnShadow)" />
-        {[355, 405, 455, 505].map((y) => (
-          <circle key={`glass-post-${y}`} cx={376} cy={y} r="3.5" fill="#19372e" />
-        ))}
+        {/* Glass Partition Dividers on Right Side with Central Walkthrough Portal */}
+        <rect x="372" y="340" width="8" height="60" rx="4" fill="url(#glassPanel)" stroke="#30584e" strokeWidth="2" filter="url(#furnShadow)" />
+        <circle cx="376" cy="350" r="3.5" fill="#19372e" />
+        <circle cx="376" cy="390" r="3.5" fill="#19372e" />
+
+        <rect x="372" y="475" width="8" height="60" rx="4" fill="url(#glassPanel)" stroke="#30584e" strokeWidth="2" filter="url(#furnShadow)" />
+        <circle cx="376" cy="485" r="3.5" fill="#19372e" />
+        <circle cx="376" cy="525" r="3.5" fill="#19372e" />
 
         {/* Lush Corner Plants */}
         <ArchitecturalPlant x={65} y={340} scale={1.1} />
@@ -749,8 +752,8 @@ function ArchitecturalFurnishings() {
         <LoungeArmchair x={845} y={750} rotate={-90} color="#35463f" />
         <LoungeArmchair x={1025} y={750} rotate={90} color="#35463f" />
 
-        {/* Glass Partition Divider on Left */}
-        <rect x="772" y="650" width="7" height="190" rx="3.5" fill="url(#glassPanel)" stroke="#2d4f45" strokeWidth="2" filter="url(#furnShadow)" />
+        {/* Glass Partition Divider on Left (trimmed for wider entrance) */}
+        <rect x="772" y="675" width="7" height="150" rx="3.5" fill="url(#glassPanel)" stroke="#2d4f45" strokeWidth="2" filter="url(#furnShadow)" />
 
         {/* Potted Indoor Plants */}
         <ArchitecturalPlant x={1140} y={650} scale={1.1} />

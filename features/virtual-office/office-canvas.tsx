@@ -969,17 +969,17 @@ function Floor() {
         <meshStandardMaterial map={woodTexture} roughness={0.55} metalness={0.02} />
       </mesh>
 
-      {/* Central Polished Terrazzo Promenade Highway */}
+      {/* Central Polished Terrazzo Promenade Highway (Expanded walking corridor) */}
       <mesh receiveShadow position={[0, 0.025, 0.35]} rotation-x={-Math.PI / 2}>
-        <planeGeometry args={[4.2, 17.8]} />
+        <planeGeometry args={[5.2, 17.8]} />
         <meshStandardMaterial map={promenadeTexture} roughness={0.42} />
       </mesh>
       {/* Central Brushed Brass Inlay Inset Lines */}
-      <mesh position={[-2.1, 0.032, 0.35]} rotation-x={-Math.PI / 2}>
+      <mesh position={[-2.6, 0.032, 0.35]} rotation-x={-Math.PI / 2}>
         <planeGeometry args={[0.04, 17.8]} />
         <meshBasicMaterial color={design.accentColor} />
       </mesh>
-      <mesh position={[2.1, 0.032, 0.35]} rotation-x={-Math.PI / 2}>
+      <mesh position={[2.6, 0.032, 0.35]} rotation-x={-Math.PI / 2}>
         <planeGeometry args={[0.04, 17.8]} />
         <meshBasicMaterial color={design.accentColor} />
       </mesh>
@@ -1183,11 +1183,11 @@ function Walls() {
     <group>
       {/* Exterior Perimeter Walls (24m x 18m) */}
       <Wall position={[0, 1.1, -9.0]} size={[24.0, 2.2, 0.25]} />
-      {/* South Wall with Center Entrance double-door portal at x = 0 */}
-      <Wall position={[-7.2, 1.1, 9.0]} size={[9.6, 2.2, 0.25]} />
-      <Wall position={[7.2, 1.1, 9.0]} size={[9.6, 2.2, 0.25]} />
+      {/* South Wall with Center Entrance double-door portal at x = 0 (generous 5.2m opening) */}
+      <Wall position={[-7.3, 1.1, 9.0]} size={[9.4, 2.2, 0.25]} />
+      <Wall position={[7.3, 1.1, 9.0]} size={[9.4, 2.2, 0.25]} />
       <mesh position={[0, 2.1, 9.0]}>
-        <boxGeometry args={[4.8, 0.2, 0.25]} />
+        <boxGeometry args={[5.2, 0.2, 0.25]} />
         <meshStandardMaterial color="#ede7dc" />
       </mesh>
       {/* West Wall */}
@@ -1196,12 +1196,12 @@ function Walls() {
       <Wall position={[12.0, 1.1, 0]} size={[0.25, 2.2, 18.0]} />
 
       {/* Interior Divider Walls (1.4m height for Gather 2.5D clarity) */}
-      {/* North Row Horizontal Divider (z = -3.0) with door openings */}
-      <InteriorWall position={[-9.0, 0.7, -3.0]} size={[6.0, 1.4, 0.16]} />
-      <InteriorWall position={[-3.0, 0.7, -3.0]} size={[1.0, 1.4, 0.16]} />
-      <InteriorWall position={[1.0, 0.7, -3.0]} size={[1.0, 1.4, 0.16]} />
-      <InteriorWall position={[4.8, 0.7, -3.0]} size={[0.6, 1.4, 0.16]} />
-      <InteriorWall position={[10.2, 0.7, -3.0]} size={[3.6, 1.4, 0.16]} />
+      {/* North Row Horizontal Divider (z = -3.0) with wide door openings */}
+      <InteriorWall position={[-9.5, 0.7, -3.0]} size={[5.0, 1.4, 0.16]} />
+      <InteriorWall position={[-3.1, 0.7, -3.0]} size={[0.8, 1.4, 0.16]} />
+      <InteriorWall position={[1.1, 0.7, -3.0]} size={[0.8, 1.4, 0.16]} />
+      <InteriorWall position={[4.8, 0.7, -3.0]} size={[0.5, 1.4, 0.16]} />
+      <InteriorWall position={[10.4, 0.7, -3.0]} size={[3.2, 1.4, 0.16]} />
 
       {/* North Row Vertical Walls */}
       <InteriorWall position={[-3.5, 0.7, -6.0]} size={[0.16, 1.4, 6.0]} />
@@ -1210,14 +1210,14 @@ function Walls() {
       <InteriorWall position={[8.5, 0.7, -6.0]} size={[0.16, 1.4, 6.0]} />
       <InteriorWall position={[10.2, 0.7, -5.8]} size={[3.4, 1.4, 0.16]} />
 
-      {/* Product / Project Room Walls (Middle Right) */}
+      {/* Product / Project Room Walls (Middle Right) with wider entryway */}
       <InteriorWall position={[8.25, 0.7, -2.5]} size={[7.5, 1.4, 0.16]} />
       <InteriorWall position={[8.25, 0.7, 3.0]} size={[7.5, 1.4, 0.16]} />
-      <InteriorWall position={[4.5, 0.7, -1.6]} size={[0.16, 1.4, 1.8]} />
-      <InteriorWall position={[4.5, 0.7, 2.0]} size={[0.16, 1.4, 2.0]} />
+      <InteriorWall position={[4.5, 0.7, -1.75]} size={[0.16, 1.4, 1.3]} />
+      <InteriorWall position={[4.5, 0.7, 2.15]} size={[0.16, 1.4, 1.5]} />
 
-      {/* South Row Walls */}
-      <InteriorWall position={[-9.25, 0.7, 3.0]} size={[5.5, 1.4, 0.16]} />
+      {/* South Row Walls with wider room entranceways */}
+      <InteriorWall position={[-9.5, 0.7, 3.0]} size={[5.0, 1.4, 0.16]} />
       <InteriorWall position={[-6.5, 0.7, 6.8]} size={[0.16, 1.4, 4.4]} />
       <InteriorWall position={[-3.5, 0.7, 6.8]} size={[0.16, 1.4, 4.4]} />
     </group>
@@ -1257,10 +1257,11 @@ function Wall({ position, size }: { position: [number, number, number]; size: [n
 function GlassPartitions() {
   return (
     <group>
-      {/* Collaboration Area Divider */}
-      <GlassPanel position={[-4.5, 0.75, 0]} depth={3.8} />
+      {/* Collaboration Area Divider - framed portal with wide central walkthrough */}
+      <GlassPanel position={[-4.5, 0.75, -2.0]} depth={1.6} />
+      <GlassPanel position={[-4.5, 0.75, 2.0]} depth={1.6} />
       {/* Waiting Area Divider */}
-      <GlassPanel position={[4.5, 0.75, 6.0]} depth={4.8} />
+      <GlassPanel position={[4.5, 0.75, 6.0]} depth={3.6} />
     </group>
   );
 }
@@ -3172,7 +3173,7 @@ function Plants() {
       [-3.0, -8.2],
       [4.0, -8.2],
       [-11.2, -2.2],
-      [-5.2, 2.2],
+      [-8.2, 2.5], // tucked towards collaboration perimeter corner, keeping corridor wide open
       [11.2, -1.8],
       [11.2, 2.2],
       [-3.0, 7.8],
