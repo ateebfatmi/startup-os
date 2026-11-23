@@ -421,6 +421,8 @@ function OfficeHud({
   const isCaffeinated = useOfficeStore((state) => state.isCaffeinated);
   const isSitting = useOfficeStore((state) => state.isSitting);
   const setIsSitting = useOfficeStore((state) => state.setIsSitting);
+  const viewMode = useOfficeStore((state) => state.viewMode);
+  const toggleViewMode = useOfficeStore((state) => state.toggleViewMode);
   const onlineCount = Object.keys(remotePlayers).length + 1;
 
   return (
@@ -482,7 +484,16 @@ function OfficeHud({
           >
             <Radio size={14} className={lofiPlaying ? "animate-pulse text-[#c8f560]" : ""} />
           </button>
-          <span className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-[#173f2b]" title="Interactive 2D office plan"><Map size={12} className="text-[#397455]" />2D plan</span>
+          <button
+            onClick={toggleViewMode}
+            className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold transition cursor-pointer ${
+              viewMode === "3d" ? "bg-[#173f2b] text-[#c8f560]" : "bg-black/5 text-[#173f2b] hover:bg-black/10"
+            }`}
+            title={viewMode === "3d" ? "Currently in 3D Isometric View (Click for 2D Blueprint)" : "Currently in 2D Blueprint (Click for 3D Office)"}
+          >
+            {viewMode === "3d" ? <LayoutGrid size={12} className="text-[#c8f560]" /> : <Map size={12} className="text-[#397455]" />}
+            <span>{viewMode === "3d" ? "3D Office" : "2D Blueprint"}</span>
+          </button>
         </div>
 
         <p className="hidden text-xs text-[#68736b]/80 xl:block ml-2">Move with WASD or arrow keys · Click floor to walk · Press E to interact</p>
