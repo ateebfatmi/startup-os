@@ -153,7 +153,42 @@ export function WorkspaceShell() {
     useOfficeStore.getState().clearRemotePlayers();
   };
   if (identityError) return <div role="alert" className="p-8">{identityError}</div>;
-  if (!identityReady) return <div role="status" className="grid h-screen place-items-center">Loading workspace…</div>;
+  if (!identityReady) {
+    return (
+      <div role="status" className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#0d2217] text-[#f5f0e4] selection:bg-[#c8f560] selection:text-[#173f2b]">
+        {/* Ambient background glows */}
+        <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-[#1b4332] opacity-40 blur-[100px]" />
+        <div className="pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-[#c8f560] opacity-15 blur-[120px]" />
+
+        <div className="relative z-10 flex flex-col items-center text-center px-6">
+          {/* Animated Logo & Pulsing Rings */}
+          <div className="relative mb-6 flex items-center justify-center">
+            <div className="absolute h-24 w-24 rounded-3xl bg-[#c8f560]/10 animate-ping duration-1000" />
+            <div className="absolute h-20 w-20 rounded-2xl bg-[#c8f560]/15 blur-sm animate-pulse" />
+            <div className="relative grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-[#1b4b32] to-[#0f2c1e] border border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.36)]">
+              <Logo size={32} />
+            </div>
+          </div>
+
+          {/* Heading with subtle shimmer */}
+          <h2 className="text-xl font-bold tracking-tight text-white/95">
+            Entering Virtual Headquarters
+          </h2>
+          <p className="mt-1.5 text-xs font-medium text-white/60">
+            Synchronizing spatial environment & team presence…
+          </p>
+
+          {/* Progress bar animation */}
+          <div className="mt-6 h-1.5 w-48 overflow-hidden rounded-full bg-white/10">
+            <div className="h-full w-full origin-left animate-pulse bg-gradient-to-r from-[#52aa72] to-[#c8f560]" />
+          </div>
+
+          {/* Screen reader label */}
+          <span className="sr-only">Loading workspace…</span>
+        </div>
+      </div>
+    );
+  }
   return <WorkspaceDataProvider key={identity.workspaceId} workspaceId={identity.workspaceId}><WorkspaceContent identity={identity} workspaces={workspaces} selectWorkspace={selectWorkspace} /></WorkspaceDataProvider>;
 }
 
