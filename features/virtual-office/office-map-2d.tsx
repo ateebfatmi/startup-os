@@ -91,7 +91,7 @@ function useOfficeMovement() {
           z: state.player.z + (dz / length) * speed * delta,
         });
         if (next.x === state.player.x && next.z === state.player.z && target) state.setClickTarget(null);
-        state.setPlayerTransform(next.x, next.z, Math.atan2(dx, dz));
+        state.setPlayerTransform(next.x, next.z, Math.atan2(dx, -dz));
       }
 
       const current = useOfficeStore.getState();
@@ -274,24 +274,31 @@ function GatherAvatar({ player, local = false, isCaffeinated = false }: { player
       {/* Realistic Avatar Ground Shadow */}
       <ellipse cy="20" rx="19" ry="8.5" fill="#0c1811" opacity=".38" />
 
-      {/* Directional Indicator Pointer Arrow */}
+      {/* Rotating Avatar Body: Facing direction arrow, shoulders, head, hair */}
       <g transform={`rotate(${rotDeg})`}>
+        {/* Directional Indicator Pointer Arrow */}
         <polygon points="0,-30 -6.5,-20 6.5,-20" fill={local ? "#c8f560" : "#ffffff"} stroke="#142c1e" strokeWidth="1.6" />
+
+        {/* Outer Glow Halo Ring */}
+        <circle r={local ? 23.5 : 21} fill="#ffffff" stroke={local ? "#c8f560" : "#173f2b"} strokeWidth={local ? 5.5 : 3.5} />
+
+        {/* Avatar Clothing / Color */}
+        <circle r={local ? 19 : 17.5} fill={player.color} />
+
+        {/* Top-down Humanoid Silhouette (Shoulders & Torso) */}
+        <ellipse cy="2" rx="13" ry="7.5" fill="#1b2420" opacity=".65" />
+        
+        {/* Head Base */}
+        <circle cy="-1" r="8.5" fill="#f5cfb5" />
+
+        {/* Hair styling facing forward */}
+        <path d="M -8.5 2 C -8.5 -9 8.5 -9 8.5 2 C 6 -3 -6 -3 -8.5 2 Z" fill="#2d1c13" />
+
+        {/* Facial Profile Details (Nose / eyes directed towards facing angle) */}
+        <ellipse cx="0" cy="-6" rx="2.2" ry="1.4" fill="#dfaa87" opacity=".7" />
       </g>
 
-      {/* Outer Glow Halo Ring */}
-      <circle r={local ? 23.5 : 21} fill="#ffffff" stroke={local ? "#c8f560" : "#173f2b"} strokeWidth={local ? 5.5 : 3.5} />
-
-      {/* Avatar Clothing / Color */}
-      <circle r="18" fill={player.color} />
-
-      {/* Top-down Humanoid Avatar Silhouette (Shoulders & Head) */}
-      <ellipse cy="1" rx="12" ry="7.5" fill="#1b2420" opacity=".6" />
-      <circle cy="-1" r="8" fill="#f5cfb5" />
-      {/* Hair styling */}
-      <path d="M -8 -3 C -7 -11 7 -11 8 -3 C 6 -8 -6 -8 -8 -3 Z" fill="#2d1c13" />
-
-      {/* Online Status Dot */}
+      {/* Online Status Dot (Stationary relative to badge) */}
       <circle cx="15.5" cy="14.5" r="5.5" fill="#22c55e" stroke="#ffffff" strokeWidth="2" />
 
       {/* Floating Name Badge */}
