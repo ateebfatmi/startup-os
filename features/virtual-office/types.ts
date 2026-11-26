@@ -40,6 +40,7 @@ export type PlayerSnapshot = {
   isDancing?: boolean;
   claimedDeskIndex?: number | null;
   activeAppStatus?: string | null; // e.g. "VS Code", "Figma", "GitHub"
+  inPhoneBooth?: boolean;
 };
 
 export type ConnectionState = "connecting" | "connected" | "reconnecting" | "offline";

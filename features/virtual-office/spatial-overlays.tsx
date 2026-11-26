@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Monitor, MonitorPlay, Square, ChevronLeft, ChevronRight, Maximize2, Radio,
   Sparkles, Smile, GitPullRequest, GitMerge, Check, DollarSign, Flame, Clock,
@@ -9,10 +9,11 @@ import {
 import { useOfficeStore } from "./store";
 import { startScreenShare, stopScreenShare } from "./screen-share";
 import { playChime, playCoffeeSound, playSlideClick } from "./audio";
-import { getOfficeRoomAt } from "./office-data";
+import { OFFICE_ROOMS } from "./office-data";
 
 export function SpatialOverlays({ displayName }: { displayName: string }) {
-  const player = useOfficeStore((state) => state.player);
+  const playerRoomId = useOfficeStore((state) => state.player.roomId);
+  const inPhoneBooth = useOfficeStore((state) => state.player.inPhoneBooth ?? false);
   const isScreenSharing = useOfficeStore((state) => state.isScreenSharing);
   const presenterName = useOfficeStore((state) => state.presenterName);
   const boardroomSlide = useOfficeStore((state) => state.boardroomSlide);
@@ -42,9 +43,8 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
   const [showArcadeModal, setShowArcadeModal] = useState(false);
   const [mergedPRs, setMergedPRs] = useState<number[]>([]);
 
-  // Gather.town Spatial Room & Audio Perimeter Detection
-  const currentRoom = getOfficeRoomAt(player.x, player.z);
-  const inPhoneBooth = Math.hypot(player.x - 2.4, player.z - (-6.4)) <= 1.4;
+  // Gather.town Spatial Room & Audio Perimeter Detection (Optimized with room boundaries)
+  const currentRoom = useMemo(() => OFFICE_ROOMS.find((r) => r.id === playerRoomId), [playerRoomId]);
   const isPrivateSpace = inPhoneBooth || (currentRoom ? ["conference-room", "founder-cabin", "manager-cabin", "project-room", "server-room"].includes(currentRoom.id) : false);
 
   // Check proximity to Conference Room

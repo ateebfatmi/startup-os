@@ -449,7 +449,7 @@ function OfficeHud({
   showMinimap: boolean;
   onToggleMinimap: () => void;
 }) {
-  const player = useOfficeStore((state) => state.player);
+  const playerRoomId = useOfficeStore((state) => state.player.roomId);
   const remotePlayers = useOfficeStore((state) => state.remotePlayers);
   const connectionState = useOfficeStore((state) => state.connectionState);
   const lightingMode = useOfficeStore((state) => state.lightingMode);
@@ -538,7 +538,7 @@ function OfficeHud({
       </div>
 
       {/* Office Minimap Popover */}
-      <OfficeMinimap open={showMinimap} onToggle={onToggleMinimap} />
+      {showMinimap && <OfficeMinimap open={showMinimap} onToggle={onToggleMinimap} />}
 
       {/* In the office People Rail */}
       {rightRail && (
@@ -562,7 +562,7 @@ function OfficeHud({
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-sm font-semibold truncate">{displayName} (You)</div>
-              <div className="text-xs text-[#68736b]">{OFFICE_ROOMS.find((room) => room.id === player.roomId)?.shortName ?? "Open workspace"}</div>
+              <div className="text-xs text-[#68736b]">{OFFICE_ROOMS.find((room) => room.id === playerRoomId)?.shortName ?? "Open workspace"}</div>
             </div>
           </div>
 

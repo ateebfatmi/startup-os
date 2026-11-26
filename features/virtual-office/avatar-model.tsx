@@ -37,6 +37,8 @@ export function AvatarModel({
   const rightArm = useRef<THREE.Group>(null);
   const headGroup = useRef<THREE.Group>(null);
   const torsoGroup = useRef<THREE.Group>(null);
+  const torsoTilt = useRef(0);
+  const torsoSway = useRef(0);
   const walkPhase = useRef(0);
   const dancePhase = useRef(0);
 
@@ -78,11 +80,17 @@ export function AvatarModel({
     const swing = Math.sin(walkPhase.current);
     const bob = Math.abs(Math.sin(walkPhase.current)) * Math.min(speed / 35, 0.04);
 
+    const targetTilt = seated ? 0.08 : (speed > 0.25 ? THREE.MathUtils.clamp(speed * 0.022, 0, 0.075) : 0);
+    torsoTilt.current = THREE.MathUtils.lerp(torsoTilt.current, targetTilt, 1 - Math.exp(-delta * 10));
+
+    const targetSway = seated ? 0 : swing * 0.028 * Math.min(1, speed / 2);
+    torsoSway.current = THREE.MathUtils.lerp(torsoSway.current, targetSway, 1 - Math.exp(-delta * 12));
+
     if (torsoGroup.current) {
       torsoGroup.current.position.y = seated ? -0.22 : bob;
-      torsoGroup.current.rotation.x = seated ? 0.08 : (speed > 0.5 ? 0.06 : 0);
-      torsoGroup.current.rotation.z = 0;
-      torsoGroup.current.rotation.y = 0;
+      torsoGroup.current.rotation.x = torsoTilt.current;
+      torsoGroup.current.rotation.z = torsoSway.current;
+      torsoGroup.current.rotation.y = THREE.MathUtils.lerp(torsoGroup.current.rotation.y, 0, 1 - Math.exp(-delta * 12));
     }
 
     if (seated) {

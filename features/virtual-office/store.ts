@@ -194,7 +194,21 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   qualityMode: "high",
   measuredFps: 0,
   rendererClass: "unknown",
-  setPlayerTransform: (x, z, rotation) => set((state) => ({ player: { ...state.player, x, z, rotation, roomId: getOfficeRoomAt(x, z)?.id, updatedAt: Date.now() } })),
+  setPlayerTransform: (x, z, rotation) => set((state) => {
+    const roomId = getOfficeRoomAt(x, z)?.id;
+    const inPhoneBooth = Math.hypot(x - 2.4, z - (-6.4)) <= 1.4;
+    return {
+      player: {
+        ...state.player,
+        x,
+        z,
+        rotation,
+        roomId,
+        inPhoneBooth,
+        updatedAt: Date.now(),
+      },
+    };
+  }),
   setPlayerIdentity: (identity) => set((state) => ({ player: { ...state.player, ...identity } })),
   upsertRemotePlayer: (player) => set((state) => player.id === state.player.id ? state : ({ remotePlayers: { ...state.remotePlayers, [player.id]: player } })),
   removeRemotePlayer: (id) => set((state) => {

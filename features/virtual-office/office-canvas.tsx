@@ -29,15 +29,36 @@ const keys = new Set<string>();
 const demoTeammates = hasSupabaseConfig ? [] : Object.values(AI_TEAMMATES);
 export const localAvatarPosition = new THREE.Vector2(0, 4.8);
 
+function PlayerPositionOutput() {
+  const x = useOfficeStore((state) => state.player.x);
+  const z = useOfficeStore((state) => state.player.z);
+  return (
+    <output className="sr-only" aria-label="Player position" data-x={x} data-z={z}>
+      {`Player position ${x.toFixed(2)}, ${z.toFixed(2)}`}
+    </output>
+  );
+}
+
+function FrameMetricsOutput() {
+  const measuredFps = useOfficeStore((state) => state.measuredFps);
+  const rendererClass = useOfficeStore((state) => state.rendererClass);
+  return (
+    <output
+      aria-label="3D frame rate"
+      data-fps={measuredFps.toFixed(1)}
+      data-renderer-class={rendererClass}
+      className="sr-only"
+    >
+      {measuredFps.toFixed(1)} FPS
+    </output>
+  );
+}
+
 export function OfficeCanvas() {
   const lightingMode = useOfficeStore((state) => state.lightingMode);
   const avatarAssetReady = useOfficeStore((state) => state.avatarAssetReady);
   const qualityMode = useOfficeStore((state) => state.qualityMode);
-  const measuredFps = useOfficeStore((state) => state.measuredFps);
-  const rendererClass = useOfficeStore((state) => state.rendererClass);
   const activePanel = useOfficeStore((state) => state.activePanel);
-
-  const player = useOfficeStore((state) => state.player);
 
   // Dynamic Lighting Themes
   const lighting = useMemo(() => {
@@ -115,11 +136,9 @@ export function OfficeCanvas() {
   return (
     <div className="relative h-full w-full">
       <span className="sr-only">You</span>
-      <output className="sr-only" aria-label="Player position" data-x={player.x} data-z={player.z}>
-        {`Player position ${player.x.toFixed(2)}, ${player.z.toFixed(2)}`}
-      </output>
+      <PlayerPositionOutput />
       {avatarAssetReady && <span className="sr-only">Animated GLTF avatar ready</span>}
-      <output aria-label="3D frame rate" data-fps={measuredFps.toFixed(1)} data-renderer-class={rendererClass} className="sr-only">{measuredFps.toFixed(1)} FPS</output>
+      <FrameMetricsOutput />
       <Canvas
       frameloop={activePanel ? "demand" : "always"}
       dpr={qualityMode === "reduced" ? 0.85 : [1, 2]}
@@ -208,11 +227,20 @@ function FrameMetrics() {
   return null;
 }
 
+function TouchMoveCenter() {
+  const x = useOfficeStore((state) => state.player.x);
+  const z = useOfficeStore((state) => state.player.z);
+  return (
+    <div aria-label="Player position" data-x={x.toFixed(2)} data-z={z.toFixed(2)} className="grid h-11 w-11 place-items-center rounded-xl bg-[#173f2b] text-[9px] font-bold text-[#c8f560]">
+      MOVE
+    </div>
+  );
+}
+
 function TouchControls() {
   const setTouchInput = useOfficeStore((state) => state.setTouchInput);
   const nearbyAction = useOfficeStore((state) => state.nearbyAction);
   const openPanel = useOfficeStore((state) => state.openPanel);
-  const player = useOfficeStore((state) => state.player);
   const bind = (x: number, z: number) => ({
     onPointerDown: (event: React.PointerEvent<HTMLButtonElement>) => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); setTouchInput({ x, z }); },
     onPointerUp: (event: React.PointerEvent<HTMLButtonElement>) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); setTouchInput({ x: 0, z: 0 }); },
@@ -221,7 +249,7 @@ function TouchControls() {
   return <div className="pointer-events-none absolute inset-x-0 bottom-20 z-20 flex items-end justify-between px-4 md:hidden">
     <div className="pointer-events-auto grid grid-cols-3 grid-rows-3 gap-1 rounded-[22px] border border-white/40 bg-[#fffdf7]/90 p-2 shadow-xl backdrop-blur touch-none">
       <span /><TouchButton label="Move up" icon={ArrowUp} {...bind(0, -1)} /><span />
-      <TouchButton label="Move left" icon={ArrowLeft} {...bind(-1, 0)} /><div aria-label="Player position" data-x={player.x.toFixed(2)} data-z={player.z.toFixed(2)} className="grid h-11 w-11 place-items-center rounded-xl bg-[#173f2b] text-[9px] font-bold text-[#c8f560]">MOVE</div><TouchButton label="Move right" icon={ArrowRight} {...bind(1, 0)} />
+      <TouchButton label="Move left" icon={ArrowLeft} {...bind(-1, 0)} /><TouchMoveCenter /><TouchButton label="Move right" icon={ArrowRight} {...bind(1, 0)} />
       <span /><TouchButton label="Move down" icon={ArrowDown} {...bind(0, 1)} /><span />
     </div>
     <button aria-label="Interact" disabled={!nearbyAction} onClick={() => nearbyAction && openPanel(nearbyAction.kind)} className="pointer-events-auto grid h-14 w-14 place-items-center rounded-full border border-white/40 bg-[#c8f560]/95 text-[#173f2b] shadow-xl backdrop-blur disabled:opacity-40"><Hand size={21} /></button>
@@ -233,12 +261,12 @@ function TouchButton({ label, icon: Icon, ...events }: { label: string; icon: ty
 }
 
 function CameraRig() {
-  const player = useOfficeStore((state) => state.player);
   const cameraMode = useOfficeStore((state) => state.cameraMode);
   const zoomLevel = useOfficeStore((state) => state.zoomLevel);
   const { size, gl } = useThree();
+  const currentLook = useRef(new THREE.Vector3(0, 0.85, 4.8));
 
-  // Mouse wheel scroll zoom support
+  // Mouse wheel scroll zoom support with fluid damping
   useEffect(() => {
     const el = gl.domElement;
     const onWheel = (e: WheelEvent) => {
@@ -252,38 +280,39 @@ function CameraRig() {
   }, [gl]);
 
   useFrame(({ camera }, delta) => {
-    // 3D Isometric Architectural perspective (Y-up)
     camera.up.set(0, 1, 0);
 
     if (cameraMode === "top") {
       // Panoramic Broader 45-degree isometric view framing the entire diorama & penthouse
       const desiredPos = new THREE.Vector3(0, 26, 26);
       const desiredLook = new THREE.Vector3(0, 0.8, 1.4);
-      camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 6));
-      camera.lookAt(desiredLook);
+      camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 7));
+      currentLook.current.lerp(desiredLook, 1 - Math.exp(-delta * 7));
+      camera.lookAt(currentLook.current);
 
       const baseZoom = Math.min((size.width - 40) / 32, (size.height - 40) / 22);
       const targetZoom = baseZoom * zoomLevel;
       if ("zoom" in camera) {
-        camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 6));
+        camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 7));
         camera.updateProjectionMatrix();
       }
     } else {
       // Follow mode: smoothly follow player from angled isometric 3rd-person perspective
-      const posX = localAvatarPosition.x || player.x;
-      const posZ = localAvatarPosition.y || player.z;
+      const posX = localAvatarPosition.x;
+      const posZ = localAvatarPosition.y;
       const targetX = THREE.MathUtils.clamp(posX, OFFICE_BOUNDS.minX, OFFICE_BOUNDS.maxX);
       const targetZ = THREE.MathUtils.clamp(posZ, OFFICE_BOUNDS.minZ, OFFICE_BOUNDS.maxZ);
       const desiredPos = new THREE.Vector3(targetX, 17, targetZ + 14.5);
       const desiredLook = new THREE.Vector3(targetX, 0.85, targetZ);
-      camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 9));
-      camera.lookAt(desiredLook);
+      camera.position.lerp(desiredPos, 1 - Math.exp(-delta * 8));
+      currentLook.current.lerp(desiredLook, 1 - Math.exp(-delta * 8));
+      camera.lookAt(currentLook.current);
 
       // Room-level focus in 3D Isometric
       const baseZoom = Math.min((size.width - 32) / 14, (size.height - 32) / 10.5);
       const targetZoom = baseZoom * zoomLevel;
       if ("zoom" in camera) {
-        camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 6));
+        camera.zoom = THREE.MathUtils.lerp(camera.zoom, targetZoom, 1 - Math.exp(-delta * 7));
         camera.updateProjectionMatrix();
       }
     }
@@ -535,11 +564,13 @@ function LocalPlayer() {
         useOfficeStore.getState().setCameraMode("follow");
       }
       const toTarget = new THREE.Vector2(clickTarget.x - position.current.x, clickTarget.z - position.current.y);
-      if (toTarget.length() < 0.28) {
+      const dist = toTarget.length();
+      if (dist < 0.28) {
         setClickTarget(null);
         input.set(0, 0);
       } else {
-        input = toTarget.normalize();
+        const arrivalSpeed = Math.min(1.0, dist / 0.85);
+        input = toTarget.normalize().multiplyScalar(arrivalSpeed);
       }
     }
 
@@ -577,7 +608,13 @@ function LocalPlayer() {
 
     position.current.set(next.x, next.z);
     localAvatarPosition.set(next.x, next.z);
-    if (velocity.current.lengthSq() > 0.08) rotation.current = Math.atan2(velocity.current.x, velocity.current.y);
+    if (velocity.current.lengthSq() > 0.08) {
+      const targetAngle = Math.atan2(velocity.current.x, velocity.current.y);
+      let diff = (targetAngle - rotation.current) % (Math.PI * 2);
+      if (diff < -Math.PI) diff += Math.PI * 2;
+      if (diff > Math.PI) diff -= Math.PI * 2;
+      rotation.current = rotation.current + diff * (1 - Math.exp(-delta * 16));
+    }
 
     if (group.current) {
       const bob = Math.abs(Math.sin(walkPhase.current * 2)) * Math.min(speed / 45, 0.05);
@@ -956,43 +993,22 @@ function EmoteParticleManager() {
 }
 
 function ProximityAudioBeams() {
-  const player = useOfficeStore((state) => state.player);
   const remotePlayers = useOfficeStore((state) => state.remotePlayers);
-  const isGhost = useOfficeStore((state) => state.isGhost);
-  const isQuietMode = useOfficeStore((state) => state.isQuietMode);
-
-  // In Ghost mode, audio connections are disconnected (true to Gather)
-  if (isGhost) return null;
-
-  // Quiet mode restricts radius to 1.1m (immediate adjacent) vs normal 3.2m
-  const audioRadius = isQuietMode ? 1.15 : 3.2;
-
-  // Find AI teammates within hearing range
-  const connectedAIs = demoTeammates.filter((t) => {
-    return Math.hypot(t.position[0] - player.x, t.position[2] - player.z) <= audioRadius;
-  });
-
-  // Find remote players within hearing range
-  const connectedRemotes = Object.values(remotePlayers).filter((r) => {
-    return Math.hypot(r.x - player.x, r.z - player.z) <= audioRadius;
-  });
 
   return (
     <group>
-      {connectedAIs.map((t) => (
+      {demoTeammates.map((t) => (
         <AudioConnectionBeam
           key={t.id}
-          from={[player.x, player.z]}
-          to={[t.position[0], t.position[2]]}
+          target={[t.position[0], t.position[2]]}
           color={t.accent}
           name={t.name}
         />
       ))}
-      {connectedRemotes.map((r) => (
+      {Object.values(remotePlayers).map((r) => (
         <AudioConnectionBeam
           key={r.id}
-          from={[player.x, player.z]}
-          to={[r.x, r.z]}
+          target={[r.x, r.z]}
           color="#c8f560"
           name={r.name}
         />
@@ -1002,39 +1018,63 @@ function ProximityAudioBeams() {
 }
 
 function AudioConnectionBeam({
-  from,
-  to,
+  target,
   color,
-  name,
 }: {
-  from: [number, number];
-  to: [number, number];
+  target: [number, number];
   color: string;
   name: string;
 }) {
+  const groupRef = useRef<THREE.Group>(null);
   const lineRef = useRef<THREE.Mesh>(null);
-  const dx = to[0] - from[0];
-  const dz = to[1] - from[1];
-  const length = Math.hypot(dx, dz);
-  const angle = Math.atan2(dz, dx);
-  const midX = (from[0] + to[0]) / 2;
-  const midZ = (from[1] + to[1]) / 2;
+  const currentOpacity = useRef(0);
 
-  useFrame(() => {
-    if (lineRef.current) {
-      const mat = lineRef.current.material as THREE.MeshBasicMaterial;
-      if (mat) {
-        mat.opacity = 0.4 + Math.sin(performance.now() / 240) * 0.25;
-      }
+  useFrame((_, delta) => {
+    if (!groupRef.current || !lineRef.current) return;
+    const isGhost = useOfficeStore.getState().isGhost;
+    if (isGhost) {
+      groupRef.current.visible = false;
+      return;
+    }
+    const isQuietMode = useOfficeStore.getState().isQuietMode;
+    const audioRadius = isQuietMode ? 1.15 : 3.2;
+
+    const fromX = localAvatarPosition.x;
+    const fromZ = localAvatarPosition.y;
+    const dx = target[0] - fromX;
+    const dz = target[1] - fromZ;
+    const length = Math.hypot(dx, dz);
+
+    const inRange = length <= audioRadius && length > 0.25;
+    const targetOpacity = inRange ? 0.45 + Math.sin(performance.now() / 240) * 0.2 : 0;
+    currentOpacity.current = THREE.MathUtils.lerp(currentOpacity.current, targetOpacity, 1 - Math.exp(-delta * 12));
+
+    if (currentOpacity.current < 0.015) {
+      groupRef.current.visible = false;
+      return;
+    }
+
+    groupRef.current.visible = true;
+    const angle = Math.atan2(dz, dx);
+    const midX = (fromX + target[0]) / 2;
+    const midZ = (fromZ + target[1]) / 2;
+
+    groupRef.current.position.set(midX, 0.038, midZ);
+    groupRef.current.rotation.y = -angle;
+    lineRef.current.scale.set(Math.max(0.01, length), 1, 1);
+
+    const mat = lineRef.current.material as THREE.MeshBasicMaterial;
+    if (mat) {
+      mat.opacity = currentOpacity.current;
     }
   });
 
   return (
-    <group position={[midX, 0.038, midZ]} rotation-y={-angle}>
-      {/* Glowing Audio Connection Mesh */}
+    <group ref={groupRef} visible={false}>
+      {/* Glowing Audio Connection Mesh - unit width scaled dynamically */}
       <mesh ref={lineRef} rotation-x={-Math.PI / 2}>
-        <planeGeometry args={[length, 0.08]} />
-        <meshBasicMaterial color={color} transparent opacity={0.6} />
+        <planeGeometry args={[1, 0.08]} />
+        <meshBasicMaterial color={color} transparent opacity={0} depthWrite={false} />
       </mesh>
       {/* Midpoint WebRTC Proximity Audio Node */}
       <mesh position={[0, 0.005, 0]} rotation-x={-Math.PI / 2}>
