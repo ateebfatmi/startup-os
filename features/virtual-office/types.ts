@@ -3,7 +3,7 @@ export type Availability = "available" | "focus" | "do_not_disturb" | "away";
 
 export type Collider = Vec2 & { width: number; depth: number; id: string };
 
-export type InteractionKind = "projects" | "meeting" | "whiteboard" | "focus" | "ai_assistant";
+export type InteractionKind = "projects" | "meeting" | "whiteboard" | "focus" | "ai_assistant" | "arcade";
 
 export type InteractionZone = Vec2 & {
   id: string;
@@ -11,6 +11,7 @@ export type InteractionZone = Vec2 & {
   hint: string;
   radius: number;
   kind: InteractionKind;
+  isSpotlight?: boolean;
 };
 
 export type OfficeRoom = {
@@ -22,6 +23,7 @@ export type OfficeRoom = {
   bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
   destination: Vec2;
   labelPosition: Vec2;
+  isPrivate?: boolean;
 };
 
 export type PlayerSnapshot = {
@@ -34,6 +36,10 @@ export type PlayerSnapshot = {
   color: string;
   roomId?: string;
   status?: Availability;
+  isGhost?: boolean;
+  isDancing?: boolean;
+  claimedDeskIndex?: number | null;
+  activeAppStatus?: string | null; // e.g. "VS Code", "Figma", "GitHub"
 };
 
 export type ConnectionState = "connecting" | "connected" | "reconnecting" | "offline";

@@ -9,6 +9,8 @@ export type AvatarModelProps = {
   motion: MutableRefObject<number>;
   seated?: boolean;
   caffeinated?: boolean;
+  ghost?: boolean;
+  dancing?: boolean;
   modelUrl?: string;
   onAssetReady?: () => void;
   hairColor?: string;
@@ -21,6 +23,8 @@ export function AvatarModel({
   motion,
   seated = false,
   caffeinated = false,
+  ghost = false,
+  dancing = false,
   hairColor = "#2c221e",
   skinTone = "#cda077",
   showProximityRing = false,
@@ -34,6 +38,7 @@ export function AvatarModel({
   const headGroup = useRef<THREE.Group>(null);
   const torsoGroup = useRef<THREE.Group>(null);
   const walkPhase = useRef(0);
+  const dancePhase = useRef(0);
 
   useEffect(() => {
     onAssetReady?.();
@@ -41,6 +46,29 @@ export function AvatarModel({
 
   useFrame((_, delta) => {
     const speed = motion.current;
+    if (dancing) {
+      dancePhase.current += delta * 6;
+      const dHop = Math.abs(Math.sin(dancePhase.current)) * 0.12;
+      const dSway = Math.sin(dancePhase.current * 0.8) * 0.22;
+      if (torsoGroup.current) {
+        torsoGroup.current.position.y = dHop;
+        torsoGroup.current.rotation.z = dSway;
+        torsoGroup.current.rotation.y = Math.sin(dancePhase.current * 0.5) * 0.3;
+      }
+      if (leftArm.current) {
+        leftArm.current.rotation.z = 1.2 + Math.sin(dancePhase.current) * 0.4;
+        leftArm.current.rotation.x = -Math.sin(dancePhase.current) * 0.6;
+      }
+      if (rightArm.current) {
+        rightArm.current.rotation.z = -1.2 - Math.sin(dancePhase.current) * 0.4;
+        rightArm.current.rotation.x = Math.sin(dancePhase.current) * 0.6;
+      }
+      if (headGroup.current) {
+        headGroup.current.rotation.y = Math.sin(dancePhase.current * 0.9) * 0.25;
+      }
+      return;
+    }
+
     if (speed > 0.08 && !seated) {
       walkPhase.current += delta * Math.min(14, Math.max(6, speed * 2.8));
     } else {
@@ -53,6 +81,8 @@ export function AvatarModel({
     if (torsoGroup.current) {
       torsoGroup.current.position.y = seated ? -0.22 : bob;
       torsoGroup.current.rotation.x = seated ? 0.08 : (speed > 0.5 ? 0.06 : 0);
+      torsoGroup.current.rotation.z = 0;
+      torsoGroup.current.rotation.y = 0;
     }
 
     if (seated) {
@@ -93,8 +123,19 @@ export function AvatarModel({
 
   return (
     <group ref={root}>
+      {/* Ghost Mode Glow Halo */}
+      {ghost && (
+        <group position={[0, 0.9, 0]}>
+          <pointLight color="#a3e635" intensity={3} distance={2.5} />
+          <mesh rotation-x={-Math.PI / 2}>
+            <ringGeometry args={[0.35, 0.45, 32]} />
+            <meshBasicMaterial color="#c8f560" transparent opacity={0.6} />
+          </mesh>
+        </group>
+      )}
+
       {/* Gather.town Style Proximity Audio Radar Wave (Hearing range) */}
-      {showProximityRing && (
+      {showProximityRing && !ghost && (
         <group position={[0, 0.012, 0]}>
           <mesh rotation-x={-Math.PI / 2}>
             <ringGeometry args={[2.94, 2.98, 64]} />
@@ -110,15 +151,21 @@ export function AvatarModel({
       {/* Realistic Soft Ambient Contact Shadow Disc */}
       <mesh position={[0, 0.018, 0]} rotation-x={-Math.PI / 2}>
         <circleGeometry args={[0.26, 24]} />
-        <meshBasicMaterial color="#000000" transparent opacity={0.24} />
+        <meshBasicMaterial color="#000000" transparent opacity={ghost ? 0.08 : 0.24} />
       </mesh>
 
-      {/* Main Human Body Group */}
+      {/* Main Human Body Group with Ghost transparency support */}
       <group ref={torsoGroup}>
         {/* Torso: Tailored Hoodie / Sweater */}
-        <mesh castShadow position={[0, 0.88, 0]}>
+        <mesh castShadow={!ghost} position={[0, 0.88, 0]}>
           <capsuleGeometry args={[0.22, 0.36, 10, 16]} />
-          <meshStandardMaterial color={color} roughness={0.62} metalness={0.05} />
+          <meshStandardMaterial
+            color={ghost ? "#c8f560" : color}
+            roughness={0.62}
+            metalness={0.05}
+            transparent={ghost}
+            opacity={ghost ? 0.45 : 1}
+          />
         </mesh>
 
         {/* Hoodie Collar / Neckline Detailing */}

@@ -9,9 +9,16 @@ export type OfficeAssetKey =
   | "standing_desk"
   | "conference_table"
   | "coffee_machine"
-  | "bookshelf";
+  | "bookshelf"
+  | "arcade_machine"
+  | "custom_embed";
 export type OfficeObjectTransform = { x: number; y: number; z: number; rotationY: number; scale: number };
-export type OfficeObject = { id: string; assetKey: OfficeAssetKey; transform: OfficeObjectTransform; interaction: { kind: InteractionKind; label: string } | null };
+export type OfficeObject = {
+  id: string;
+  assetKey: OfficeAssetKey;
+  transform: OfficeObjectTransform;
+  interaction: { kind: InteractionKind; label: string; embedUrl?: string } | null;
+};
 
 export const OFFICE_OBJECT_CATALOG: Record<OfficeAssetKey, { label: string; width: number; depth: number; interaction?: { kind: InteractionKind; label: string } }> = {
   planter: { label: "Architectural planter", width: 0.9, depth: 0.9 },
@@ -23,6 +30,8 @@ export const OFFICE_OBJECT_CATALOG: Record<OfficeAssetKey, { label: string; widt
   conference_table: { label: "Executive conference table", width: 3.2, depth: 1.4, interaction: { kind: "meeting", label: "Join conference meeting" } },
   coffee_machine: { label: "Espresso coffee station", width: 1.1, depth: 0.8 },
   bookshelf: { label: "Walnut design library", width: 2.0, depth: 0.6 },
+  arcade_machine: { label: "Retro arcade station", width: 1.2, depth: 1.1, interaction: { kind: "arcade", label: "Play Breakroom Mini-Games (Tetris / 2048)" } },
+  custom_embed: { label: "Interactive Web Screen", width: 2.0, depth: 0.2, interaction: { kind: "focus", label: "Open Interactive Web Screen" } },
 };
 
 export const OFFICE_ASSET_KEYS = Object.keys(OFFICE_OBJECT_CATALOG) as OfficeAssetKey[];

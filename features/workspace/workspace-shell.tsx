@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, AudioLines, BarChart3, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, Compass, CreditCard, DoorOpen, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Map, MapPin, Maximize2, Menu, MessageSquare, Mic, MicOff, Minimize2, MonitorUp, Moon, Music, Palette, PanelLeftClose, PanelLeftOpen, PenTool, PhoneOff, Plug, Plus, Radio, Search, Smile, Sparkles, Sun, Sunset, Target, Users, Video, VideoOff, VolumeX, Wifi, X } from "lucide-react";
+import { Activity, AudioLines, BarChart3, Bot, Bell, CalendarDays, CheckSquare2, ChevronDown, CircleHelp, Coffee, Command, Compass, CreditCard, DoorOpen, Eye, Files, FolderKanban, Headphones, LayoutGrid, Loader2, LogOut, Map, MapPin, Maximize2, Menu, MessageSquare, Mic, MicOff, Minimize2, MonitorUp, Moon, Music, Navigation, Palette, PanelLeftClose, PanelLeftOpen, PenTool, PhoneOff, Plug, Plus, Radio, Search, Smile, Sparkles, Sun, Sunset, Target, Users, Video, VideoOff, VolumeX, Wifi, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -14,7 +14,7 @@ import { OfficeMap2D } from "@/features/virtual-office/office-map-2d";
 import { OfficeCanvas } from "@/features/virtual-office/office-canvas";
 import { useOfficeStore } from "@/features/virtual-office/store";
 import { startScreenShare, stopScreenShare } from "@/features/virtual-office/screen-share";
-import { playChime } from "@/features/virtual-office/audio";
+import { playChime, playSlideClick } from "@/features/virtual-office/audio";
 import { useMultiplayer } from "@/features/multiplayer/use-multiplayer";
 import { useHuddle, type HuddleController } from "@/features/communication/use-huddle";
 import type { CallParticipant } from "@/features/communication/types";
@@ -48,6 +48,9 @@ import { loadOfficeObjects } from "./office-object-service";
 import { useProximityAudio, type ProximityAudioController } from "@/features/communication/use-proximity-audio";
 import { DEFAULT_OFFICE_DESIGN } from "@/features/virtual-office/office-design";
 import { OFFICE_ROOMS } from "@/features/virtual-office/office-data";
+import { ArcadePanel } from "@/features/virtual-office/arcade-panel";
+import { OFFICE_ASSET_KEYS, OFFICE_OBJECT_CATALOG } from "@/features/virtual-office/office-object-catalog";
+import { AI_TEAMMATES } from "@/features/virtual-office/ai-teammates";
 import { OFFICE_BOUNDS } from "@/features/virtual-office/collision";
 
 const nav = [
@@ -557,36 +560,160 @@ function OfficeHud({
               {initialsFor(displayName)}
               <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#55ac74]" />
             </div>
-            <div>
-              <div className="text-sm font-semibold">{displayName}</div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold truncate">{displayName} (You)</div>
               <div className="text-xs text-[#68736b]">{OFFICE_ROOMS.find((room) => room.id === player.roomId)?.shortName ?? "Open workspace"}</div>
             </div>
           </div>
-          {Object.values(remotePlayers).map((remote) => (
-            <button
-              key={remote.id}
-              onClick={() => {
-                useOfficeStore.getState().setClickTarget({ x: remote.x, z: remote.z });
-                useOfficeStore.getState().setCameraMode("top");
-              }}
-              className="mt-2 flex w-full items-center gap-3 rounded-xl p-1.5 text-left transition hover:bg-black/[.04] cursor-pointer"
-              title={`Walk to ${remote.name}`}
-            >
-              <div className="relative grid h-10 w-10 place-items-center rounded-full text-xs font-bold text-white" style={{ background: remote.color }}>
-                {remote.name.slice(0, 2).toUpperCase()}
-                <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${remote.status === "focus" ? "bg-blue-500" : remote.status === "do_not_disturb" ? "bg-red-500" : remote.status === "away" ? "bg-amber-500" : "bg-[#55ac74]"}`} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold">{remote.name}</div>
-                <div className="flex min-w-0 items-center gap-1 truncate text-xs text-[#68736b]">
-                  <span className="truncate">{OFFICE_ROOMS.find((room) => room.id === remote.roomId)?.shortName ?? "Open workspace"}</span>
-                  <span aria-hidden="true">·</span>
-                  <span className="shrink-0 capitalize">{(remote.status || "available").replaceAll("_", " ")}</span>
+
+          {/* Gather.town App Status Tag Picker */}
+          <div className="mt-2.5 flex items-center gap-1 overflow-x-auto pb-1 text-[10px]">
+            <span className="text-[#68736b] font-medium shrink-0">Status:</span>
+            {["VS Code", "Figma", "PR Review", "Deep Focus", "Break"].map((status) => {
+              const active = useOfficeStore.getState().activeAppStatus === status;
+              return (
+                <button
+                  key={status}
+                  onClick={() => {
+                    useOfficeStore.getState().setActiveAppStatus(active ? null : status);
+                    playSlideClick();
+                  }}
+                  className={`rounded-md px-1.5 py-0.5 font-bold transition shrink-0 cursor-pointer ${
+                    active ? "bg-[#173f2b] text-[#c8f560]" : "bg-black/5 text-[#4a5568] hover:bg-black/10"
+                  }`}
+                >
+                  {status}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-3 flex flex-col gap-2 max-h-[38vh] overflow-y-auto pr-0.5">
+            {Object.values(remotePlayers).length === 0 ? (
+              // If no remote human peers, show active AI Teammates
+              Object.values(AI_TEAMMATES).map((teammate) => (
+                <div
+                  key={teammate.id}
+                  className="rounded-2xl border border-black/[.06] bg-white/70 p-2.5 transition hover:bg-white hover:shadow-xs"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="relative grid h-8 w-8 place-items-center rounded-full text-xs font-bold text-[#173f2b]" style={{ background: teammate.color }}>
+                      {teammate.name.slice(0, 2).toUpperCase()}
+                      <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border border-white bg-[#55ac74]" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-xs font-bold text-[#17211b]">{teammate.name}</div>
+                      <div className="text-[10px] text-[#68736b]">{teammate.role} · {teammate.department}</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 flex items-center gap-1.5 border-t border-black/[.05] pt-1.5">
+                    <button
+                      onClick={() => {
+                        useOfficeStore.getState().setClickTarget({ x: teammate.position[0], z: teammate.position[2] });
+                        playChime();
+                      }}
+                      className="flex-1 flex items-center justify-center gap-1 rounded-lg bg-black/[.04] hover:bg-black/[.08] py-1 text-[10px] font-bold text-[#17211b] cursor-pointer"
+                      title="Walk to teammate"
+                    >
+                      <MapPin size={11} className="text-[#397455]" />
+                      <span>Walk</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        useOfficeStore.getState().setLocatedPlayerId(teammate.id);
+                        playChime();
+                      }}
+                      className="flex items-center justify-center gap-1 rounded-lg bg-sky-50 hover:bg-sky-100 px-2 py-1 text-[10px] font-bold text-sky-700 cursor-pointer"
+                      title="Locate with Map Beacon"
+                    >
+                      <Eye size={11} />
+                      <span>Locate</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        useOfficeStore.getState().ringTeammate(teammate.id);
+                        playChime();
+                      }}
+                      className="flex items-center justify-center gap-1 rounded-lg bg-amber-50 hover:bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-700 cursor-pointer"
+                      title="Ring Bell / Wave"
+                    >
+                      <Bell size={11} />
+                      <span>Ring</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <MapPin size={14} className="text-[#4b7a5e]" />
-            </button>
-          ))}
+              ))
+            ) : (
+              Object.values(remotePlayers).map((remote) => (
+                <div
+                  key={remote.id}
+                  className="rounded-2xl border border-black/[.06] bg-white/70 p-2.5 transition hover:bg-white hover:shadow-xs"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="relative grid h-8 w-8 place-items-center rounded-full text-xs font-bold text-white" style={{ background: remote.color }}>
+                      {remote.name.slice(0, 2).toUpperCase()}
+                      <span className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border border-white ${remote.status === "focus" ? "bg-blue-500" : remote.status === "do_not_disturb" ? "bg-red-500" : remote.status === "away" ? "bg-amber-500" : "bg-[#55ac74]"}`} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-xs font-bold text-[#17211b]">{remote.name}</div>
+                      <div className="text-[10px] text-[#68736b] truncate">
+                        {OFFICE_ROOMS.find((room) => room.id === remote.roomId)?.shortName ?? "Open workspace"}
+                        {remote.activeAppStatus ? ` · ${remote.activeAppStatus}` : ""}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 flex items-center gap-1.5 border-t border-black/[.05] pt-1.5">
+                    <button
+                      onClick={() => {
+                        useOfficeStore.getState().setClickTarget({ x: remote.x, z: remote.z });
+                        playChime();
+                      }}
+                      className="flex-1 flex items-center justify-center gap-1 rounded-lg bg-black/[.04] hover:bg-black/[.08] py-1 text-[10px] font-bold text-[#17211b] cursor-pointer"
+                      title="Walk to teammate"
+                    >
+                      <MapPin size={11} className="text-[#397455]" />
+                      <span>Walk</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        useOfficeStore.getState().setFollowingPlayerId(remote.id);
+                        playChime();
+                      }}
+                      className="flex items-center justify-center gap-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-800 cursor-pointer"
+                      title="Follow teammate"
+                    >
+                      <Navigation size={11} />
+                      <span>Follow</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        useOfficeStore.getState().setLocatedPlayerId(remote.id);
+                        playChime();
+                      }}
+                      className="flex items-center justify-center gap-1 rounded-lg bg-sky-50 hover:bg-sky-100 px-2 py-1 text-[10px] font-bold text-sky-700 cursor-pointer"
+                      title="Locate with Map Beacon"
+                    >
+                      <Eye size={11} />
+                      <span>Locate</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        useOfficeStore.getState().ringTeammate(remote.id);
+                        playChime();
+                      }}
+                      className="flex items-center justify-center gap-1 rounded-lg bg-amber-50 hover:bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-700 cursor-pointer"
+                      title="Ring Bell / Wave"
+                    >
+                      <Bell size={11} />
+                      <span>Ring</span>
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
           <div className="my-4 h-px bg-black/[.07]" />
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-[#68736b]">Today</span>
@@ -639,6 +766,11 @@ function GatherBottomDock({
   const triggerEmote = useOfficeStore((state) => state.triggerEmote);
   const remotePlayers = useOfficeStore((state) => state.remotePlayers);
   const onlineCount = Object.keys(remotePlayers).length + 1;
+  const isMapmakerOpen = useOfficeStore((state) => state.isMapmakerOpen);
+  const toggleMapmaker = useOfficeStore((state) => state.toggleMapmaker);
+  const setIsMapmakerOpen = useOfficeStore((state) => state.setIsMapmakerOpen);
+  const selectedCatalogAsset = useOfficeStore((state) => state.selectedCatalogAsset);
+  const setSelectedCatalogAsset = useOfficeStore((state) => state.setSelectedCatalogAsset);
 
   const [showEmotePicker, setShowEmotePicker] = useState(false);
 
@@ -657,7 +789,8 @@ function GatherBottomDock({
   ];
 
   return (
-    <div className="absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-2xl border border-white/40 bg-[#fffdf7]/95 p-1.5 shadow-2xl backdrop-blur-md select-none">
+    <>
+      <div className="absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-2xl border border-white/40 bg-[#fffdf7]/95 p-1.5 shadow-2xl backdrop-blur-md select-none">
       {/* Microphone Toggle */}
       <button
         onClick={() => (inCall ? huddle.toggleMicrophone() : onOpenMeeting())}
@@ -845,6 +978,24 @@ function GatherBottomDock({
         </button>
       )}
 
+      {/* Mapmaker Build Mode Toggle */}
+      <button
+        onClick={() => {
+          toggleMapmaker();
+          playSlideClick();
+        }}
+        aria-label="Toggle Mapmaker (Build Mode)"
+        className={`flex h-10 items-center gap-1.5 rounded-xl border px-2.5 text-xs font-bold transition shadow-xs cursor-pointer ${
+          isMapmakerOpen
+            ? "border-[#173f2b] bg-[#173f2b] text-[#c8f560]"
+            : "border-black/10 bg-white/80 text-[#173f2b] hover:bg-black/5"
+        }`}
+        title={isMapmakerOpen ? "Exit Mapmaker (Build Mode)" : "Mapmaker: Place furniture, plants & retro arcade"}
+      >
+        <PenTool size={16} />
+        <span className="hidden xl:inline">{isMapmakerOpen ? "Build Mode" : "Build"}</span>
+      </button>
+
       {/* People Toggle */}
       <button
         onClick={onToggleRail}
@@ -880,6 +1031,53 @@ function GatherBottomDock({
         </button>
       </div>
     </div>
+
+    {/* Mapmaker Asset Drawer Tray */}
+    {isMapmakerOpen && (
+      <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-2xl border border-white/30 bg-[#121c17]/95 p-2 shadow-2xl backdrop-blur-md text-white animate-in slide-in-from-bottom-2 duration-150">
+        <div className="flex items-center gap-2 px-2.5 border-r border-white/15">
+          <span className="h-2 w-2 rounded-full bg-[#c8f560] animate-pulse" />
+          <span className="text-xs font-bold text-[#c8f560]">Mapmaker</span>
+        </div>
+
+        <div className="flex items-center gap-1.5 overflow-x-auto max-w-[55vw] py-0.5 px-1">
+          {OFFICE_ASSET_KEYS.map((key) => {
+            const asset = OFFICE_OBJECT_CATALOG[key];
+            const isSelected = selectedCatalogAsset === key;
+            return (
+              <button
+                key={key}
+                onClick={() => {
+                  setSelectedCatalogAsset(isSelected ? null : key);
+                  playSlideClick();
+                }}
+                className={`flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-1 text-xs font-semibold transition cursor-pointer ${
+                  isSelected
+                    ? "bg-[#c8f560] text-[#121c17] font-bold shadow-md"
+                    : "bg-white/10 text-white/80 hover:bg-white/20"
+                }`}
+                title={`${asset.label} (${asset.width}m x ${asset.depth}m)`}
+              >
+                <span>{key === "arcade_machine" ? "🕹️" : key === "planter" ? "🪴" : key === "coffee_machine" ? "☕" : key === "whiteboard" ? "📋" : key === "focus_pod" ? "🎙️" : "🪑"}</span>
+                <span className="truncate max-w-[120px]">{asset.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          onClick={() => {
+            setSelectedCatalogAsset(null);
+            setIsMapmakerOpen(false);
+            playChime();
+          }}
+          className="ml-1 rounded-xl bg-white/10 hover:bg-white/20 px-3 py-1.5 text-xs font-bold text-white transition cursor-pointer"
+        >
+          Done
+        </button>
+      </div>
+    )}
+  </>
   );
 }
 
@@ -1015,6 +1213,7 @@ function FeatureDialog({ kind, onClose, tasks, moveTask, addTask, huddle, worksp
   if (kind === "projects") return <Dialog open title="Project board" onClose={onClose}><KanbanView /></Dialog>;
   if (kind === "whiteboard") return <Dialog open title="Spatial Whiteboard" onClose={onClose}><WhiteboardPanel workspaceId={workspaceId} /></Dialog>;
   if (kind === "focus") return <Dialog open title="Focus pod" onClose={onClose}><FocusPanel /></Dialog>;
+  if (kind === "arcade") return <Dialog open title="Breakroom Arcade Station" size="xl" onClose={onClose}><ArcadePanel /></Dialog>;
   if (kind === "ai_assistant") return <Dialog open title="AI Startup Copilot" size="xl" onClose={onClose}><AIAssistantPanel tasks={tasks} addTask={addTask} workspaceName={workspaceName} /></Dialog>;
   return <Dialog open title="Weekly product pulse" onClose={onClose}><MeetingPanel huddle={huddle} /></Dialog>;
 }

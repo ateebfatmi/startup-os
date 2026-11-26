@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import type { Availability, ConnectionState, InteractionKind, PlayerSnapshot } from "./types";
 import { DEFAULT_OFFICE_DESIGN, type OfficeDesignSettings } from "./office-design";
-import type { OfficeObject } from "./office-object-catalog";
+import type { OfficeAssetKey, OfficeObject } from "./office-object-catalog";
 import { getOfficeRoomAt } from "./office-data";
 
 type OfficeState = {
@@ -19,6 +19,16 @@ type OfficeState = {
   lightingMode: "day" | "sunset" | "night";
   isSitting: boolean;
   isCaffeinated: boolean;
+  isGhost: boolean;
+  isDancing: boolean;
+  isQuietMode: boolean;
+  followingPlayerId: string | null;
+  locatedPlayerId: string | null;
+  claimedDesks: Record<number, { odId: string; name: string }>; // desk index -> owner
+  incomingRings: Array<{ id: string; senderName: string; senderId: string; senderPosition: { x: number; z: number }; timestamp: number }>;
+  isMapmakerOpen: boolean;
+  selectedCatalogAsset: OfficeAssetKey | null;
+  activeAppStatus: string | null;
   lofiPlaying: boolean;
   boardroomSlide: number;
   isScreenSharing: boolean;
@@ -57,6 +67,22 @@ type OfficeState = {
   cycleLightingMode: () => void;
   setIsSitting: (sitting: boolean) => void;
   setIsCaffeinated: (caffeinated: boolean) => void;
+  setIsGhost: (ghost: boolean) => void;
+  setIsDancing: (dancing: boolean) => void;
+  toggleQuietMode: () => void;
+  setFollowingPlayerId: (id: string | null) => void;
+  setLocatedPlayerId: (id: string | null) => void;
+  claimDesk: (deskIndex: number, ownerName?: string) => void;
+  unclaimDesk: (deskIndex: number) => void;
+  ringTeammate: (targetId: string) => void;
+  dismissRing: (ringId: string) => void;
+  toggleMapmaker: () => void;
+  setIsMapmakerOpen: (open: boolean) => void;
+  setSelectedCatalogAsset: (asset: OfficeAssetKey | null) => void;
+  addOfficeObject: (object: OfficeObject) => void;
+  removeOfficeObject: (id: string) => void;
+  rotateOfficeObject: (id: string) => void;
+  setActiveAppStatus: (status: string | null) => void;
   setLofiPlaying: (playing: boolean) => void;
   toggleLofi: () => void;
   nextBoardroomSlide: () => void;
@@ -95,6 +121,33 @@ const getSavedViewMode = (): "3d" | "2d" => {
   return "3d";
 };
 
+const getSavedOfficeObjects = (): OfficeObject[] => {
+  if (typeof window === "undefined") {
+    return [
+      {
+        id: "breakroom-arcade-1",
+        assetKey: "arcade_machine",
+        transform: { x: 7.5, y: 0, z: -5.5, rotationY: 0, scale: 1 },
+        interaction: { kind: "arcade", label: "Play Breakroom Mini-Games (2048 / Snake)" },
+      },
+    ];
+  }
+  try {
+    const saved = window.localStorage.getItem("crewvilla-office-objects");
+    if (saved) return JSON.parse(saved);
+  } catch {
+    // Ignore storage access errors
+  }
+  return [
+    {
+      id: "breakroom-arcade-1",
+      assetKey: "arcade_machine",
+      transform: { x: 7.5, y: 0, z: -5.5, rotationY: 0, scale: 1 },
+      interaction: { kind: "arcade", label: "Play Breakroom Mini-Games (2048 / Snake)" },
+    },
+  ];
+};
+
 export const useOfficeStore = create<OfficeState>((set) => ({
   player: { id: "local", name: "You", x: 0, z: 4.8, rotation: Math.PI, updatedAt: Date.now(), color: "#ff8a4c", status: "available", roomId: "reception" },
   remotePlayers: {},
@@ -108,6 +161,20 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   lightingMode: "day",
   isSitting: false,
   isCaffeinated: false,
+  isGhost: false,
+  isDancing: false,
+  isQuietMode: false,
+  followingPlayerId: null,
+  locatedPlayerId: null,
+  claimedDesks: {
+    0: { odId: "demo-1", name: "Ateeb (Lead)" },
+    1: { odId: "demo-dev", name: "Dev AI" },
+    4: { odId: "demo-design", name: "Design AI" },
+  },
+  incomingRings: [],
+  isMapmakerOpen: false,
+  selectedCatalogAsset: null,
+  activeAppStatus: null,
   lofiPlaying: false,
   boardroomSlide: 0,
   isScreenSharing: false,
@@ -121,7 +188,7 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   avatarOutfit: { jacketColor: "#ff8a4c", glasses: false },
   startupMetrics: { mrr: 48200, burnRate: 14500, runwayMonths: 18.4, activePRs: 4 },
   officeDesign: DEFAULT_OFFICE_DESIGN,
-  officeObjects: [],
+  officeObjects: getSavedOfficeObjects(),
   avatarAssetReady: false,
   touchInput: { x: 0, z: 0 },
   qualityMode: "high",
@@ -164,6 +231,73 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   }),
   setIsSitting: (isSitting) => set({ isSitting }),
   setIsCaffeinated: (isCaffeinated) => set({ isCaffeinated }),
+  setIsGhost: (isGhost) => set((state) => ({ isGhost, player: { ...state.player, isGhost } })),
+  setIsDancing: (isDancing) => set((state) => ({ isDancing, player: { ...state.player, isDancing } })),
+  toggleQuietMode: () => set((state) => ({ isQuietMode: !state.isQuietMode })),
+  setFollowingPlayerId: (followingPlayerId) => set({ followingPlayerId }),
+  setLocatedPlayerId: (locatedPlayerId) => set({ locatedPlayerId }),
+  claimDesk: (deskIndex, ownerName) => set((state) => {
+    const name = ownerName || state.player.name;
+    return {
+      claimedDesks: { ...state.claimedDesks, [deskIndex]: { odId: state.player.id, name } },
+      player: { ...state.player, claimedDeskIndex: deskIndex }
+    };
+  }),
+  unclaimDesk: (deskIndex) => set((state) => {
+    const claimedDesks = { ...state.claimedDesks };
+    delete claimedDesks[deskIndex];
+    return {
+      claimedDesks,
+      player: { ...state.player, claimedDeskIndex: null }
+    };
+  }),
+  ringTeammate: (targetId) => set((state) => {
+    // If target is local, simulate incoming ring for feedback; otherwise broadcast
+    const target = state.remotePlayers[targetId];
+    const ring = {
+      id: `ring-${Date.now()}`,
+      senderName: state.player.name,
+      senderId: state.player.id,
+      senderPosition: { x: state.player.x, z: state.player.z },
+      timestamp: Date.now(),
+    };
+    return { incomingRings: [ring, ...state.incomingRings.slice(0, 4)] };
+  }),
+  dismissRing: (ringId) => set((state) => ({
+    incomingRings: state.incomingRings.filter((r) => r.id !== ringId)
+  })),
+  toggleMapmaker: () => set((state) => ({ isMapmakerOpen: !state.isMapmakerOpen })),
+  setIsMapmakerOpen: (isMapmakerOpen) => set({ isMapmakerOpen }),
+  setSelectedCatalogAsset: (selectedCatalogAsset) => set({ selectedCatalogAsset }),
+  setActiveAppStatus: (activeAppStatus) => set((state) => ({
+    activeAppStatus,
+    player: { ...state.player, activeAppStatus, updatedAt: Date.now() }
+  })),
+  addOfficeObject: (object) => set((state) => {
+    const next = [...state.officeObjects, object];
+    if (typeof window !== "undefined") {
+      try { window.localStorage.setItem("crewvilla-office-objects", JSON.stringify(next)); } catch { /* ignore */ }
+    }
+    return { officeObjects: next };
+  }),
+  removeOfficeObject: (id) => set((state) => {
+    const next = state.officeObjects.filter((o) => o.id !== id);
+    if (typeof window !== "undefined") {
+      try { window.localStorage.setItem("crewvilla-office-objects", JSON.stringify(next)); } catch { /* ignore */ }
+    }
+    return { officeObjects: next };
+  }),
+  rotateOfficeObject: (id) => set((state) => {
+    const next = state.officeObjects.map((o) =>
+      o.id === id
+        ? { ...o, transform: { ...o.transform, rotationY: (o.transform.rotationY + Math.PI / 2) % (Math.PI * 2) } }
+        : o
+    );
+    if (typeof window !== "undefined") {
+      try { window.localStorage.setItem("crewvilla-office-objects", JSON.stringify(next)); } catch { /* ignore */ }
+    }
+    return { officeObjects: next };
+  }),
   setLofiPlaying: (lofiPlaying) => set({ lofiPlaying }),
   toggleLofi: () => set((state) => ({ lofiPlaying: !state.lofiPlaying })),
   nextBoardroomSlide: () => set((state) => ({ boardroomSlide: (state.boardroomSlide + 1) % 3 })),
@@ -186,7 +320,12 @@ export const useOfficeStore = create<OfficeState>((set) => ({
   zoomOut: () => set((state) => ({ zoomLevel: Math.max(0.5, state.zoomLevel - 0.15) })),
   resetZoom: () => set({ zoomLevel: 1.0 }),
   setOfficeDesign: (officeDesign) => set({ officeDesign }),
-  setOfficeObjects: (officeObjects) => set({ officeObjects }),
+  setOfficeObjects: (officeObjects) => {
+    if (typeof window !== "undefined") {
+      try { window.localStorage.setItem("crewvilla-office-objects", JSON.stringify(officeObjects)); } catch { /* ignore */ }
+    }
+    set({ officeObjects });
+  },
   setAvatarAssetReady: (avatarAssetReady) => set({ avatarAssetReady }),
   setTouchInput: (touchInput) => set({ touchInput }),
   setQualityMode: (qualityMode) => set({ qualityMode }),

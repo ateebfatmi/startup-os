@@ -295,21 +295,77 @@ function CameraRig() {
 function FloorClickSurface() {
   const setClickTarget = useOfficeStore((state) => state.setClickTarget);
   const setIsSitting = useOfficeStore((state) => state.setIsSitting);
+  const isMapmakerOpen = useOfficeStore((state) => state.isMapmakerOpen);
+  const selectedCatalogAsset = useOfficeStore((state) => state.selectedCatalogAsset);
+  const addOfficeObject = useOfficeStore((state) => state.addOfficeObject);
+  const [hoverPos, setHoverPos] = useState<{ x: number; z: number } | null>(null);
 
   return (
-    <mesh
-      position={[0, 0.02, 2.5]}
-      rotation-x={-Math.PI / 2}
-      onPointerDown={(e) => {
-        e.stopPropagation();
-        setIsSitting(false);
-        setClickTarget({ x: e.point.x, z: e.point.z });
-      }}
-      visible={false}
-    >
-      <planeGeometry args={[36, 32]} />
-      <meshBasicMaterial transparent opacity={0} />
-    </mesh>
+    <>
+      <mesh
+        position={[0, 0.02, 2.5]}
+        rotation-x={-Math.PI / 2}
+        onPointerMove={(e) => {
+          if (isMapmakerOpen && selectedCatalogAsset) {
+            e.stopPropagation();
+            setHoverPos({
+              x: Math.round(e.point.x * 2) / 2,
+              z: Math.round(e.point.z * 2) / 2,
+            });
+          }
+        }}
+        onPointerLeave={() => setHoverPos(null)}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          if (isMapmakerOpen && selectedCatalogAsset) {
+            const asset = OFFICE_OBJECT_CATALOG[selectedCatalogAsset];
+            const id = `obj-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+            const newObj: OfficeObject = {
+              id,
+              assetKey: selectedCatalogAsset,
+              transform: {
+                x: Math.round(e.point.x * 2) / 2,
+                y: 0,
+                z: Math.round(e.point.z * 2) / 2,
+                rotationY: 0,
+                scale: 1,
+              },
+              interaction: asset.interaction ? { kind: asset.interaction.kind, label: asset.interaction.label } : null,
+            };
+            addOfficeObject(newObj);
+            playSlideClick();
+            return;
+          }
+          setIsSitting(false);
+          setClickTarget({ x: e.point.x, z: e.point.z });
+        }}
+        visible={false}
+      >
+        <planeGeometry args={[36, 32]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
+
+      {/* Mapmaker Placement Ghost Cursor */}
+      {isMapmakerOpen && selectedCatalogAsset && hoverPos && (
+        <group position={[hoverPos.x, 0.05, hoverPos.z]}>
+          <mesh rotation-x={-Math.PI / 2}>
+            <planeGeometry
+              args={[
+                OFFICE_OBJECT_CATALOG[selectedCatalogAsset].width,
+                OFFICE_OBJECT_CATALOG[selectedCatalogAsset].depth,
+              ]}
+            />
+            <meshBasicMaterial color="#c8f560" transparent opacity={0.35} />
+          </mesh>
+          <SpriteLabel
+            text={`Click to Place: ${OFFICE_OBJECT_CATALOG[selectedCatalogAsset].label}`}
+            position={[0, 1.4, 0]}
+            color="#c8f560"
+            width={3.4}
+          />
+        </group>
+      )}
+    </>
   );
 }
 
@@ -364,7 +420,16 @@ function LocalPlayer() {
   const toggleLofi = useOfficeStore((state) => state.toggleLofi);
   const isSitting = useOfficeStore((state) => state.isSitting);
   const setIsSitting = useOfficeStore((state) => state.setIsSitting);
+  const isGhost = useOfficeStore((state) => state.isGhost);
+  const setIsGhost = useOfficeStore((state) => state.setIsGhost);
+  const isDancing = useOfficeStore((state) => state.isDancing);
+  const setIsDancing = useOfficeStore((state) => state.setIsDancing);
+  const toggleQuietMode = useOfficeStore((state) => state.toggleQuietMode);
+  const triggerEmote = useOfficeStore((state) => state.triggerEmote);
+  const followingPlayerId = useOfficeStore((state) => state.followingPlayerId);
+  const setFollowingPlayerId = useOfficeStore((state) => state.setFollowingPlayerId);
   const setAvatarAssetReady = useOfficeStore((state) => state.setAvatarAssetReady);
+  const activeAppStatus = useOfficeStore((state) => state.activeAppStatus);
 
   // Keyboard controls
   useEffect(() => {
@@ -373,9 +438,35 @@ function LocalPlayer() {
       if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA" || (activeEl as HTMLElement).isContentEditable)) {
         return;
       }
-      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(event.key)) event.preventDefault();
-      keys.add(event.key.toLowerCase());
-      if ((event.key.toLowerCase() === "e" || event.key.toLowerCase() === "x" || event.key === "Enter") && nearbyAction) {
+      const key = event.key.toLowerCase();
+      // Quiet mode toggle: Cmd/Ctrl + U
+      if ((event.metaKey || event.ctrlKey) && key === "u") {
+        event.preventDefault();
+        toggleQuietMode();
+        playChime();
+        return;
+      }
+
+      if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) event.preventDefault();
+      keys.add(key);
+
+      // Ghost Mode: Hold G
+      if (key === "g") {
+        setIsGhost(true);
+      }
+
+      // Dance Mode: Press Z
+      if (key === "z") {
+        setIsDancing(!isDancing);
+        triggerEmote("🎵");
+      }
+
+      // Break follow mode if manual movement key pressed
+      if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key) && followingPlayerId) {
+        setFollowingPlayerId(null);
+      }
+
+      if ((key === "e" || key === "x" || event.key === "Enter") && nearbyAction) {
         if (nearbyAction.teammateId) {
           playChime();
           openAITeammate(nearbyAction.teammateId);
@@ -390,13 +481,15 @@ function LocalPlayer() {
           openPanel(nearbyAction.kind);
         }
       }
-      if (event.key.toLowerCase() === "shift") setIsSprinting(true);
-      if (event.key.toLowerCase() === "v") toggleCameraMode();
-      if (event.key.toLowerCase() === "f") setIsSitting(!isSitting);
+      if (key === "shift") setIsSprinting(true);
+      if (key === "v") toggleCameraMode();
+      if (key === "f") setIsSitting(!isSitting);
     };
     const up = (event: KeyboardEvent) => {
-      keys.delete(event.key.toLowerCase());
-      if (event.key.toLowerCase() === "shift") setIsSprinting(false);
+      const key = event.key.toLowerCase();
+      keys.delete(key);
+      if (key === "shift") setIsSprinting(false);
+      if (key === "g") setIsGhost(false);
     };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
@@ -405,7 +498,7 @@ function LocalPlayer() {
       window.removeEventListener("keyup", up);
       keys.clear();
     };
-  }, [nearbyAction, openPanel, openAITeammate, toggleCameraMode, isSitting, setIsSitting, setIsCaffeinated, toggleLofi]);
+  }, [nearbyAction, openPanel, openAITeammate, toggleCameraMode, isSitting, setIsSitting, setIsCaffeinated, toggleLofi, isDancing, setIsDancing, setIsGhost, toggleQuietMode, triggerEmote, followingPlayerId, setFollowingPlayerId]);
 
   useFrame((_, rawDelta) => {
     const delta = Math.min(rawDelta, 1 / 30);
@@ -422,7 +515,16 @@ function LocalPlayer() {
     }
 
     let input = wasd;
-    if (wasd.lengthSq() > 0) {
+    // Check if following another player
+    const followedPlayer = followingPlayerId ? (useOfficeStore.getState().remotePlayers[followingPlayerId] || demoTeammates.find(t => t.id === followingPlayerId) ? { x: demoTeammates.find(t => t.id === followingPlayerId)?.position[0] ?? 0, z: demoTeammates.find(t => t.id === followingPlayerId)?.position[2] ?? 0 } : null) : null;
+    if (followedPlayer && wasd.lengthSq() === 0) {
+      const toFollow = new THREE.Vector2(followedPlayer.x - position.current.x, followedPlayer.z - position.current.y);
+      if (toFollow.length() > 1.2) {
+        input = toFollow.normalize();
+      } else {
+        input.set(0, 0);
+      }
+    } else if (wasd.lengthSq() > 0) {
       if (clickTarget) setClickTarget(null);
       if (useOfficeStore.getState().cameraMode !== "follow") {
         useOfficeStore.getState().setCameraMode("follow");
@@ -441,11 +543,12 @@ function LocalPlayer() {
       }
     }
 
-    // Speed boost: Shift sprint (+45%), Caffeinated (+30%), or combined
+    // Speed boost: Shift sprint (+45%), Caffeinated (+30%), or combined; Ghost mode (+20% glide)
     const isSprinting = keys.has("shift") || keys.has("shiftleft") || keys.has("shiftright");
     const sprintMultiplier = isSprinting ? 1.45 : 1.0;
     const coffeeMultiplier = isCaffeinated ? 1.3 : 1.0;
-    const maxSpeed = isSitting ? 0 : 4.5 * sprintMultiplier * coffeeMultiplier;
+    const ghostMultiplier = isGhost ? 1.2 : 1.0;
+    const maxSpeed = isSitting ? 0 : 4.5 * sprintMultiplier * coffeeMultiplier * ghostMultiplier;
     velocity.current.lerp(input.multiplyScalar(maxSpeed), 1 - Math.exp(-delta * 12));
     if (velocity.current.lengthSq() < 0.005) velocity.current.set(0, 0);
 
@@ -464,6 +567,7 @@ function LocalPlayer() {
       { x: position.current.x, z: position.current.y },
       { x: position.current.x + velocity.current.x * delta, z: position.current.y + velocity.current.y * delta },
       [...COLLIDERS, ...customObjects.map(officeObjectCollider)],
+      isGhost
     );
 
     // Cancel clickTarget if blocked
@@ -489,6 +593,9 @@ function LocalPlayer() {
 
     // AI Teammates proximity
     const nearTeammate = demoTeammates.find((t) => Math.hypot(t.position[0] - next.x, t.position[2] - next.z) <= 1.8);
+    // Elevator Portals proximity
+    const nearTerraceElevator = Math.hypot(4.8 - next.x, 6.2 - next.z) <= 1.4;
+    const nearRooftopElevator = Math.hypot(4.8 - next.x, 11.5 - next.z) <= 1.4;
     // Smart Stations proximity
     const nearEspresso = Math.hypot(8.1 - next.x, 2.4 - next.z) <= 1.5;
     const nearVinyl = Math.hypot(6.8 - next.x, 5.2 - next.z) <= 1.5;
@@ -496,6 +603,10 @@ function LocalPlayer() {
 
     const action = nearTeammate
       ? { kind: "ai_assistant" as const, label: `Talk to ${nearTeammate.name} (${nearTeammate.role})`, teammateId: nearTeammate.id }
+      : nearTerraceElevator
+      ? { kind: "focus" as const, label: "Take Express Elevator up to Sky Terrace", special: "elevator_terrace" }
+      : nearRooftopElevator
+      ? { kind: "focus" as const, label: "Take Express Elevator down to Reception", special: "elevator_reception" }
       : nearEspresso
       ? { kind: "focus" as const, label: "Brew Italian espresso (+Speed boost)", special: "espresso" }
       : nearVinyl
@@ -522,15 +633,17 @@ function LocalPlayer() {
         motion={motion}
         seated={isSitting}
         caffeinated={isCaffeinated}
-        showProximityRing={true}
+        ghost={isGhost}
+        dancing={isDancing}
+        showProximityRing={!isGhost}
         onAssetReady={() => setAvatarAssetReady(true)}
       />
 
       <SpriteLabel
-        text={`● You${isSprinting ? "  ⚡" : ""}${isCaffeinated ? "  ☕" : ""}${isSitting ? "  Seated" : ""}`}
+        text={`● You${isGhost ? "  👻 Ghost" : ""}${isDancing ? "  💃 Dancing" : ""}${isSprinting ? "  ⚡" : ""}${isCaffeinated ? "  ☕" : ""}${isSitting ? "  Seated" : ""}${activeAppStatus ? ` · ${activeAppStatus}` : ""}`}
         position={[0, 1.78, 0]}
-        color="#ffffff"
-        width={isSprinting || isCaffeinated || isSitting ? 3.0 : 1.8}
+        color={isGhost ? "#c8f560" : "#ffffff"}
+        width={isGhost || isDancing || isSprinting || isCaffeinated || isSitting || activeAppStatus ? 3.8 : 1.8}
       />
     </group>
   );
@@ -538,10 +651,36 @@ function LocalPlayer() {
 
 function RemotePlayers() {
   const players = useOfficeStore((state) => state.remotePlayers);
-  return <>{Object.values(players).map((player) => <RemotePlayer key={player.id} player={player} />)}</>;
+  const locatedPlayerId = useOfficeStore((state) => state.locatedPlayerId);
+  const setFollowingPlayerId = useOfficeStore((state) => state.setFollowingPlayerId);
+  const ringTeammate = useOfficeStore((state) => state.ringTeammate);
+
+  return (
+    <>
+      {Object.values(players).map((player) => (
+        <RemotePlayer
+          key={player.id}
+          player={player}
+          isLocated={locatedPlayerId === player.id}
+          onFollow={() => setFollowingPlayerId(player.id)}
+          onRing={() => ringTeammate(player.id)}
+        />
+      ))}
+    </>
+  );
 }
 
-function RemotePlayer({ player }: { player: ReturnType<typeof useOfficeStore.getState>["player"] }) {
+function RemotePlayer({
+  player,
+  isLocated,
+  onFollow,
+  onRing
+}: {
+  player: ReturnType<typeof useOfficeStore.getState>["player"];
+  isLocated?: boolean;
+  onFollow?: () => void;
+  onRing?: () => void;
+}) {
   const group = useRef<THREE.Group>(null);
   const targetPosition = useRef(new THREE.Vector3(player.x, 0.06, player.z));
   const targetRotation = useRef(player.rotation);
@@ -560,13 +699,39 @@ function RemotePlayer({ player }: { player: ReturnType<typeof useOfficeStore.get
     group.current.position.lerp(targetPosition.current, 1 - Math.exp(-delta * 10));
     const difference = Math.atan2(Math.sin(targetRotation.current - group.current.rotation.y), Math.cos(targetRotation.current - group.current.rotation.y));
     group.current.rotation.y += difference * (1 - Math.exp(-delta * 12));
-
   });
 
   return (
-    <group ref={group} position={[player.x, 0.06, player.z]} rotation-y={player.rotation}>
+    <group
+      ref={group}
+      position={[player.x, 0.06, player.z]}
+      rotation-y={player.rotation}
+      onClick={(e) => {
+        e.stopPropagation();
+        playChime();
+        onFollow?.();
+      }}
+    >
+      {/* Locate on Map Pulsing Beacon Light */}
+      {isLocated && (
+        <group position={[0, 0.02, 0]}>
+          <mesh rotation-x={-Math.PI / 2}>
+            <ringGeometry args={[0.5, 1.2, 32]} />
+            <meshBasicMaterial color="#38bdf8" transparent opacity={0.7} />
+          </mesh>
+          <pointLight color="#38bdf8" intensity={4} distance={3} />
+          <SpriteLabel text="📍 HERE" position={[0, 2.3, 0]} color="#38bdf8" width={1.8} />
+        </group>
+      )}
+
       <AvatarModel color={player.color} motion={motion} />
-      <SpriteLabel text={player.name} position={[0, 1.78, 0]} background="rgba(255,255,255,0.96)" color="#17211b" width={2.2} />
+      <SpriteLabel
+        text={`${player.name}${player.isGhost ? " 👻" : ""}${player.isDancing ? " 💃" : ""}${player.activeAppStatus ? ` · ${player.activeAppStatus}` : ""}`}
+        position={[0, 1.78, 0]}
+        background="rgba(255,255,255,0.96)"
+        color="#17211b"
+        width={player.activeAppStatus ? 3.2 : 2.2}
+      />
     </group>
   );
 }
@@ -619,20 +784,106 @@ function CustomOfficeObjects() {
 
 function CustomOfficeObject({ object }: { object: OfficeObject }) {
   const openPanel = useOfficeStore((state) => state.openPanel);
+  const isMapmakerOpen = useOfficeStore((state) => state.isMapmakerOpen);
+  const removeOfficeObject = useOfficeStore((state) => state.removeOfficeObject);
+  const rotateOfficeObject = useOfficeStore((state) => state.rotateOfficeObject);
   const { x, y, z, rotationY, scale } = object.transform;
   const interactive = Boolean(object.interaction);
-  return <group position={[x, y, z]} rotation-y={rotationY} scale={scale} onClick={interactive ? (event) => { event.stopPropagation(); openPanel(object.interaction!.kind); } : undefined}>
-    {object.assetKey === "planter" && <><RoundedBox args={[0.75, 0.55, 0.75]} radius={0.1} position={[0, 0.28, 0]} castShadow><meshStandardMaterial color="#6a4b36" roughness={0.8} /></RoundedBox><mesh position={[0, 0.78, 0]} castShadow><sphereGeometry args={[0.46, 14, 10]} /><meshStandardMaterial color="#47705a" roughness={0.9} /></mesh></>}
-    {object.assetKey === "floor_lamp" && <><mesh position={[0, 0.06, 0]} castShadow><cylinderGeometry args={[0.28, 0.34, 0.12, 20]} /><meshStandardMaterial color="#7b633d" metalness={0.75} roughness={0.3} /></mesh><mesh position={[0, 1.05, 0]} castShadow><cylinderGeometry args={[0.035, 0.045, 2, 12]} /><meshStandardMaterial color="#b69350" metalness={0.8} roughness={0.25} /></mesh><mesh position={[0, 2.03, 0]} castShadow><coneGeometry args={[0.38, 0.55, 20, 1, true]} /><meshStandardMaterial color="#f1dfb5" roughness={0.7} side={THREE.DoubleSide} /></mesh><pointLight position={[0, 1.9, 0]} intensity={3} distance={3.5} color="#ffdca0" /></>}
-    {object.assetKey === "lounge_bench" && <><RoundedBox args={[2.4, 0.42, 0.85]} radius={0.15} position={[0, 0.38, 0]} castShadow><meshStandardMaterial color="#435a50" roughness={0.9} /></RoundedBox><RoundedBox args={[2.2, 0.55, 0.2]} radius={0.08} position={[0, 0.82, -0.34]} castShadow><meshStandardMaterial color="#365047" roughness={0.9} /></RoundedBox></>}
-    {object.assetKey === "whiteboard" && <><RoundedBox args={[2.4, 1.55, 0.14]} radius={0.08} position={[0, 1.15, 0]} castShadow><meshStandardMaterial color="#715439" roughness={0.65} /></RoundedBox><mesh position={[0, 1.15, 0.081]}><planeGeometry args={[2.15, 1.3]} /><meshStandardMaterial color="#f7f3e8" roughness={0.45} /></mesh><mesh position={[-0.72, 1.34, 0.09]} rotation-z={-0.08}><boxGeometry args={[0.55, 0.045, 0.025]} /><meshBasicMaterial color="#c8f560" /></mesh></>}
-    {object.assetKey === "focus_pod" && <><RoundedBox args={[1.5, 2.2, 1.5]} radius={0.25} position={[0, 1.1, 0]} castShadow><meshStandardMaterial color="#263d35" roughness={0.65} /></RoundedBox><mesh position={[0, 1.12, 0.756]}><planeGeometry args={[1.05, 1.55]} /><meshStandardMaterial color="#88a99a" transparent opacity={0.42} metalness={0.2} roughness={0.2} /></mesh><pointLight position={[0, 1.7, 0]} intensity={4} distance={2.5} color="#c8f560" /></>}
-    {object.assetKey === "standing_desk" && <><RoundedBox args={[1.8, 0.08, 0.85]} radius={0.03} position={[0, 0.95, 0]} castShadow><meshStandardMaterial color="#c9a562" roughness={0.4} /></RoundedBox><mesh position={[-0.75, 0.46, 0]} castShadow><cylinderGeometry args={[0.04, 0.04, 0.92, 12]} /><meshStandardMaterial color="#1a202c" metalness={0.8} /></mesh><mesh position={[0.75, 0.46, 0]} castShadow><cylinderGeometry args={[0.04, 0.04, 0.92, 12]} /><meshStandardMaterial color="#1a202c" metalness={0.8} /></mesh></>}
-    {object.assetKey === "conference_table" && <><RoundedBox args={[3.2, 0.1, 1.35]} radius={0.05} position={[0, 0.74, 0]} castShadow><meshStandardMaterial color="#17211b" roughness={0.3} metalness={0.1} /></RoundedBox><mesh position={[-1.2, 0.36, 0]} castShadow><cylinderGeometry args={[0.08, 0.1, 0.72, 16]} /><meshStandardMaterial color="#c8f560" metalness={0.5} roughness={0.3} /></mesh><mesh position={[1.2, 0.36, 0]} castShadow><cylinderGeometry args={[0.08, 0.1, 0.72, 16]} /><meshStandardMaterial color="#c8f560" metalness={0.5} roughness={0.3} /></mesh></>}
-    {object.assetKey === "coffee_machine" && <><RoundedBox args={[0.9, 0.85, 0.65]} radius={0.04} position={[0, 0.42, 0]} castShadow><meshStandardMaterial color="#2d3748" roughness={0.5} /></RoundedBox><RoundedBox args={[0.35, 0.38, 0.3]} radius={0.02} position={[0, 1.0, 0]} castShadow><meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.2} /></RoundedBox><pointLight position={[0, 1.1, 0.2]} intensity={1.5} distance={1.8} color="#ffa552" /></>}
-    {object.assetKey === "bookshelf" && <><RoundedBox args={[2.0, 2.1, 0.55]} radius={0.04} position={[0, 1.05, 0]} castShadow><meshStandardMaterial color="#4a3022" roughness={0.7} /></RoundedBox><mesh position={[0, 1.05, 0.28]}><boxGeometry args={[1.8, 1.9, 0.02]} /><meshStandardMaterial color="#d4a373" roughness={0.8} /></mesh></>}
-    {interactive && <SpriteLabel text={OFFICE_OBJECT_CATALOG[object.assetKey].label} position={[0, object.assetKey === "floor_lamp" ? 2.6 : 2.45, 0]} width={2.5} />}
-  </group>;
+
+  const handleClick = (event: any) => {
+    event.stopPropagation();
+    if (isMapmakerOpen) {
+      if (event.nativeEvent?.shiftKey) {
+        removeOfficeObject(object.id);
+        playSlideClick();
+      } else {
+        rotateOfficeObject(object.id);
+        playSlideClick();
+      }
+      return;
+    }
+    if (interactive) {
+      openPanel(object.interaction!.kind);
+    }
+  };
+
+  return (
+    <group
+      position={[x, y, z]}
+      rotation-y={rotationY}
+      scale={scale}
+      onClick={interactive || isMapmakerOpen ? handleClick : undefined}
+    >
+      {object.assetKey === "planter" && <><RoundedBox args={[0.75, 0.55, 0.75]} radius={0.1} position={[0, 0.28, 0]} castShadow><meshStandardMaterial color="#6a4b36" roughness={0.8} /></RoundedBox><mesh position={[0, 0.78, 0]} castShadow><sphereGeometry args={[0.46, 14, 10]} /><meshStandardMaterial color="#47705a" roughness={0.9} /></mesh></>}
+      {object.assetKey === "floor_lamp" && <><mesh position={[0, 0.06, 0]} castShadow><cylinderGeometry args={[0.28, 0.34, 0.12, 20]} /><meshStandardMaterial color="#7b633d" metalness={0.75} roughness={0.3} /></mesh><mesh position={[0, 1.05, 0]} castShadow><cylinderGeometry args={[0.035, 0.045, 2, 12]} /><meshStandardMaterial color="#b69350" metalness={0.8} roughness={0.25} /></mesh><mesh position={[0, 2.03, 0]} castShadow><coneGeometry args={[0.38, 0.55, 20, 1, true]} /><meshStandardMaterial color="#f1dfb5" roughness={0.7} side={THREE.DoubleSide} /></mesh><pointLight position={[0, 1.9, 0]} intensity={3} distance={3.5} color="#ffdca0" /></>}
+      {object.assetKey === "lounge_bench" && <><RoundedBox args={[2.4, 0.42, 0.85]} radius={0.15} position={[0, 0.38, 0]} castShadow><meshStandardMaterial color="#435a50" roughness={0.9} /></RoundedBox><RoundedBox args={[2.2, 0.55, 0.2]} radius={0.08} position={[0, 0.82, -0.34]} castShadow><meshStandardMaterial color="#365047" roughness={0.9} /></RoundedBox></>}
+      {object.assetKey === "whiteboard" && <><RoundedBox args={[2.4, 1.55, 0.14]} radius={0.08} position={[0, 1.15, 0]} castShadow><meshStandardMaterial color="#715439" roughness={0.65} /></RoundedBox><mesh position={[0, 1.15, 0.081]}><planeGeometry args={[2.15, 1.3]} /><meshStandardMaterial color="#f7f3e8" roughness={0.45} /></mesh><mesh position={[-0.72, 1.34, 0.09]} rotation-z={-0.08}><boxGeometry args={[0.55, 0.045, 0.025]} /><meshBasicMaterial color="#c8f560" /></mesh></>}
+      {object.assetKey === "focus_pod" && <><RoundedBox args={[1.5, 2.2, 1.5]} radius={0.25} position={[0, 1.1, 0]} castShadow><meshStandardMaterial color="#263d35" roughness={0.65} /></RoundedBox><mesh position={[0, 1.12, 0.756]}><planeGeometry args={[1.05, 1.55]} /><meshStandardMaterial color="#88a99a" transparent opacity={0.42} metalness={0.2} roughness={0.2} /></mesh><pointLight position={[0, 1.7, 0]} intensity={4} distance={2.5} color="#c8f560" /></>}
+      {object.assetKey === "standing_desk" && <><RoundedBox args={[1.8, 0.08, 0.85]} radius={0.03} position={[0, 0.95, 0]} castShadow><meshStandardMaterial color="#c9a562" roughness={0.4} /></RoundedBox><mesh position={[-0.75, 0.46, 0]} castShadow><cylinderGeometry args={[0.04, 0.04, 0.92, 12]} /><meshStandardMaterial color="#1a202c" metalness={0.8} /></mesh><mesh position={[0.75, 0.46, 0]} castShadow><cylinderGeometry args={[0.04, 0.04, 0.92, 12]} /><meshStandardMaterial color="#1a202c" metalness={0.8} /></mesh></>}
+      {object.assetKey === "conference_table" && <><RoundedBox args={[3.2, 0.1, 1.35]} radius={0.05} position={[0, 0.74, 0]} castShadow><meshStandardMaterial color="#17211b" roughness={0.3} metalness={0.1} /></RoundedBox><mesh position={[-1.2, 0.36, 0]} castShadow><cylinderGeometry args={[0.08, 0.1, 0.72, 16]} /><meshStandardMaterial color="#c8f560" metalness={0.5} roughness={0.3} /></mesh><mesh position={[1.2, 0.36, 0]} castShadow><cylinderGeometry args={[0.08, 0.1, 0.72, 16]} /><meshStandardMaterial color="#c8f560" metalness={0.5} roughness={0.3} /></mesh></>}
+      {object.assetKey === "coffee_machine" && <><RoundedBox args={[0.9, 0.85, 0.65]} radius={0.04} position={[0, 0.42, 0]} castShadow><meshStandardMaterial color="#2d3748" roughness={0.5} /></RoundedBox><RoundedBox args={[0.35, 0.38, 0.3]} radius={0.02} position={[0, 1.0, 0]} castShadow><meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.2} /></RoundedBox><pointLight position={[0, 1.1, 0.2]} intensity={1.5} distance={1.8} color="#ffa552" /></>}
+      {object.assetKey === "bookshelf" && <><RoundedBox args={[2.0, 2.1, 0.55]} radius={0.04} position={[0, 1.05, 0]} castShadow><meshStandardMaterial color="#4a3022" roughness={0.7} /></RoundedBox><mesh position={[0, 1.05, 0.28]}><boxGeometry args={[1.8, 1.9, 0.02]} /><meshStandardMaterial color="#d4a373" roughness={0.8} /></mesh></>}
+      {object.assetKey === "arcade_machine" && (
+        <group>
+          <RoundedBox args={[1.0, 1.9, 0.9]} radius={0.06} position={[0, 0.95, 0]} castShadow>
+            <meshStandardMaterial color="#11161d" metalness={0.6} roughness={0.4} />
+          </RoundedBox>
+          <RoundedBox args={[0.96, 0.28, 0.2]} radius={0.03} position={[0, 1.82, 0.32]} castShadow>
+            <meshStandardMaterial color="#c8f560" emissive="#c8f560" emissiveIntensity={0.6} roughness={0.2} />
+          </RoundedBox>
+          <mesh position={[0, 1.35, 0.36]} rotation-x={-0.22}>
+            <planeGeometry args={[0.78, 0.58]} />
+            <meshStandardMaterial color="#00ffcc" emissive="#00a382" emissiveIntensity={0.7} roughness={0.1} />
+          </mesh>
+          <RoundedBox args={[0.96, 0.1, 0.45]} radius={0.03} position={[0, 0.98, 0.42]} rotation-x={0.12} castShadow>
+            <meshStandardMaterial color="#1a232e" metalness={0.7} roughness={0.3} />
+          </RoundedBox>
+          <mesh position={[-0.22, 1.08, 0.45]}>
+            <cylinderGeometry args={[0.015, 0.015, 0.12, 10]} />
+            <meshStandardMaterial color="#ff4757" metalness={0.8} roughness={0.2} />
+          </mesh>
+          <mesh position={[-0.22, 1.15, 0.45]}>
+            <sphereGeometry args={[0.045, 12, 12]} />
+            <meshStandardMaterial color="#ff4757" emissive="#ff4757" emissiveIntensity={0.3} />
+          </mesh>
+          <mesh position={[0.12, 1.02, 0.45]}>
+            <cylinderGeometry args={[0.028, 0.028, 0.02, 10]} />
+            <meshStandardMaterial color="#ffd32a" emissive="#ffd32a" emissiveIntensity={0.4} />
+          </mesh>
+          <mesh position={[0.22, 1.04, 0.43]}>
+            <cylinderGeometry args={[0.028, 0.028, 0.02, 10]} />
+            <meshStandardMaterial color="#00d2d3" emissive="#00d2d3" emissiveIntensity={0.4} />
+          </mesh>
+          <pointLight position={[0, 1.4, 0.6]} intensity={2.2} distance={2.5} color="#00ffcc" />
+        </group>
+      )}
+      {object.assetKey === "custom_embed" && (
+        <group>
+          <RoundedBox args={[2.2, 1.3, 0.08]} radius={0.04} position={[0, 1.6, 0]} castShadow>
+            <meshStandardMaterial color="#0e1713" metalness={0.8} roughness={0.2} />
+          </RoundedBox>
+          <mesh position={[0, 1.6, 0.045]}>
+            <planeGeometry args={[2.1, 1.2]} />
+            <meshStandardMaterial color="#1a2e24" emissive="#264e3b" emissiveIntensity={0.4} roughness={0.3} />
+          </mesh>
+          <mesh position={[0, 0.8, -0.05]} castShadow>
+            <cylinderGeometry args={[0.04, 0.04, 1.6, 16]} />
+            <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.2} />
+          </mesh>
+          <mesh position={[0, 0.03, -0.05]} castShadow>
+            <cylinderGeometry args={[0.35, 0.4, 0.06, 24]} />
+            <meshStandardMaterial color="#2d3748" metalness={0.7} roughness={0.3} />
+          </mesh>
+          <pointLight position={[0, 1.6, 0.5]} intensity={1.8} distance={3.0} color="#c8f560" />
+        </group>
+      )}
+      {isMapmakerOpen ? (
+        <SpriteLabel text="↻ Click to rotate · ⇧Click to remove" position={[0, 2.5, 0]} color="#c8f560" width={3.2} />
+      ) : interactive ? (
+        <SpriteLabel text={OFFICE_OBJECT_CATALOG[object.assetKey].label} position={[0, object.assetKey === "floor_lamp" ? 2.6 : 2.45, 0]} width={2.5} />
+      ) : null}
+    </group>
+  );
 }
 
 function EmoteSpriteItem({
@@ -707,15 +958,23 @@ function EmoteParticleManager() {
 function ProximityAudioBeams() {
   const player = useOfficeStore((state) => state.player);
   const remotePlayers = useOfficeStore((state) => state.remotePlayers);
+  const isGhost = useOfficeStore((state) => state.isGhost);
+  const isQuietMode = useOfficeStore((state) => state.isQuietMode);
 
-  // Find AI teammates within 3.2m
+  // In Ghost mode, audio connections are disconnected (true to Gather)
+  if (isGhost) return null;
+
+  // Quiet mode restricts radius to 1.1m (immediate adjacent) vs normal 3.2m
+  const audioRadius = isQuietMode ? 1.15 : 3.2;
+
+  // Find AI teammates within hearing range
   const connectedAIs = demoTeammates.filter((t) => {
-    return Math.hypot(t.position[0] - player.x, t.position[2] - player.z) <= 3.2;
+    return Math.hypot(t.position[0] - player.x, t.position[2] - player.z) <= audioRadius;
   });
 
-  // Find remote players within 3.2m
+  // Find remote players within hearing range
   const connectedRemotes = Object.values(remotePlayers).filter((r) => {
-    return Math.hypot(r.x - player.x, r.z - player.z) <= 3.2;
+    return Math.hypot(r.x - player.x, r.z - player.z) <= audioRadius;
   });
 
   return (
@@ -841,25 +1100,48 @@ function OfficeEnvironment() {
       <StorageUtilityRoom />
       <Reception />
       <WaitingArea />
+      <ExpressElevatorLobby />
 
       <LightingDetails />
       {design.plantsEnabled && <Plants />}
       <RoomWayfinding />
 
-      {/* Clean, Subtle Interactive Zone Floor Rings */}
+      {/* Clean, Subtle Interactive Zone Floor Rings with Spotlight Beam support */}
       {INTERACTION_ZONES.map((zone) => {
         const isNear = activeNearby?.kind === zone.kind;
         return (
           <group key={zone.id} position={[zone.x, 0.048, zone.z]}>
-            <mesh rotation-x={-Math.PI / 2}>
-              <ringGeometry args={[0.55, 0.65, 36]} />
-              <meshBasicMaterial color={isNear ? design.accentColor : "#ffffff"} transparent opacity={isNear ? 0.9 : 0.28} />
-            </mesh>
-            <mesh rotation-x={-Math.PI / 2}>
-              <circleGeometry args={[0.52, 32]} />
-              <meshBasicMaterial color={isNear ? design.accentColor : "#ffffff"} transparent opacity={isNear ? 0.15 : 0.04} />
-            </mesh>
-            {isNear && <SpriteLabel text={zone.label.toUpperCase()} position={[0, 0.32, 0]} color="#c8f560" width={2.4} />}
+            {/* If Spotlight tile (Megaphone podium), render golden beam and broadcast indicator */}
+            {zone.isSpotlight ? (
+              <group>
+                <mesh rotation-x={-Math.PI / 2}>
+                  <ringGeometry args={[0.75, 0.9, 36]} />
+                  <meshBasicMaterial color="#f59e0b" transparent opacity={isNear ? 0.95 : 0.45} />
+                </mesh>
+                <mesh rotation-x={-Math.PI / 2}>
+                  <circleGeometry args={[0.74, 32]} />
+                  <meshBasicMaterial color="#f59e0b" transparent opacity={isNear ? 0.25 : 0.08} />
+                </mesh>
+                {/* Spotlight Holographic Stage Beam */}
+                <mesh position={[0, 1.4, 0]}>
+                  <cylinderGeometry args={[0.4, 0.8, 2.8, 24, 1, true]} />
+                  <meshBasicMaterial color="#fbbf24" transparent opacity={isNear ? 0.35 : 0.12} side={THREE.DoubleSide} />
+                </mesh>
+                <SpriteLabel text="📢 SPOTLIGHT STAGE" position={[0, 0.45, 0]} color="#f59e0b" width={2.8} />
+              </group>
+            ) : (
+              <>
+                <mesh rotation-x={-Math.PI / 2}>
+                  <ringGeometry args={[0.55, 0.65, 36]} />
+                  <meshBasicMaterial color={isNear ? design.accentColor : "#ffffff"} transparent opacity={isNear ? 0.9 : 0.28} />
+                </mesh>
+                <mesh rotation-x={-Math.PI / 2}>
+                  <circleGeometry args={[0.52, 32]} />
+                  <meshBasicMaterial color={isNear ? design.accentColor : "#ffffff"} transparent opacity={isNear ? 0.15 : 0.04} />
+                </mesh>
+                {isNear && <SpriteLabel text={zone.label.toUpperCase()} position={[0, 0.32, 0]} color="#c8f560" width={2.4} />}
+              </>
+            )}
           </group>
         );
       })}
@@ -993,12 +1275,67 @@ function Floor() {
   );
 }
 
+function ExpressElevatorLobby() {
+  return (
+    <group position={[4.8, 0, 6.2]}>
+      <mesh position={[0, 1.25, 0.45]}>
+        <boxGeometry args={[1.6, 2.5, 0.1]} />
+        <meshStandardMaterial color="#1a202c" metalness={0.8} roughness={0.2} />
+      </mesh>
+      <mesh position={[-0.36, 1.25, 0.49]}>
+        <boxGeometry args={[0.7, 2.4, 0.02]} />
+        <meshStandardMaterial color="#94a3b8" metalness={0.9} roughness={0.3} />
+      </mesh>
+      <mesh position={[0.36, 1.25, 0.49]}>
+        <boxGeometry args={[0.7, 2.4, 0.02]} />
+        <meshStandardMaterial color="#94a3b8" metalness={0.9} roughness={0.3} />
+      </mesh>
+      <mesh position={[0, 0.035, 0]} rotation-x={-Math.PI / 2}>
+        <ringGeometry args={[0.6, 0.75, 32]} />
+        <meshBasicMaterial color="#38bdf8" transparent opacity={0.65} />
+      </mesh>
+      <mesh position={[0, 0.032, 0]} rotation-x={-Math.PI / 2}>
+        <circleGeometry args={[0.59, 32]} />
+        <meshBasicMaterial color="#38bdf8" transparent opacity={0.15} />
+      </mesh>
+      <pointLight position={[0, 2.2, 0.2]} intensity={1.8} distance={2.5} color="#38bdf8" />
+      <SpriteLabel text="▲ SKY TERRACE ELEVATOR" position={[0, 0.35, 0]} color="#38bdf8" width={2.8} />
+    </group>
+  );
+}
+
+function ExpressElevatorTerrace() {
+  return (
+    <group position={[4.8, 0, -0.45]}>
+      <mesh position={[0, 1.25, 0]}>
+        <boxGeometry args={[1.5, 2.5, 1.4]} />
+        <meshPhysicalMaterial color="#c5e2db" transparent opacity={0.3} roughness={0.1} transmission={0.8} />
+      </mesh>
+      <mesh position={[0, 2.52, 0]}>
+        <boxGeometry args={[1.7, 0.06, 1.6]} />
+        <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.2} />
+      </mesh>
+      <mesh position={[0, 0.035, 0]} rotation-x={-Math.PI / 2}>
+        <ringGeometry args={[0.6, 0.75, 32]} />
+        <meshBasicMaterial color="#c8f560" transparent opacity={0.65} />
+      </mesh>
+      <mesh position={[0, 0.032, 0]} rotation-x={-Math.PI / 2}>
+        <circleGeometry args={[0.59, 32]} />
+        <meshBasicMaterial color="#c8f560" transparent opacity={0.15} />
+      </mesh>
+      <pointLight position={[0, 2.2, 0]} intensity={1.8} distance={2.5} color="#c8f560" />
+      <SpriteLabel text="▼ PENTHOUSE ELEVATOR" position={[0, 0.35, 0]} color="#c8f560" width={2.8} />
+    </group>
+  );
+}
+
 // Expansive Penthouse Sun Terrace with Teak Decking, Loungers, Parasol, and Balustrade
 function PenthouseTerrace() {
   const setIsSitting = useOfficeStore((state) => state.setIsSitting);
 
   return (
     <group position={[0, 0, 11.95]}>
+      <ExpressElevatorTerrace />
       {/* Warm Teak Deck Flooring */}
       <mesh receiveShadow position={[0, 0.02, 0]} rotation-x={-Math.PI / 2}>
         <planeGeometry args={[30, 4.9]} />
@@ -2318,9 +2655,13 @@ function Chair({ position }: { position: [number, number, number] }) {
   );
 }
 
-// Engineering Dual-Monitor Workstation with Realistic Code & Telemetry Displays
+// Engineering Dual-Monitor Workstation with Realistic Code & Telemetry Displays and Personalized Desk Nameplate
 function Desk({ position, deskIndex }: { position: readonly [number, number, number]; deskIndex: number }) {
   const setIsSitting = useOfficeStore((state) => state.setIsSitting);
+  const claimedDesks = useOfficeStore((state) => state.claimedDesks);
+  const claimDesk = useOfficeStore((state) => state.claimDesk);
+  const unclaimDesk = useOfficeStore((state) => state.unclaimDesk);
+  const currentClaim = claimedDesks[deskIndex];
 
   const codeTexture = useMemo(() => {
     if (typeof document === "undefined") return null;
@@ -2520,6 +2861,35 @@ function Desk({ position, deskIndex }: { position: readonly [number, number, num
       {/* Matching Ergonomic Task Chair */}
       <group position={[0, 0, 0.6]} onClick={() => { setIsSitting(true); playChime(); }}>
         <Chair position={[0, 0, 0]} />
+      </group>
+
+      {/* Gather.town Personalized Desk Nameplate & Ownership Plaque */}
+      <group
+        position={[0, 0.82, -0.42]}
+        onClick={(e) => {
+          e.stopPropagation();
+          playChime();
+          if (currentClaim?.odId === useOfficeStore.getState().player.id) {
+            unclaimDesk(deskIndex);
+          } else {
+            claimDesk(deskIndex);
+          }
+        }}
+      >
+        <mesh castShadow>
+          <boxGeometry args={[0.55, 0.08, 0.04]} />
+          <meshStandardMaterial color={currentClaim ? "#143a28" : "#2a343b"} roughness={0.3} metalness={0.7} />
+        </mesh>
+        <mesh position={[0, 0, 0.022]}>
+          <planeGeometry args={[0.52, 0.06]} />
+          <meshBasicMaterial color={currentClaim ? "#c8f560" : "#94a3b8"} />
+        </mesh>
+        <SpriteLabel
+          text={currentClaim ? `📌 ${currentClaim.name}` : `Desk ${deskIndex + 1} (Click to Claim)`}
+          position={[0, 0.22, 0]}
+          color={currentClaim ? "#c8f560" : "#ffffff"}
+          width={currentClaim ? 2.4 : 2.0}
+        />
       </group>
     </group>
   );

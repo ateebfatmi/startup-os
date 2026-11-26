@@ -84,11 +84,14 @@ function collides(point: Vec2, collider: Collider) {
   );
 }
 
-export function resolveMovement(current: Vec2, target: Vec2, colliders = COLLIDERS): Vec2 {
+export function resolveMovement(current: Vec2, target: Vec2, colliders = COLLIDERS, isGhost = false): Vec2 {
   const bounded = {
     x: Math.max(OFFICE_BOUNDS.minX, Math.min(OFFICE_BOUNDS.maxX, target.x)),
     z: Math.max(OFFICE_BOUNDS.minZ, Math.min(OFFICE_BOUNDS.maxZ, target.z)),
   };
+  if (isGhost) {
+    return bounded;
+  }
   const tryX = { x: bounded.x, z: current.z };
   const tryZ = { x: current.x, z: bounded.z };
   const x = colliders.some((item) => collides(tryX, item)) ? current.x : tryX.x;

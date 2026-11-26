@@ -2,10 +2,12 @@ import type { InteractionZone, OfficeRoom } from "./types";
 
 export const INTERACTION_ZONES: InteractionZone[] = [
   { id: "meeting", kind: "meeting", label: "Conference Room", hint: "Open meeting controls & presentation screen", x: -7.5, z: -4.5, radius: 1.5 },
+  { id: "spotlight", kind: "meeting", label: "Town Hall Spotlight", hint: "Broadcast audio & video to entire office", x: -7.5, z: -2.8, radius: 1.2, isSpotlight: true },
   { id: "founder", kind: "focus", label: "Director / Founder Cabin", hint: "Review executive dashboard & roadmap", x: -1.5, z: -4.5, radius: 1.3 },
   { id: "manager", kind: "focus", label: "Manager Cabin", hint: "Team management & sprints", x: 2.5, z: -4.5, radius: 1.3 },
   { id: "focus", kind: "focus", label: "Workstations Hub", hint: "Start deep focus session", x: 0, z: 0, radius: 1.6 },
   { id: "projects", kind: "projects", label: "Product / Project Room", hint: "Open launch board & tasks", x: 7.5, z: 0.2, radius: 1.5 },
+  { id: "arcade", kind: "arcade", label: "Breakroom Arcade Table", hint: "Play team mini-games (Tetris / Chess / 2048)", x: 7.5, z: -5.5, radius: 1.4 },
   { id: "whiteboard", kind: "whiteboard", label: "Collaboration Wall", hint: "Start brainstorming canvas", x: -7.0, z: 0, radius: 1.4 },
   { id: "reception", kind: "focus", label: "Front Desk Reception", hint: "Visitor check-in & workspace overview", x: 0, z: 5.0, radius: 1.4 },
   { id: "server", kind: "focus", label: "Server Rack Terminal", hint: "View infrastructure telemetry", x: -8.5, z: 5.5, radius: 1.3 },

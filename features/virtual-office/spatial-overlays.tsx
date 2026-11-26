@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Monitor, MonitorPlay, Square, ChevronLeft, ChevronRight, Maximize2, Radio, Sparkles, Smile, GitPullRequest, GitMerge, Check, DollarSign, Flame, Clock, Lock, Globe } from "lucide-react";
+import {
+  Monitor, MonitorPlay, Square, ChevronLeft, ChevronRight, Maximize2, Radio,
+  Sparkles, Smile, GitPullRequest, GitMerge, Check, DollarSign, Flame, Clock,
+  Lock, Globe, Bell, VolumeX, Eye, Ghost, Music, Gamepad2, X, Navigation
+} from "lucide-react";
 import { useOfficeStore } from "./store";
 import { startScreenShare, stopScreenShare } from "./screen-share";
 import { playChime, playCoffeeSound, playSlideClick } from "./audio";
@@ -22,9 +26,20 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
   const setIsCaffeinated = useOfficeStore((state) => state.setIsCaffeinated);
   const toggleLofi = useOfficeStore((state) => state.toggleLofi);
 
+  const isGhost = useOfficeStore((state) => state.isGhost);
+  const isDancing = useOfficeStore((state) => state.isDancing);
+  const isQuietMode = useOfficeStore((state) => state.isQuietMode);
+  const toggleQuietMode = useOfficeStore((state) => state.toggleQuietMode);
+  const incomingRings = useOfficeStore((state) => state.incomingRings);
+  const dismissRing = useOfficeStore((state) => state.dismissRing);
+  const setClickTarget = useOfficeStore((state) => state.setClickTarget);
+  const followingPlayerId = useOfficeStore((state) => state.followingPlayerId);
+  const setFollowingPlayerId = useOfficeStore((state) => state.setFollowingPlayerId);
+
   const [showEmoteWheel, setShowEmoteWheel] = useState(false);
   const [showPRModal, setShowPRModal] = useState(false);
   const [showFullscreenTV, setShowFullscreenTV] = useState(false);
+  const [showArcadeModal, setShowArcadeModal] = useState(false);
   const [mergedPRs, setMergedPRs] = useState<number[]>([]);
 
   // Gather.town Spatial Room & Audio Perimeter Detection
@@ -40,6 +55,16 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
     if (nearbyAction.teammateId) {
       playChime();
       openAITeammate(nearbyAction.teammateId);
+    } else if (nearbyAction.special === "elevator_terrace") {
+      playChime();
+      triggerEmote("✨");
+      useOfficeStore.getState().setPlayerTransform(4.8, 11.5, Math.PI);
+      useOfficeStore.getState().setClickTarget(null);
+    } else if (nearbyAction.special === "elevator_reception") {
+      playChime();
+      triggerEmote("✨");
+      useOfficeStore.getState().setPlayerTransform(4.8, 6.0, 0);
+      useOfficeStore.getState().setClickTarget(null);
     } else if (nearbyAction.special === "espresso") {
       playCoffeeSound();
       setIsCaffeinated(true);
@@ -100,9 +125,29 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
 
   return (
     <>
-      {/* 1. Gather.town Top Audio Perimeter HUD (Private Space / Proximity Audio) */}
+      {/* 1. Gather.town Top Audio Perimeter HUD (Private Space / Proximity Audio / Spotlight / Quiet Mode) */}
       <div className="absolute top-3.5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 px-4 py-1.5 text-xs shadow-xl backdrop-blur-md transition-all duration-200 select-none bg-[#121c17]/90 text-white">
-        {inPhoneBooth ? (
+        {isGhost ? (
+          <>
+            <span className="flex h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="font-bold text-cyan-400 flex items-center gap-1">
+              <Ghost size={12} />
+              <span>Ghost Mode Active</span>
+            </span>
+            <span className="text-white/30">·</span>
+            <span className="text-[11px] text-white/70">Phasing through obstacles · Audio muted</span>
+          </>
+        ) : isQuietMode ? (
+          <>
+            <span className="flex h-2 w-2 rounded-full bg-amber-400" />
+            <span className="font-bold text-amber-400 flex items-center gap-1">
+              <VolumeX size={12} />
+              <span>Quiet Mode (⌘U)</span>
+            </span>
+            <span className="text-white/30">·</span>
+            <span className="text-[11px] text-white/70">1m adjacent hearing only</span>
+          </>
+        ) : inPhoneBooth ? (
           <>
             <span className="flex h-2 w-2 rounded-full bg-[#c8f560] animate-pulse" />
             <span className="font-bold text-[#c8f560] flex items-center gap-1">
@@ -137,7 +182,72 @@ export function SpatialOverlays({ displayName }: { displayName: string }) {
             <span className="text-[11px] text-white/70">Spatial audio zone · 3m range</span>
           </>
         )}
+
+        {/* Quiet Mode Quick Toggle Button */}
+        <button
+          onClick={() => { toggleQuietMode(); playChime(); }}
+          className={`ml-1.5 flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold transition cursor-pointer ${
+            isQuietMode ? "bg-amber-400/20 text-amber-300 border border-amber-400/40" : "bg-white/10 text-white/70 hover:bg-white/20"
+          }`}
+          title="Toggle Quiet Mode (Cmd/Ctrl + U)"
+        >
+          {isQuietMode ? <VolumeX size={10} /> : <Radio size={10} />}
+          <span>{isQuietMode ? "Quiet ON" : "Quiet"}</span>
+        </button>
       </div>
+
+      {/* Gather.town Incoming Ring / Wave Notification Banner */}
+      {incomingRings.length > 0 && (
+        <div className="absolute top-14 left-1/2 z-40 flex -translate-x-1/2 flex-col gap-2">
+          {incomingRings.map((ring) => (
+            <div
+              key={ring.id}
+              className="flex items-center gap-3 rounded-2xl border border-[#c8f560]/40 bg-[#121c17]/95 px-4 py-2.5 shadow-2xl backdrop-blur-md animate-in slide-in-from-top-3 text-white"
+            >
+              <div className="grid h-8 w-8 place-items-center rounded-xl bg-[#c8f560] text-[#17211b] animate-bounce">
+                <Bell size={16} />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-white">
+                  🔔 <span className="text-[#c8f560]">{ring.senderName}</span> rang your bell!
+                </p>
+                <p className="text-[10px] text-white/60">Wants to chat or connect</p>
+              </div>
+              <button
+                onClick={() => {
+                  playChime();
+                  setClickTarget({ x: ring.senderPosition.x, z: ring.senderPosition.z });
+                  dismissRing(ring.id);
+                }}
+                className="flex items-center gap-1 rounded-xl bg-[#c8f560] px-3 py-1 text-xs font-bold text-[#17211b] hover:bg-[#d8ff7a] transition cursor-pointer"
+              >
+                <Navigation size={12} />
+                <span>Walk Over</span>
+              </button>
+              <button
+                onClick={() => dismissRing(ring.id)}
+                className="rounded-lg p-1 text-white/50 hover:bg-white/10"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Following Target Floating Pill */}
+      {followingPlayerId && (
+        <div className="absolute top-14 right-6 z-30 flex items-center gap-2 rounded-2xl border border-white/20 bg-[#17211b]/95 px-3 py-1.5 text-xs text-white shadow-xl backdrop-blur-md">
+          <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
+          <span className="font-semibold text-white/90">Following Teammate</span>
+          <button
+            onClick={() => setFollowingPlayerId(null)}
+            className="ml-2 rounded-lg bg-white/10 px-2 py-0.5 text-[10px] font-bold text-white/70 hover:bg-white/20"
+          >
+            Stop
+          </button>
+        </div>
+      )}
 
       {/* 2. Gather.town Signature [X] Interaction Prompt */}
       {nearbyAction && (
